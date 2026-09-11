@@ -619,6 +619,7 @@ export function Onboarding({ courseId }: { courseId: string }) {
             height={900}
             sizes="(min-width: 1024px) 50vw, 100vw"
             alt={`${course.name} adventure world`}
+            priority
           />
           <div className="onboard-note">
             <Heart size={20} /> A little closer to your people.
@@ -844,6 +845,7 @@ export function Dashboard({ courseId }: { courseId?: string }) {
                 width={900}
                 height={900}
                 sizes="200px"
+                loading="eager"
               />
             </div>
             <div className="path-area">
