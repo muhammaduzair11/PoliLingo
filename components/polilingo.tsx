@@ -1,7 +1,7 @@
 'use client';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ART_WIDTHS } from '@/lib/art-widths.mjs';
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   ArrowUpRight,
@@ -51,6 +51,45 @@ import {
   unlocked,
 } from '@/lib/progress';
 
+function Art({
+  name,
+  alt,
+  className = '',
+  sizes,
+  priority = false,
+  width = 1000,
+  height = 1000,
+}: {
+  name: string;
+  alt: string;
+  className?: string;
+  sizes: string;
+  priority?: boolean;
+  width?: number;
+  height?: number;
+}) {
+  const srcSet = (ext: string) =>
+    ART_WIDTHS.map((w) => `/assets/${name}-${w}.${ext} ${w}w`).join(', ');
+  return (
+    <picture>
+      <source type="image/avif" srcSet={srcSet('avif')} sizes={sizes} />
+      <source type="image/webp" srcSet={srcSet('webp')} sizes={sizes} />
+      <img
+        className={className}
+        src={`/assets/${name}-840.webp`}
+        srcSet={srcSet('webp')}
+        sizes={sizes}
+        width={width}
+        height={height}
+        alt={alt}
+        decoding="async"
+        loading={priority ? 'eager' : 'lazy'}
+        fetchPriority={priority ? 'high' : 'auto'}
+      />
+    </picture>
+  );
+}
+
 export function Poli({
   pose = 'welcome',
   className = '',
@@ -61,18 +100,18 @@ export function Poli({
   priority?: boolean;
 }) {
   return (
-    <Image
+    <Art
+      name={`poli-${pose}`}
       className={`poli ${className}`}
-      src={`/assets/poli-${pose}.webp`}
-      width={800}
-      height={800}
-      sizes="(min-width: 768px) 260px, 40vw"
+      sizes="(min-width: 768px) 560px, 92vw"
+      priority={priority}
+      width={900}
+      height={900}
       alt={
         pose === 'welcome'
           ? 'Poli, your cream-colored markhor buddy with violet horns and an orange bag'
           : ''
       }
-      priority={priority}
     />
   );
 }
@@ -336,12 +375,10 @@ export function Home() {
                   </span>
                 </div>
                 <div className="world-frame">
-                  <Image
-                    src={course.image}
+                  <Art
+                    name={course.image}
                     alt={`${course.name} miniature adventure world`}
-                    width={900}
-                    height={900}
-                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    sizes="(min-width: 1024px) 36vw, (min-width: 640px) 55vw, 100vw"
                   />
                   <span className="world-spark" aria-hidden="true">
                     ✦
@@ -612,12 +649,10 @@ export function Onboarding({ courseId }: { courseId: string }) {
               {course.native}
             </span>
           </h2>
-          <Image
+          <Art
             className="onboard-world"
-            src={course.image}
-            width={900}
-            height={900}
-            sizes="(min-width: 1024px) 50vw, 100vw"
+            name={course.image}
+            sizes="(min-width: 1024px) 60vw, 100vw"
             alt={`${course.name} adventure world`}
             priority
           />
@@ -839,14 +874,7 @@ export function Dashboard({ courseId }: { courseId?: string }) {
                 <h2>{course.name}, here you come.</h2>
                 <p>{course.variety} · Introductory sample</p>
               </div>
-              <Image
-                src={course.image}
-                alt=""
-                width={900}
-                height={900}
-                sizes="200px"
-                loading="eager"
-              />
+              <Art name={course.image} alt="" sizes="200px" priority />
             </div>
             <div className="path-area">
               <svg

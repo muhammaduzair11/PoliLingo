@@ -431,6 +431,9 @@ svg {
   animation: float 5s ease-in-out infinite;
   transform: rotate(var(--tilt));
 }
+picture {
+  display: contents;
+}
 .poli {
   object-fit: contain;
 }
