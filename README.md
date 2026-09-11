@@ -22,7 +22,15 @@ The homepage leads into two-step onboarding and a three-lesson course for each l
 
 `lib/courses.ts` contains typed phrase records, exercise definitions, source links and local usage notes. Every phrase is a seed sample, not a claim of a certified curriculum. Hindko especially needs review by a Hazara/Abbottabad-speaking teacher. See `docs/content-notes.md` before extending or publishing the curriculum broadly.
 
-Eight original PNG assets live in `public/assets`. The character is Poli, a cream markhor with violet spiral horns and an orange satchel. The visual specifications are recorded in `docs/assets-prompts.md`.
+The character is Poli, a cream markhor with violet spiral horns and an orange satchel. Lossless PNG masters live in `assets-src/`; `npm run optimize-assets` generates an AVIF/WebP width ladder into `public/assets`, which is what the site serves. Render specifications are recorded in `docs/assets-prompts.md`, and the pipeline in `docs/architecture.md`.
+
+## Documentation
+
+- `docs/design.md` — the design system: colour, typography, layout, mascot, motion and accessibility rules.
+- `docs/architecture.md` — routing, state model, content model, image pipeline, quality gates and the Vercel deployment contract.
+- `docs/content-notes.md` — corpus provenance and review caveats.
+- `docs/assets-prompts.md` — generation specifications for the mascot and world renders.
+- `docs/validation.md` — the verification checklist.
 
 Decorative animation respects both the OS preference and an app setting. Text remains actual HTML; native-script runs have explicit language and RTL direction. Optional sounds use the Web Audio API after a user gesture. The interface uses Outfit and Noto Naskh Arabic with local fallback fonts.
 
