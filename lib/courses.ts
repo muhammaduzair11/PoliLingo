@@ -403,7 +403,7 @@ export const courses: Course[] = [
     variety: 'Northern / Peshawar',
     tagline: 'Big-hearted hellos. New horizons.',
     color: '#c4e5ff',
-    image: '/assets/world-pashto.png',
+    image: '/assets/world-pashto.webp',
     lessons: makeLessons('pashto'),
   },
   {
@@ -414,7 +414,7 @@ export const courses: Course[] = [
     variety: 'Hazara / Abbottabad',
     tagline: 'A little closer to your roots.',
     color: '#d3f4d8',
-    image: '/assets/world-hindko.png',
+    image: '/assets/world-hindko.webp',
     lessons: makeLessons('hindko'),
   },
   {
@@ -425,7 +425,7 @@ export const courses: Course[] = [
     variety: 'Everyday Pakistani Urdu',
     tagline: 'Every conversation, a connection.',
     color: '#ffd3df',
-    image: '/assets/world-urdu.png',
+    image: '/assets/world-urdu.webp',
     lessons: makeLessons('urdu'),
   },
 ];

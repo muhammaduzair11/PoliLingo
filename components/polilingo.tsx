@@ -1,5 +1,5 @@
 'use client';
-/* oxlint-disable next/no-img-element -- Original assets are pre-optimized WebP with fixed dimensions; no runtime image service is needed. */
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
@@ -61,18 +61,18 @@ export function Poli({
   priority?: boolean;
 }) {
   return (
-    <img
+    <Image
       className={`poli ${className}`}
-      src={`/assets/poli-${pose}.png`}
-      width="900"
-      height="900"
+      src={`/assets/poli-${pose}.webp`}
+      width={800}
+      height={800}
+      sizes="(min-width: 768px) 260px, 40vw"
       alt={
         pose === 'welcome'
           ? 'Poli, your cream-colored markhor buddy with violet horns and an orange bag'
           : ''
       }
-      loading={priority ? 'eager' : 'lazy'}
-      fetchPriority={priority ? 'high' : 'auto'}
+      priority={priority}
     />
   );
 }
@@ -336,12 +336,12 @@ export function Home() {
                   </span>
                 </div>
                 <div className="world-frame">
-                  <img
+                  <Image
                     src={course.image}
                     alt={`${course.name} miniature adventure world`}
-                    width="1000"
-                    height="1000"
-                    loading="lazy"
+                    width={900}
+                    height={900}
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                   />
                   <span className="world-spark" aria-hidden="true">
                     ✦
@@ -612,11 +612,12 @@ export function Onboarding({ courseId }: { courseId: string }) {
               {course.native}
             </span>
           </h2>
-          <img
+          <Image
             className="onboard-world"
             src={course.image}
-            width="1000"
-            height="1000"
+            width={900}
+            height={900}
+            sizes="(min-width: 1024px) 50vw, 100vw"
             alt={`${course.name} adventure world`}
           />
           <div className="onboard-note">
@@ -837,7 +838,13 @@ export function Dashboard({ courseId }: { courseId?: string }) {
                 <h2>{course.name}, here you come.</h2>
                 <p>{course.variety} · Introductory sample</p>
               </div>
-              <img src={course.image} alt="" width="1000" height="1000" />
+              <Image
+                src={course.image}
+                alt=""
+                width={900}
+                height={900}
+                sizes="200px"
+              />
             </div>
             <div className="path-area">
               <svg
