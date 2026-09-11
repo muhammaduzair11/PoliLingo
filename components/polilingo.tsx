@@ -63,7 +63,7 @@ export function Poli({
   return (
     <img
       className={`poli ${className}`}
-      src={`/assets/poli-${pose}.webp`}
+      src={`/assets/poli-${pose}.png`}
       width="900"
       height="900"
       alt={
