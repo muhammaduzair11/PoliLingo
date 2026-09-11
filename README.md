@@ -1,0 +1,31 @@
+# PoliLingo
+
+A playful, responsive language-learning MVP for Pashto, Hazara/Abbottabad Hindko, and Urdu. React 19, TypeScript, Vinext, Sites, and customized Shadcn/Base UI primitives.
+
+## Run locally
+
+```sh
+npm install
+npm run dev
+```
+
+```sh
+npm run typecheck
+npm test
+npm run lint
+npm run build
+```
+
+The homepage leads into two-step onboarding and a three-lesson course for each language. Lessons contain study cards and eight exercises, with repeat practice for mistakes. Progress and in-flight feedback are stored under `polilingo.progress.v1` in localStorage. A completed run earns 20 XP initially and 5 XP on replay. Session IDs prevent double-awarding on refresh. Calendar dates use the learner's browser-local timezone. No app accounts, cloud sync, pronunciation audio, payments, or public leaderboards are implemented.
+
+## Content and assets
+
+`lib/courses.ts` contains typed phrase records, exercise definitions, source links and local usage notes. Every phrase is a seed sample, not a claim of a certified curriculum. Hindko especially needs review by a Hazara/Abbottabad-speaking teacher. See `docs/content-notes.md` before extending or publishing the curriculum broadly.
+
+Eight original generated WebP assets live in `public/assets`. The character is Poli, a cream markhor with violet spiral horns and an orange satchel. Full generation prompts and source output paths are recorded in `docs/assets-prompts.md`.
+
+Decorative animation respects both the OS preference and an app setting. Text remains actual HTML; native-script runs have explicit language and RTL direction. Optional sounds use the Web Audio API after a user gesture. The interface uses Outfit and Noto Naskh Arabic with local fallback fonts.
+
+## Deploy
+
+The Sites project ID is retained in `.openai/hosting.json`. Build and publish the exact validated source using the Sites hosting workflow. The requested release is an owner-only preview.
