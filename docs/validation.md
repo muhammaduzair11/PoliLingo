@@ -6,7 +6,7 @@ Validated locally on 2026-09-09.
 
 - TypeScript no-emit check and application lint.
 - Nine Node tests cover all 72 exercises, all three course unlock sequences, incorrect-answer review, answer ordering, pair matching, reward idempotency, 5-XP replays, local calendar streaks, restoring unfinished feedback, malformed storage, and reset defaults.
-- Vinext production build completes with all six route patterns.
+- Next.js production build completes with all six route patterns.
 - Lint excludes the untouched generated component catalog and its mobile helper. The two client state modules document their deliberate post-hydration effects; the application does not enable React Compiler.
 
 ## Browser walkthrough

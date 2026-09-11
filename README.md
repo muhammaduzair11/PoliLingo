@@ -1,6 +1,6 @@
 # PoliLingo
 
-A playful, responsive language-learning MVP for Pashto, Hazara/Abbottabad Hindko, and Urdu. React 19, TypeScript, Vinext, Sites, and customized Shadcn/Base UI primitives.
+A playful, responsive language-learning MVP for Pashto, Hazara/Abbottabad Hindko, and Urdu. Built with Next.js, React 19, TypeScript, Tailwind CSS, and customized Shadcn/Base UI primitives.
 
 ## Run locally
 
@@ -22,10 +22,22 @@ The homepage leads into two-step onboarding and a three-lesson course for each l
 
 `lib/courses.ts` contains typed phrase records, exercise definitions, source links and local usage notes. Every phrase is a seed sample, not a claim of a certified curriculum. Hindko especially needs review by a Hazara/Abbottabad-speaking teacher. See `docs/content-notes.md` before extending or publishing the curriculum broadly.
 
-Eight original generated WebP assets live in `public/assets`. The character is Poli, a cream markhor with violet spiral horns and an orange satchel. Full generation prompts and source output paths are recorded in `docs/assets-prompts.md`.
+Eight original PNG assets live in `public/assets`. The character is Poli, a cream markhor with violet spiral horns and an orange satchel. The visual specifications are recorded in `docs/assets-prompts.md`.
 
 Decorative animation respects both the OS preference and an app setting. Text remains actual HTML; native-script runs have explicit language and RTL direction. Optional sounds use the Web Audio API after a user gesture. The interface uses Outfit and Noto Naskh Arabic with local fallback fonts.
 
-## Deploy
+## Deploy to Vercel
 
-The Sites project ID is retained in `.openai/hosting.json`. Build and publish the exact validated source using the Sites hosting workflow. The requested release is an owner-only preview.
+Import the GitHub repository into Vercel. Vercel detects Next.js automatically, runs `npm run build`, and publishes from the `.next` output without custom framework settings.
+
+For a command-line preview deployment:
+
+```sh
+npx vercel
+```
+
+For a production deployment:
+
+```sh
+npx vercel --prod
+```

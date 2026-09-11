@@ -1,6 +1,6 @@
-# PoliLingo generated assets
+# PoliLingo asset direction
 
-Generated with the built-in imagegen tool, one request per asset. Welcome was used as the visual identity reference for all four remaining mascot poses. Each final PNG was visually inspected and verified as RGBA with genuine transparency. Detached sparkle-like alpha artifacts were removed from the transparent area without changing the illustrations. Mascots are 900px square and worlds are 1000px square. Generated originals remain under C:/Users/Muhammad Uzair/.codex/generated_images/01a08223-0a59-7070-a212-cbe1761b0f37/.
+The welcome pose establishes the visual identity for the four remaining mascot poses. Each final PNG was visually inspected and verified as RGBA with genuine transparency. Detached sparkle-like alpha artifacts were removed from the transparent area without changing the illustrations. Mascots are 900px square and worlds are 1000px square.
 
 ## welcome
 
