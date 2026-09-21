@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     template: '%s · PoliLingo',
   },
   description:
-    'Find your words. Find your people. Learn Pashto, Hindko and Urdu in small, playful lessons with Poli, your little adventure buddy.',
+    'Find your words. Find your people. Learn Pashto and Hindko in small, playful lessons with Poli, your little adventure buddy.',
 };
 export default function RootLayout({
   children,

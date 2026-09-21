@@ -31,7 +31,7 @@ generation prompts in `docs/assets-prompts.md`; the verification checklist in
 | `/settings` | Static | Sound, motion, goal and reset controls |
 | `/_not-found` | Static | Fallback |
 
-Course slugs are `pashto`, `hindko`, `urdu` (the `id` field in
+Course slugs are `pashto` and `hindko` (the `id` field in
 `lib/courses.ts`).
 
 ## 3. State model

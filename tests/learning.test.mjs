@@ -13,8 +13,8 @@ import {
   streak,
 } from '../lib/progress.ts';
 
-test('nine complete, sourced lessons with eight exercises each', () => {
-  assert.equal(courses.length, 3);
+test('six complete, sourced lessons with eight exercises each', () => {
+  assert.equal(courses.length, 2);
   for (const c of courses) {
     assert.equal(c.lessons.length, 3);
     for (const l of c.lessons) {
@@ -60,7 +60,7 @@ test('all answer types accept correct answers and reject incorrect answers', () 
   );
   assert.equal(evaluate(m, swapped), false);
 });
-test('all three courses unlock sequentially and preserve independent progress', () => {
+test('both courses unlock sequentially and preserve independent progress', () => {
   let s = initialState();
   let id = 0;
   for (const c of courses) {
@@ -84,15 +84,15 @@ test('all three courses unlock sequentially and preserve independent progress', 
       assert.equal(s.sessions[key].firstCorrect, 8);
     }
   }
-  assert.equal(s.xp, 180);
-  assert.equal(Object.keys(s.completed).length, 9);
-  assert.equal(s.activity['2026-09-08'], 9);
+  assert.equal(s.xp, 120);
+  assert.equal(Object.keys(s.completed).length, 6);
+  assert.equal(s.activity['2026-09-08'], 6);
   assert.equal(streak(s.activity, new Date(2026, 8, 8)), 1);
 });
 test('mistakes reappear and repeated checking cannot duplicate an attempt', () => {
-  const key = 'urdu/greetings';
+  const key = 'hindko/greetings';
   let s = initialState();
-  s.sessions[key] = newSession('urdu', 'greetings', 'mistake');
+  s.sessions[key] = newSession('hindko', 'greetings', 'mistake');
   s.sessions[key] = recordAnswer(s.sessions[key], false);
   assert.equal(s.sessions[key].queue.length, 9);
   assert.equal(s.sessions[key].queue[8], 0);
@@ -164,11 +164,26 @@ test('invalid or unavailable storage recovers to defaults', () => {
   ])
     assert.deepEqual(parseState(raw), initialState());
   const s = initialState();
-  s.sessions['urdu/greetings'] = {
-    ...newSession('urdu', 'greetings', 'bad'),
+  s.sessions['hindko/greetings'] = {
+    ...newSession('hindko', 'greetings', 'bad'),
     cursor: 999,
   };
   assert.deepEqual(parseState(JSON.stringify(s)), initialState());
+});
+test('progress from a retired course is dropped without resetting the rest', () => {
+  const s = initialState();
+  s.xp = 40;
+  s.selected = 'urdu';
+  s.completed['pashto/greetings'] = true;
+  s.completed['urdu/greetings'] = true;
+  s.sessions['urdu/greetings'] = newSession('urdu', 'greetings', 'retired');
+  s.activity['2026-09-08'] = 2;
+  const parsed = parseState(JSON.stringify(s));
+  assert.equal(parsed.selected, null);
+  assert.equal(parsed.xp, 40);
+  assert.deepEqual(parsed.completed, { 'pashto/greetings': true });
+  assert.deepEqual(parsed.sessions, {});
+  assert.equal(parsed.activity['2026-09-08'], 2);
 });
 test('local calendar streak survives today, yesterday, month boundaries and resets after gaps', () => {
   assert.equal(localDate(new Date(2026, 0, 2, 0, 1)), '2026-01-02');
@@ -186,7 +201,7 @@ test('local calendar streak survives today, yesterday, month boundaries and rese
 test('reset creates independent clean state', () => {
   const a = initialState();
   a.xp = 50;
-  a.completed['urdu/greetings'] = true;
+  a.completed['hindko/greetings'] = true;
   const b = initialState();
   assert.equal(b.xp, 0);
   assert.deepEqual(b.completed, {});

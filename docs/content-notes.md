@@ -1,6 +1,6 @@
 # Introductory curriculum and editorial status
 
-This release contains 36 phrase/word records and 72 exercises. Exercise wording and explanations are authored for PoliLingo. Short conventional expressions, meanings, and elementary patterns were researched against the references below on 2026-09-08. Each phrase has a `source` and a `note` in `lib/courses.ts`.
+This release contains 24 phrase/word records and 48 exercises. Exercise wording and explanations are authored for PoliLingo. Short conventional expressions, meanings, and elementary patterns were researched against the references below on 2026-09-08. Each phrase has a `source` and a `note` in `lib/courses.ts`.
 
 ## Pashto
 
@@ -11,10 +11,6 @@ Primary seed reference: [Transparent Language phrase resource](https://tplsites.
 Target: Hazara/Abbottabad. [Hindko Language & Culture Society](https://www.hindko.org/hno/contact) directly attests `تساں دا ناں` as “your name”. A [community response discussing Abbottabad and Mansehra](https://www.reddit.com/r/pakistan/comments/na4o62/) attests the Abbottabad `میرا ناں … اے` pattern; Sara is substituted. This community attestation is explicitly provisional, not expert verification. Remaining small vocabulary and pronoun entries are checked against [World Schoolbooks](https://worldschoolbooks.com/hindko-for-beginners/), whose page does not establish an exact dialect. Avoid its questionable morning/night phrases and internally inconsistent question spelling. Normalize the shared Arabic-origin greeting to conventional script. Local Hazara alternatives may differ, including verbs and possessive forms. The UI discloses pending speaker review in onboarding and settings.
 
 Before calling this a validated Hazara curriculum, a native-speaking Hazara/Abbottabad educator must review all 12 records for idiomatic usage, script spelling, romanization and context. Do not silently broaden it to Peshawari Hindko or label Punjabi/Pothwari phrases as Hindko.
-
-## Urdu
-
-[Omniglot's contributed Urdu phrase collection](https://www.omniglot.com/language/phrases/urdu.php) is the seed reference. Use familiar Pakistani spelling and accessible Roman approximations; normalize older typography. Sara/Pakistan replace the source's name/place slots. Introductory phrases avoid gendered “how are you” variants by using `کیا حال ہے؟`; the course does not purport to teach all registers.
 
 ## Learning and review behavior
 

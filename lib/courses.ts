@@ -1,4 +1,4 @@
-export type CourseId = 'pashto' | 'hindko' | 'urdu';
+export type CourseId = 'pashto' | 'hindko';
 export type Phrase = {
   id: string;
   native: string;
@@ -37,7 +37,6 @@ export const sources = {
   pashto:
     'https://tplsites.s3.amazonaws.com/resources/PUSas-ENGus/grammar/ADDITIONAL_INFORMATION.htm',
   pashto2: 'https://www.omniglot.com/language/phrases/pashto.php',
-  urdu: 'https://www.omniglot.com/language/phrases/urdu.php',
   hindko: 'https://worldschoolbooks.com/hindko-for-beginners/',
   hindkoName: 'https://www.reddit.com/r/pakistan/comments/na4o62/',
   hindkoSociety: 'https://www.hindko.org/hno/contact',
@@ -233,98 +232,6 @@ const seeds: Record<CourseId, Seed[][]> = {
       ],
     ],
   ],
-  urdu: [
-    [
-      [
-        'السلام علیکم',
-        'Assalam alaikum',
-        'Hello',
-        'Greet someone you have just met.',
-        'A widely used greeting.',
-      ],
-      [
-        'شکریہ',
-        'Shukriya',
-        'Thank you',
-        'Someone helps you. Thank them.',
-        'An everyday expression of gratitude.',
-      ],
-      [
-        'خدا حافظ',
-        'Khuda hafiz',
-        'Goodbye',
-        'It is time to leave. Say goodbye.',
-        'A common expression when parting.',
-      ],
-      [
-        'کیا حال ہے؟',
-        'Kya haal hai?',
-        'How are you?',
-        'Ask a friend how they are.',
-        'A conversational way to ask how someone is doing.',
-      ],
-    ],
-    [
-      [
-        'میرا نام سارا ہے',
-        'Mera naam Sara hai',
-        'My name is Sara',
-        'Introduce yourself as Sara.',
-        'Replace Sara with your own name.',
-      ],
-      [
-        'آپ کا نام کیا ہے؟',
-        'Aap ka naam kya hai?',
-        'What is your name?',
-        'Ask someone their name politely.',
-        'Aap is the respectful form of “you”.',
-      ],
-      [
-        'میں ٹھیک ہوں',
-        'Main theek hoon',
-        'I am fine',
-        'Someone asks how you are. Say you are fine.',
-        'A short reply to a question about how you are.',
-      ],
-      [
-        'میرا تعلق پاکستان سے ہے',
-        'Mera talluq Pakistan se hai',
-        'I am from Pakistan',
-        'Tell someone you are from Pakistan.',
-        'The place name is inserted into a sourced introductory pattern.',
-      ],
-    ],
-    [
-      [
-        'معاف کیجیے',
-        'Maaf kijiye',
-        'Excuse me',
-        'Get someone’s attention politely.',
-        'A respectful expression also used to apologize.',
-      ],
-      [
-        'یہ کتنے کا ہے؟',
-        'Yeh kitne ka hai?',
-        'How much is this?',
-        'You see something in a shop. Ask its price.',
-        'A useful question for shopping.',
-      ],
-      [
-        'مدد',
-        'Madad',
-        'Help',
-        'Recognize the word for assistance.',
-        'Used to refer to help or call for it.',
-      ],
-      [
-        'کوئی بات نہیں',
-        'Koi baat nahin',
-        'No problem',
-        'Reassure someone after a small mistake.',
-        'Literally, “it is no matter”; also a reply to thanks.',
-      ],
-    ],
-  ],
 };
 const lessonMeta = [
   ['greetings', 'A little hello', 'Small words. New connections.'],
@@ -416,17 +323,6 @@ export const courses: Course[] = [
     color: '#d3f4d8',
     image: 'world-hindko',
     lessons: makeLessons('hindko'),
-  },
-  {
-    id: 'urdu',
-    name: 'Urdu',
-    native: 'اردو',
-    lang: 'ur',
-    variety: 'Everyday Pakistani Urdu',
-    tagline: 'Every conversation, a connection.',
-    color: '#ffd3df',
-    image: 'world-urdu',
-    lessons: makeLessons('urdu'),
   },
 ];
 export function getCourse(id: string): Course | undefined {

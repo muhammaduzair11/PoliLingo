@@ -484,13 +484,13 @@ export function Home() {
             <p>
               One word can open a whole conversation.
               <br />
-              Try this little bit of Urdu.
+              Try this little bit of Pashto.
             </p>
             <span className="handwritten">Go on. Take a guess. ↗</span>
           </div>
           <div className="sample-card">
             <div className="sample-top">
-              <span>URDU · A LITTLE HELLO</span>
+              <span>PASHTO · A LITTLE HELLO</span>
               <span>
                 <Star size={15} /> FIRST WORD
               </span>
@@ -499,8 +499,8 @@ export function Home() {
             <div className="sample-options">
               {[
                 { n: 'سلام', r: 'Salaam', id: 'hello' },
-                { n: 'شکریہ', r: 'Shukriya', id: 'thanks' },
-                { n: 'خدا حافظ', r: 'Khuda hafiz', id: 'bye' },
+                { n: 'مننه', r: 'Manana', id: 'thanks' },
+                { n: 'د خدای په امان', r: 'Da Khuday pa aman', id: 'bye' },
               ].map((p) => (
                 <button
                   key={p.id}
@@ -511,7 +511,7 @@ export function Home() {
                   }}
                   aria-pressed={sample === p.id}
                 >
-                  <span className="native" lang="ur" dir="rtl">
+                  <span className="native" lang="ps" dir="rtl">
                     {p.n}
                   </span>
                   <span>{p.r}</span>
@@ -531,17 +531,17 @@ export function Home() {
                 </>
               ) : sample === 'thanks' ? (
                 <>
-                  <Check size={18} /> Shukriya! Look at you, making connections.
+                  <Check size={18} /> Manana! Look at you, making connections.
                 </>
               ) : (
                 <>
-                  <Heart size={17} /> A good try! Shukriya means “Thank you”.
-                  Try it.
+                  <Heart size={17} /> A good try! Manana means “Thank you”. Try
+                  it.
                 </>
               )}
             </output>
             {sample === 'thanks' && (
-              <Link href="/onboarding/urdu" className="button button-purple">
+              <Link href="/onboarding/pashto" className="button button-purple">
                 Keep that feeling going <ArrowRight size={18} />
               </Link>
             )}
@@ -1141,7 +1141,6 @@ export function Settings() {
             Pashto uses a Northern/Peshawar starting point. Hindko targets
             Hazara/Abbottabad; available references are not always
             dialect-specific, so local wording needs further speaker review.
-            Urdu uses everyday Pakistani expressions.
           </p>
           <div className="source-links">
             <a
@@ -1150,13 +1149,6 @@ export function Settings() {
               rel="noreferrer"
             >
               Pashto phrase reference <ArrowUpRight size={15} />
-            </a>
-            <a
-              href="https://www.omniglot.com/language/phrases/urdu.php"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Urdu phrase reference <ArrowUpRight size={15} />
             </a>
             <a
               href="https://www.hindko.org/hno/contact"

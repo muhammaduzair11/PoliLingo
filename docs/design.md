@@ -9,7 +9,7 @@ this document and the code disagree, fix the document.
 
 ## 1. Design intent
 
-PoliLingo teaches Pashto, Hindko and Urdu in small, playful lessons. The
+PoliLingo teaches Pashto and Hindko in small, playful lessons. The
 design goals, in order:
 
 1. **Warm, not childish.** Playfulness comes from shape, motion and mascot
@@ -58,7 +58,6 @@ through the `--course-color` custom property on that course's surfaces
 | --- | --- | --- |
 | Pashto | `#c4e5ff` | Sky blue; mountains and open horizons |
 | Hindko | `#d3f4d8` | Mint green; valleys and orchards |
-| Urdu | `#ffd3df` | Blossom pink; courtyards and lanterns |
 
 ### Usage rules
 
@@ -132,8 +131,7 @@ shaping both depend on the attributes.
 Poli is a cream markhor with violet spiral horns and an orange satchel. The
 renders are soft-clay 3D dioramas: saturated but never neon, with rounded
 geometry and visible material texture. World art is a floating island
-diorama per language (mountain gate for Pashto, valley house for Hindko,
-courtyard for Urdu).
+diorama per language (mountain gate for Pashto, valley house for Hindko).
 
 Masters live in `assets-src/` (see `docs/architecture.md` for the pipeline).
 Poses and their semantic use:

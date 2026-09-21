@@ -1,6 +1,6 @@
 # PoliLingo
 
-A playful, responsive language-learning MVP for Pashto, Hazara/Abbottabad Hindko, and Urdu. Built with Next.js, React 19, TypeScript, Tailwind CSS, and customized Shadcn/Base UI primitives.
+A playful, responsive language-learning MVP for Pashto and Hazara/Abbottabad Hindko. Built with Next.js, React 19, TypeScript, Tailwind CSS, and customized Shadcn/Base UI primitives.
 
 ## Run locally
 

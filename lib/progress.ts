@@ -130,7 +130,7 @@ export function parseState(raw: string | null): ProgressState {
       !Number.isSafeInteger(s.xp) ||
       s.xp < 0 ||
       ![1, 2, 3].includes(s.dailyGoal) ||
-      (s.selected !== null && !getCourse(s.selected)) ||
+      (s.selected !== null && typeof s.selected !== 'string') ||
       !s.prefs ||
       ['sound', 'reducedMotion', 'transliteration'].some(
         (k) => typeof s.prefs[k] !== 'boolean',
@@ -148,6 +148,13 @@ export function parseState(raw: string | null): ProgressState {
     const validKeys = courses.flatMap((c) =>
       c.lessons.map((l) => lessonKey(c.id, l.id)),
     );
+    // A retired course leaves keys behind in saved progress. Drop just those
+    // entries so the learner keeps the courses that still exist, rather than
+    // failing validation below and resetting everything.
+    if (s.selected !== null && !getCourse(s.selected)) s.selected = null;
+    for (const field of ['completed', 'sessions'] as const)
+      for (const key of Object.keys(s[field]))
+        if (!validKeys.includes(key)) delete s[field][key];
     if (
       Object.entries(s.completed).some(
         ([k, v]) => !validKeys.includes(k) || typeof v !== 'boolean',
