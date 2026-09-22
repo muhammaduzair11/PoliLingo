@@ -1,0 +1,78 @@
+# The repository squash-merges, and the squash commit takes the pull request title.
+# So the PR title is the commit message that lands on main forever, and this check is
+# what keeps the history readable and the changelog writable.
+#
+# Deliberately written inline rather than using a marketplace action: nothing to pin,
+# nothing to update, and nothing that can be skipped locally the way a git hook can.
+
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-title:
+    name: pr-title
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check the title is a Conventional Commit
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+
+          # type(optional scope)(optional !): subject
+          PATTERN='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|content)(\([a-z0-9._/-]+\))?!?: .+'
+
+          if [[ ! "$TITLE" =~ $PATTERN ]]; then
+            echo "::error::Pull request title is not a Conventional Commit."
+            echo ""
+            echo "  Your title: $TITLE"
+            echo ""
+            echo "  Expected:   <type>(<optional scope>): <what changed>"
+            echo ""
+            echo "  Types:"
+            echo "    feat      a new capability a learner or contributor can see"
+            echo "    fix       a bug fix"
+            echo "    docs      documentation only"
+            echo "    style     formatting only, no behaviour change"
+            echo "    refactor  restructuring with no behaviour change"
+            echo "    perf      a performance improvement"
+            echo "    test      adding or correcting tests"
+            echo "    build     build system, dependencies, asset pipeline"
+            echo "    ci        GitHub Actions and workflows"
+            echo "    chore     maintenance that fits nowhere else"
+            echo "    revert    reverting an earlier commit"
+            echo "    content   curriculum or audio data"
+            echo ""
+            echo "  Examples from this project:"
+            echo "    feat(lesson): add listen-and-repeat recorder to the study card"
+            echo "    fix(progress): stop awarding replay XP twice after a refresh"
+            echo "    refactor(polilingo): split Header and Art into their own modules"
+            echo "    content(ps): add unit 2 greetings with reviewer attestation"
+            echo "    ci: run the four quality gates on every pull request"
+            echo ""
+            exit 1
+          fi
+
+          # A subject that runs past ~72 characters is truncated everywhere git shows it.
+          SUBJECT="${TITLE#*: }"
+          if (( ${#SUBJECT} > 72 )); then
+            echo "::error::The part after the colon is ${#SUBJECT} characters. Keep it under 72."
+            exit 1
+          fi
+
+          # Imperative mood, lowercase start, no trailing full stop: small things that
+          # make `git log --oneline` readable at a glance.
+          if [[ "$SUBJECT" =~ \.$ ]]; then
+            echo "::error::Do not end the title with a full stop."
+            exit 1
+          fi
+
+          echo "Title is valid: $TITLE"

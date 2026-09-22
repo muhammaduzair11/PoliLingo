@@ -1,0 +1,67 @@
+{
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
+  "name": "PoliLingo web",
+
+  // Node 22 to match .nvmrc and package.json engines (>= 22.13.0).
+  // Do not bump this without bumping both of those in the same pull request.
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // This project uses oxlint and oxfmt, NOT ESLint and Prettier.
+        // Installing the ESLint or Prettier extensions here would fight oxfmt
+        // and produce noisy diffs. See ADR-0011 in the docs repository.
+        "oxc.oxc-vscode",
+
+        // Tailwind v4 theme tokens live as CSS custom properties in
+        // app/globals.css, so autocomplete matters more than usual here.
+        "bradlc.vscode-tailwindcss",
+
+        "EditorConfig.EditorConfig",
+        "GitHub.copilot",
+        "GitHub.vscode-pull-request-github"
+      ],
+      "settings": {
+        "files.eol": "\n",
+
+        // oxfmt is run through `npm run format`, not on save. A different
+        // formatter firing on save would fight it.
+        "editor.formatOnSave": false,
+
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+
+  "postCreateCommand": "npm ci",
+
+  "postAttachCommand": {
+    "hint": "echo '\\nReady. Run: npm run dev   |   Gates: npm run typecheck && npm run lint && npm test && npm run build\\n'"
+  },
+
+  // Next.js dev server.
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "PoliLingo dev server",
+      "onAutoForward": "notify"
+    }
+  },
+
+  // A 2-core machine is enough for this project and makes the 180 core-hour
+  // monthly student allowance go roughly twice as far as a 4-core one.
+  // See ADR-0024.
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "8gb",
+    "storage": "32gb"
+  },
+
+  "remoteUser": "node"
+}

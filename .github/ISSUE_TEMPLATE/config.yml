@@ -1,0 +1,18 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a mistake in a phrase, translation or pronunciation
+    url: https://github.com/polilingo/content/issues/new/choose
+    about: >-
+      Language corrections go to the content repository so they reach a reviewer for
+      that language and variety. Please do not open them here.
+
+  - name: Offer to record your voice, or contribute a story or proverb
+    url: https://github.com/polilingo/content/issues/new/choose
+    about: >-
+      Voice and cultural contributions have their own forms, including the consent
+      steps that have to happen before any recording is made.
+
+  - name: Report a security or privacy concern
+    url: https://github.com/polilingo/web/security/advisories/new
+    about: >-
+      Please report these privately rather than in a public issue. See SECURITY.md.

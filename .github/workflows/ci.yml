@@ -1,0 +1,106 @@
+# Runs the four quality gates that the README already documents but nothing enforced.
+# This workflow is the single highest-value file in the scaffolding: until it existed,
+# a pull request could break the build and still be merged.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel a superseded run when new commits are pushed to the same pull request.
+# Without this, pushing three fixups queues three full builds.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          # .nvmrc is the single source of truth for the Node version, shared with
+          # local development. package.json requires >= 22.13.0.
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        # `npm ci` installs exactly what package-lock.json specifies and fails if the
+        # lockfile is out of step with package.json. `npm install` would silently fix
+        # the drift and hide the problem.
+        run: npm ci
+
+      # The four gates, in increasing order of cost, so the cheapest failure is reported
+      # first. Each `run` is a separate step so the GitHub UI shows which gate failed
+      # without reading the log.
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  formatting:
+    name: formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # ADVISORY FOR NOW, AND THIS IS TEMPORARY.
+    #
+    # The repository has never been oxfmt-formatted - running `npm run format` on
+    # a clean checkout of main changes 18 files, including tsconfig.json,
+    # .oxlintrc.json, scripts/optimize-assets.mjs and two existing docs. All of it
+    # is cosmetic (JSON array collapsing, line wrapping), but reformatting them
+    # does not belong in a scaffolding pull request.
+    #
+    # A check that is red from day one is a check everyone learns to ignore, so
+    # this job reports without failing until the follow-up PR
+    # "style: format the repository with oxfmt" has merged.
+    #
+    # THEN: delete this line, so a formatting slip actually fails.
+    continue-on-error: true
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # oxfmt has no dedicated check mode in the version this project pins, so format
+      # in place and fail if anything moved. This is deliberately a separate job from
+      # `verify`: a formatting slip should not hide a real type error behind it, and it
+      # is not a required check, so it never blocks a merge on its own.
+      - name: Check formatting
+        run: |
+          npm run format
+          if ! git diff --quiet; then
+            echo "::error::Files are not formatted. Run 'npm run format' and commit the result."
+            git --no-pager diff --stat
+            exit 1
+          fi

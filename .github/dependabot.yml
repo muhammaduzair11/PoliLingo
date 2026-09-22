@@ -1,0 +1,56 @@
+# Dependency updates.
+#
+# Grouped and scheduled weekly so that dependency maintenance is one batch at Monday
+# planning rather than a trickle of pull requests all week.
+#
+# Deliberately NOT auto-merged. Auto-merging would require adding a bypass to the branch
+# ruleset for the Dependabot app, which puts a hole in the protection you just set up in
+# order to save ten minutes a week. Revisit at Stage 2 when the volume justifies it.
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Asia/Karachi
+    open-pull-requests-limit: 5
+    labels: ["type/chore", "area/deps"]
+    commit-message:
+      prefix: "build(deps)"
+      prefix-development: "build(deps-dev)"
+    groups:
+      # One pull request for all the low-risk bumps, rather than a dozen.
+      dev-minor-and-patch:
+        dependency-type: development
+        update-types: ["minor", "patch"]
+      prod-patch:
+        dependency-type: production
+        update-types: ["patch"]
+    ignore:
+      # Framework major versions are a planned piece of work with a migration guide,
+      # not a Monday morning surprise. Next 16 and React 19 are recent; upgrading them
+      # is an ADR and a scheduled task, not a dependency bump.
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Asia/Karachi
+    labels: ["type/chore", "area/ci"]
+    commit-message:
+      prefix: "ci(deps)"

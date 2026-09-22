@@ -1,0 +1,74 @@
+# CODEOWNERS — who is automatically asked to review changes to which files.
+#
+# HOW TO FINISH THIS FILE
+# -----------------------
+# Replace @polilingo/dev-two with the second developer's GitHub username, and check
+# that @muhammaduzair11 is correct. Then delete this block.
+#
+# IMPORTANT: this file is silently ignored if the team it names does not have at least
+# Write access to the repository. There is no error — reviews simply never get
+# requested. Confirm at Settings -> Collaborators and teams that @polilingo/engineering
+# has the Write role. (See bootstrap/02-github-setup.md step 6.)
+#
+# WHY THIS FILE IS SHORT
+# ----------------------
+# With two people, "required approvals: 1" already means the other person reviews
+# everything. Listing every path here would just be that rule with extra steps. This
+# file covers only the paths where the WRONG person reviewing would be a real loss —
+# the ones where a mistake is expensive, silent, or hard to undo.
+
+
+# Default: either developer may review anything.
+*                               @polilingo/engineering
+
+
+# ---------------------------------------------------------------------------
+# Hot files
+# ---------------------------------------------------------------------------
+# components/polilingo.tsx is 41 KB and app/globals.css is 71 KB. Both are touched by
+# almost every feature, so with two people working in parallel they are where merge
+# conflicts come from.
+#
+# The fix is not this file — it is splitting them, which is scheduled for week 1 and
+# tracked as a task on the board. Until that lands, the hot-file protocol in
+# docs/process/engineering-workflow.md applies: say in the daily message that you are
+# going into one of these, keep the change small, and merge the same day.
+
+/components/polilingo.tsx       @polilingo/engineering
+/app/globals.css                @polilingo/engineering
+
+
+# ---------------------------------------------------------------------------
+# Things that are expensive to get wrong
+# ---------------------------------------------------------------------------
+
+# Learning state. `lib/progress.ts` decides XP, streaks and what is unlocked, and its
+# anti-double-award logic is subtle. It is also the data that has to migrate into
+# accounts without destroying anyone's streak. Changes here need a second pair of eyes
+# and a test.
+/lib/progress.ts                @polilingo/engineering
+/tests/                         @polilingo/engineering
+
+# Build, CI and configuration. A mistake here is either invisible or breaks everything.
+/.github/                       @polilingo/engineering
+/package.json                   @polilingo/engineering
+/package-lock.json              @polilingo/engineering
+/next.config.ts                 @polilingo/engineering
+/tsconfig.json                  @polilingo/engineering
+/.oxlintrc.json                 @polilingo/engineering
+/.oxfmtrc.json                  @polilingo/engineering
+/.gitattributes                 @polilingo/engineering
+
+# The environment contract. Every change here is a change to what the app expects at
+# runtime and to what may or may not be sent to browsers.
+/.env.example                   @polilingo/engineering
+
+# Curriculum still living in code. This file moves to the content repository during
+# v0.2; until then, changes to it are content changes wearing a TypeScript costume and
+# deserve the same scrutiny a content pull request would get.
+/lib/courses.ts                 @polilingo/engineering
+
+# The asset pipeline. Regenerating the image ladder incorrectly is not caught by any
+# test — it just looks slightly wrong on some screens.
+/scripts/                       @polilingo/engineering
+/lib/art-widths.mjs             @polilingo/engineering

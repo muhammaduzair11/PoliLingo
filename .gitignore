@@ -28,6 +28,9 @@ yarn-error.log*
 
 # local environment
 .env*
+# ...but .env.example is the documented contract for what the app expects,
+# and it contains no real values. See docs/configuration.md.
+!.env.example
 
 # deployment and generated files
 .vercel
