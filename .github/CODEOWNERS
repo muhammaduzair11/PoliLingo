@@ -14,14 +14,11 @@
 # -----------------------------------------------------------------------------
 # Hot files
 # -----------------------------------------------------------------------------
-# components/polilingo.tsx is 41 KB and app/globals.css is 71 KB. Both are
-# touched by almost every feature, so with two people working in parallel they
-# are where merge conflicts come from. Splitting them is week-1 work. Until
-# that lands, the hot-file protocol in process/how-we-work.md (docs repository)
-# applies: say in the daily message that you are going into one of these, keep
-# the change small, and merge the same day.
+# components/polilingo.tsx (41 KB) was split into per-area modules under
+# components/ in #12, so the hot-file protocol no longer applies to it.
+# app/globals.css stays listed: it is the design system's entry point and a
+# change to it affects every screen.
 
-/components/polilingo.tsx       @muhammaduzair11 @junaidaslam2006
 /app/globals.css                @muhammaduzair11 @junaidaslam2006
 
 # -----------------------------------------------------------------------------

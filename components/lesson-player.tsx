@@ -30,7 +30,10 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useLearning } from './learning-provider';
-import { Native, Poli, MotionButton, Loading, NotFoundView } from './polilingo';
+import { Poli } from './art';
+import { Native } from './native';
+import { MotionButton } from './site-chrome';
+import { Loading, NotFoundView } from './status-views';
 import { getCourse, evaluate } from '@/lib/courses';
 import {
   advanceSession,

@@ -94,17 +94,19 @@ it does and does not establish.
 
 ## 5. Components
 
-- **`components/polilingo.tsx`** — the main product UI: `Header`, page sections, `Native`
-  (script-safe text with correct `lang` and `dir`), `Poli` and `Art` (image delivery),
-  `MotionButton`, dialogs
+- **`components/home.tsx`**, **`onboarding.tsx`**, **`dashboard.tsx`**, **`settings.tsx`** —
+  one module per screen
+- **`components/site-chrome.tsx`** — `Brand`, `Header`, `Footer`, `MotionButton`
+- **`components/native.tsx`** — `Native`, script-safe text with correct `lang` and `dir`
+- **`components/art.tsx`** — `Art` and `Poli`, image delivery from the pre-baked ladder
+- **`components/status-views.tsx`** — `Loading`, `NotFoundView`
 - **`components/lesson-player.tsx`** — exercise flow, feedback, completion
 - **`components/learning-provider.tsx`** — state provider, persistence, and the
   `data-motion` attribute that drives reduced-motion behaviour
 
-> `polilingo.tsx` is 41 KB and `app/globals.css` is 71 KB. With two developers working in
-> parallel these are the main source of merge conflicts. Splitting them is scheduled for
-> week 1; until then the hot-file protocol in `process/how-we-work.md` (docs repository)
-> applies.
+> The product UI used to be one 41 KB `components/polilingo.tsx`, which every feature
+> touched. It was split into the modules above (#12) so that two developers can work in
+> parallel without meeting in one file; `app/globals.css` is split in the same issue.
 
 ## 6. Image pipeline
 

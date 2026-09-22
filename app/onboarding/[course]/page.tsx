@@ -1,4 +1,4 @@
-import { Onboarding } from '@/components/polilingo';
+import { Onboarding } from '@/components/onboarding';
 export default async function Page({
   params,
 }: {
