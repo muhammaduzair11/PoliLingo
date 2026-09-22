@@ -1,0 +1,59 @@
+name: Spike
+description: Time-boxed investigation to answer a question before committing to work
+labels: ['type/spike']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A spike produces an **answer**, not a feature. Its output is a written
+        recommendation — often an ADR in the docs repository — and any throwaway code
+        is thrown away.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: The question
+      description: One sentence, answerable yes/no or by choosing between named options.
+      placeholder: |
+        Can a Next.js PWA reliably record microphone audio and play it back on iOS
+        Safari without a native wrapper?
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: What is blocked until we know
+      placeholder: |
+        D6 speaking practice. If iOS Safari cannot do this reliably, the listen-and-
+        compare flow needs a different design and the Stage 3 native decision moves
+        earlier.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: timebox
+    attributes:
+      label: Time box
+      description: |
+        When the time is up, write down what you learned even if the answer is "still
+        unclear". A spike that quietly becomes a week of work is how twelve-week plans
+        fail.
+      options:
+        - 2 hours
+        - Half a day
+        - One day
+        - Two days — needs both of you to agree first
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: What will exist when this is finished
+      placeholder: |
+        - A comment on this issue with the answer and the evidence
+        - ADR-00NN if the answer changes a decision
+        - A board item for the real work, or a note saying we are not doing it
+    validations:
+      required: true

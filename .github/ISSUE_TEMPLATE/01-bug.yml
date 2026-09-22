@@ -1,0 +1,85 @@
+name: Bug
+description: Something in the app behaves incorrectly
+labels: ['type/bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a mistake in a **phrase, translation or pronunciation**, this is the wrong
+        place — open a content report instead, so it reaches a language reviewer:
+        https://github.com/polilingo/content/issues/new/choose
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, not what you think caused it.
+      placeholder: |
+        Completing the Pashto greetings lesson a second time awarded 20 XP instead of 5.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered, starting from a fresh page load.
+      placeholder: |
+        1. Open https://poli-lingo.vercel.app in a private window
+        2. Choose Pashto and complete the greetings lesson
+        3. Return to the learning map and open greetings again
+        4. Complete it a second time
+        5. Check the XP total in the header
+    validations:
+      required: true
+
+  - type: dropdown
+    id: reproducible
+    attributes:
+      label: Does it happen every time?
+      options:
+        - Every time
+        - Sometimes
+        - Happened once, cannot reproduce
+    validations:
+      required: true
+
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: URL, plus browser and device.
+      placeholder: '/lesson/pashto/greetings — Chrome 140 on Android'
+    validations:
+      required: true
+
+  - type: textarea
+    id: progress-state
+    attributes:
+      label: Stored progress (optional, but very helpful)
+      description: |
+        Nearly every state bug is solved instantly with this. Open the browser console
+        (F12), paste the line below, press Enter, and paste the result here.
+
+        ```
+        localStorage.getItem('polilingo.progress.v1')
+        ```
+
+        It contains only your own learning progress — XP, streaks, which lessons you
+        have finished and your settings. No name, email or account details.
+      render: json
+
+  - type: checkboxes
+    id: severity
+    attributes:
+      label: Does this lose or corrupt learner progress?
+      options:
+        - label: Yes — progress, XP or a streak was lost or wrongly changed
+        - label: The app is unusable on this device

@@ -1,0 +1,80 @@
+name: Feature
+description: A new capability for learners or contributors
+labels: ['type/feature']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve
+      description: |
+        Describe the learner's or contributor's problem, not the solution. If the only
+        answer is "it would be nice", it is probably not Stage 1 work.
+      placeholder: |
+        A learner can hear the native recording but has no way to tell whether their own
+        pronunciation is close. They give up on speaking and treat the app as reading
+        practice.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deliverable
+    attributes:
+      label: Which deliverable does this belong to
+      description: |
+        From docs/release/deliverables.md. If the honest answer is "none", say so —
+        but then it needs a reason to exist before week 12.
+      options:
+        - D1 — Production web/PWA
+        - D2 — Accounts and progress
+        - D3 — Pashto Foundation Course
+        - D4 — Hindko
+        - D5 — Native audio library
+        - D6 — Speaking practice
+        - D7 — Content/admin system
+        - D8 — Review workflow
+        - D9 — Community contributions
+        - D10 — Analytics
+        - D11 — New-language playbook
+        - D12 — AI readiness
+        - None — this is outside the twelve deliverables
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you propose
+    validations:
+      required: true
+
+  - type: textarea
+    id: done
+    attributes:
+      label: How we will know it is done
+      description: |
+        Observable outcomes, in the form "a learner can ...". This becomes the
+        acceptance check at review, so vagueness here costs time later.
+      placeholder: |
+        - A learner can record themselves on any study card and play it back
+        - A learner can play their recording and the native recording one after the other
+        - The recording never leaves the device (ADR-0007)
+        - Refusing the microphone permission leaves the rest of the lesson working
+    validations:
+      required: true
+
+  - type: textarea
+    id: not-doing
+    attributes:
+      label: Explicitly not in scope
+      description: |
+        The most useful box on this form. Naming what this is *not* prevents the work
+        from quietly tripling.
+      placeholder: |
+        - No automatic scoring of pronunciation — that needs ASR, which is Stage 4
+        - No uploading or storing of learner recordings anywhere
+
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions
+      description: Anything that must be decided before this can start.

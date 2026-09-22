@@ -1,0 +1,42 @@
+# Line endings.
+#
+# This repository was authored on a Unix-like system and every text file uses LF.
+# Both developers now work on Windows. Without this file, Git's Windows defaults can
+# rewrite line endings on checkout, which makes a one-line edit appear in review as a
+# whole-file rewrite and hides the actual change.
+#
+# `text=auto eol=lf` means: detect text files, store them with LF, and check them out
+# with LF on every platform. Modern Windows editors, including VS Code, handle LF
+# correctly. The bootstrap script also sets core.autocrlf=false globally; this file
+# makes the repository correct regardless of anyone's global configuration.
+
+* text=auto eol=lf
+
+# Windows-only scripts must keep CRLF or some shells mis-parse them.
+*.ps1   text eol=crlf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+# Binary assets: never convert, never diff as text.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.avif  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.mp3   binary
+*.m4a   binary
+*.opus  binary
+*.ogg   binary
+*.wav   binary
+*.pdf   binary
+
+# Generated files. Collapsing them in pull request diffs keeps a dependency bump from
+# burying a real change under thousands of lines. They are still versioned and still
+# reviewed — `linguist-generated` only affects the default diff view.
+package-lock.json  linguist-generated=true -diff
+public/assets/**   linguist-generated=true -diff

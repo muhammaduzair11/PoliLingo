@@ -1,0 +1,46 @@
+name: Chore
+description: Maintenance, tooling, dependencies, refactoring or cleanup
+labels: ['type/chore']
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What needs doing
+      placeholder: |
+        Split components/polilingo.tsx (41 KB) into Header, Art, Poli, MotionButton and
+        the page sections, each in its own module.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why-now
+    attributes:
+      label: Why now
+      description: |
+        Maintenance competes with the twelve deliverables for twelve weeks. What does
+        this unblock, or what does it cost to keep deferring?
+      placeholder: |
+        Both developers touch this file in almost every feature, so it is the main source
+        of merge conflicts. Splitting it costs half a day once and saves conflict time
+        every week for the remaining eleven.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk of breaking something
+      options:
+        - Low — tooling or configuration only, no runtime change
+        - Medium — refactoring with no intended behaviour change
+        - High — touches learning state, progress or the build
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: How we will verify nothing broke
+      description: |
+        For a pure refactor: what proves behaviour is unchanged? "The build passes" is
+        not enough on anything that touches lib/progress.ts.
