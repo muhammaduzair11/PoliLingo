@@ -4,14 +4,14 @@
 
 This repository is the **application code**. Most contributions are not code.
 
-| You want to                                      | Go to                                                                       |
-| ------------------------------------------------ | --------------------------------------------------------------------------- |
+| You want to                                      | Go to                                                                                                       |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
 | Correct a phrase, translation or transliteration | [muhammaduzair11/polilingo-content](https://github.com/muhammaduzair11/polilingo-content/issues/new/choose) |
 | Offer to record your voice                       | [muhammaduzair11/polilingo-content](https://github.com/muhammaduzair11/polilingo-content/issues/new/choose) |
 | Suggest a story, proverb or cultural note        | [muhammaduzair11/polilingo-content](https://github.com/muhammaduzair11/polilingo-content/issues/new/choose) |
-| Review a language as a native speaker            | `content/docs/reviewer-checklist.md`                                        |
-| Report a bug in the app                          | [an issue here](https://github.com/muhammaduzair11/PoliLingo/issues/new/choose)         |
-| Report a security or privacy concern             | [privately](https://github.com/muhammaduzair11/PoliLingo/security/advisories/new)       |
+| Review a language as a native speaker            | `content/docs/reviewer-checklist.md`                                                                        |
+| Report a bug in the app                          | [an issue here](https://github.com/muhammaduzair11/PoliLingo/issues/new/choose)                             |
+| Report a security or privacy concern             | [privately](https://github.com/muhammaduzair11/PoliLingo/security/advisories/new)                           |
 
 **You do not need to know how to use git or GitHub to improve the language content.** The
 content repository has web forms for every kind of contribution. See

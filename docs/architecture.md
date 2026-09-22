@@ -3,7 +3,7 @@
 > **Scope.** This document describes **what is deployed today**, and nothing else. If a
 > sentence here is not true of the current `main` branch, it is a bug in this document.
 >
-> The *target* architecture — seven layers, Supabase, Cloudflare R2, a content database,
+> The _target_ architecture — seven layers, Supabase, Cloudflare R2, a content database,
 > community review workflows — lives in `technical/architecture-target.md` in the
 > [docs repository](https://github.com/muhammaduzair11/polilingo-docs), together with the ordered path
 > from here to there.
@@ -33,14 +33,14 @@ server to fall over.
 
 ## 2. Routes
 
-| Route | Rendering | Purpose |
-| --- | --- | --- |
-| `/` | Static | Landing: hero, language cards, how it works, sample lesson teaser |
-| `/onboarding/[course]` | Dynamic | Two-step course introduction and commitment |
-| `/learn/[course]` | Dynamic | Learning map: lesson path, streak, badges |
-| `/lesson/[course]/[lesson]` | Dynamic | Study cards plus eight exercises |
-| `/settings` | Static | Sound, motion, goal and reset controls |
-| `/_not-found` | Static | Fallback |
+| Route                       | Rendering | Purpose                                                           |
+| --------------------------- | --------- | ----------------------------------------------------------------- |
+| `/`                         | Static    | Landing: hero, language cards, how it works, sample lesson teaser |
+| `/onboarding/[course]`      | Dynamic   | Two-step course introduction and commitment                       |
+| `/learn/[course]`           | Dynamic   | Learning map: lesson path, streak, badges                         |
+| `/lesson/[course]/[lesson]` | Dynamic   | Study cards plus eight exercises                                  |
+| `/settings`                 | Static    | Sound, motion, goal and reset controls                            |
+| `/_not-found`               | Static    | Fallback                                                          |
 
 Course identifiers are `pashto`, `hindko` and `urdu`, mapped in `lib/courses.ts`.
 

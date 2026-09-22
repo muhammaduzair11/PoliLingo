@@ -67,16 +67,16 @@ AVIF/WebP width ladder into `public/assets/`, which is what the site serves.
 
 **In this repository — how the app works today:**
 
-| | |
-| --- | --- |
-| [`docs/architecture.md`](docs/architecture.md) | Routing, state model, content model, image pipeline, quality gates, deployment |
-| [`docs/design.md`](docs/design.md) | Colour, typography, layout, mascot, motion, accessibility |
-| [`docs/local-setup-windows.md`](docs/local-setup-windows.md) | Getting a development machine running |
-| [`docs/configuration.md`](docs/configuration.md) | Environment variables and secrets |
-| [`docs/testing.md`](docs/testing.md) | What we test, and what we deliberately do not |
-| [`docs/validation.md`](docs/validation.md) | The manual verification pass before a release |
-| [`docs/runbook-deploy.md`](docs/runbook-deploy.md) | Deploying, rolling back, and what to do when it breaks |
-| [`docs/assets-prompts.md`](docs/assets-prompts.md) | Generation specifications for the mascot and world renders |
+|                                                              |                                                                                |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| [`docs/architecture.md`](docs/architecture.md)               | Routing, state model, content model, image pipeline, quality gates, deployment |
+| [`docs/design.md`](docs/design.md)                           | Colour, typography, layout, mascot, motion, accessibility                      |
+| [`docs/local-setup-windows.md`](docs/local-setup-windows.md) | Getting a development machine running                                          |
+| [`docs/configuration.md`](docs/configuration.md)             | Environment variables and secrets                                              |
+| [`docs/testing.md`](docs/testing.md)                         | What we test, and what we deliberately do not                                  |
+| [`docs/validation.md`](docs/validation.md)                   | The manual verification pass before a release                                  |
+| [`docs/runbook-deploy.md`](docs/runbook-deploy.md)           | Deploying, rolling back, and what to do when it breaks                         |
+| [`docs/assets-prompts.md`](docs/assets-prompts.md)           | Generation specifications for the mascot and world renders                     |
 
 **In [muhammaduzair11/polilingo-docs](https://github.com/muhammaduzair11/polilingo-docs) — product, plans and decisions:**
 vision, the Stage 1 plan and its twelve deliverables, target architecture, data model, architecture
