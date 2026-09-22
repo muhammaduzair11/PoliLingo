@@ -1,6 +1,6 @@
 name: Bug
 description: Something in the app behaves incorrectly
-labels: ["type/bug"]
+labels: ['type/bug']
 body:
   - type: markdown
     attributes:
@@ -56,7 +56,7 @@ body:
     attributes:
       label: Where
       description: URL, plus browser and device.
-      placeholder: "/lesson/pashto/greetings — Chrome 140 on Android"
+      placeholder: '/lesson/pashto/greetings — Chrome 140 on Android'
     validations:
       required: true
 

@@ -22,10 +22,10 @@ code.
 
 So:
 
-| Prefix | Visibility | Use for |
-| --- | --- | --- |
+| Prefix          | Visibility             | Use for                          |
+| --------------- | ---------------------- | -------------------------------- |
 | `NEXT_PUBLIC_*` | Every visitor, forever | Values that are public by design |
-| No prefix | Server only | Everything else |
+| No prefix       | Server only            | Everything else                  |
 
 The worst available mistake on this project is `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`.
 The service-role key bypasses Row Level Security entirely; publishing it hands every
@@ -40,11 +40,11 @@ discipline and by that check.**
 
 ## Environments
 
-| Environment | Where | Database |
-| --- | --- | --- |
-| **Development** | `npm run dev` locally | `polilingo-dev` |
-| **Preview** | Every pull request's Vercel preview | `polilingo-staging` |
-| **Production** | `main` → `poli-lingo.vercel.app` | `polilingo-prod` |
+| Environment     | Where                               | Database            |
+| --------------- | ----------------------------------- | ------------------- |
+| **Development** | `npm run dev` locally               | `polilingo-dev`     |
+| **Preview**     | Every pull request's Vercel preview | `polilingo-staging` |
+| **Production**  | `main` → `poli-lingo.vercel.app`    | `polilingo-prod`    |
 
 **Preview deployments must never point at the production database.** A preview builds
 unreviewed code from a public repository; anyone who opens a pull request could read or
@@ -60,17 +60,18 @@ variable names are the easy part.
 ## The variables
 
 ### Now
+
 None.
 
 ### D2 — accounts and progress sync, around week 4
 
-| Variable | Public? | Source |
-| --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase → Settings → API → Project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes, by design | Supabase → Settings → API → `anon public` |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Never** | Supabase → Settings → API → `service_role` |
+| Variable                        | Public?        | Source                                     |
+| ------------------------------- | -------------- | ------------------------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Yes            | Supabase → Settings → API → Project URL    |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes, by design | Supabase → Settings → API → `anon public`  |
+| `SUPABASE_SERVICE_ROLE_KEY`     | **Never**      | Supabase → Settings → API → `service_role` |
 
-The anon key is *meant* to be public. It identifies the project and authorises nothing on
+The anon key is _meant_ to be public. It identifies the project and authorises nothing on
 its own — everything it can do is decided by Row Level Security policies. That means **RLS
 is the security boundary**, and a missing policy is a data breach, not a bug. See
 `docs/technical/data-model.md` in the docs repository.
@@ -82,9 +83,9 @@ to bypass RLS and whether it should.
 
 ### D5 — native audio, around week 5
 
-| Variable | Public? | Notes |
-| --- | --- | --- |
-| `NEXT_PUBLIC_AUDIO_BASE_URL` | Yes | The R2 public bucket's custom domain. It appears in every `<audio>` element anyway |
+| Variable                     | Public? | Notes                                                                              |
+| ---------------------------- | ------- | ---------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_AUDIO_BASE_URL` | Yes     | The R2 public bucket's custom domain. It appears in every `<audio>` element anyway |
 
 The app needs **no** R2 credentials. It reads public audio over plain HTTPS. Writing to R2
 happens in the content repository's release workflow, using a token scoped to the buckets
@@ -92,10 +93,10 @@ that job actually touches.
 
 ### D3, D4 — content, around week 3
 
-| Variable | Public? | Notes |
-| --- | --- | --- |
-| `NEXT_PUBLIC_CONTENT_VERSION` | Yes | Which content release this build used, e.g. `content@2026.10.1`. Set by CI. Makes a learner's bug report traceable to exact content |
-| `CONTENT_CHANNEL` | Server | `published` in production, `preview` locally to see unreviewed drafts |
+| Variable                      | Public? | Notes                                                                                                                               |
+| ----------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_CONTENT_VERSION` | Yes     | Which content release this build used, e.g. `content@2026.10.1`. Set by CI. Makes a learner's bug report traceable to exact content |
+| `CONTENT_CHANNEL`             | Server  | `published` in production, `preview` locally to see unreviewed drafts                                                               |
 
 ### D10 — analytics, around week 8
 
@@ -122,13 +123,13 @@ even read-only, not even briefly.
 
 ## Where secrets actually live
 
-| Secret | Lives in | Who can read it |
-| --- | --- | --- |
-| Supabase anon key | Vercel env vars, and every browser | Everyone. By design |
-| Supabase service-role key | `content` repo → Actions secrets | The release workflow |
-| R2 write token | `content` repo → Actions secrets | The release workflow |
-| R2 read token | Not needed — public bucket | — |
-| Vercel deploy token | Not needed — Git integration | — |
+| Secret                    | Lives in                           | Who can read it      |
+| ------------------------- | ---------------------------------- | -------------------- |
+| Supabase anon key         | Vercel env vars, and every browser | Everyone. By design  |
+| Supabase service-role key | `content` repo → Actions secrets   | The release workflow |
+| R2 write token            | `content` repo → Actions secrets   | The release workflow |
+| R2 read token             | Not needed — public bucket         | —                    |
+| Vercel deploy token       | Not needed — Git integration       | —                    |
 
 Everything also goes in the shared password vault with a backup owner, per
 `docs/ops/access-register.md`. A secret only one person can reach is a single point of

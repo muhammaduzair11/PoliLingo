@@ -4,14 +4,14 @@
 
 This repository is the **application code**. Most contributions are not code.
 
-| You want to | Go to |
-| --- | --- |
+| You want to                                      | Go to                                                                       |
+| ------------------------------------------------ | --------------------------------------------------------------------------- |
 | Correct a phrase, translation or transliteration | [polilingo/content](https://github.com/polilingo/content/issues/new/choose) |
-| Offer to record your voice | [polilingo/content](https://github.com/polilingo/content/issues/new/choose) |
-| Suggest a story, proverb or cultural note | [polilingo/content](https://github.com/polilingo/content/issues/new/choose) |
-| Review a language as a native speaker | `content/docs/reviewer-checklist.md` |
-| Report a bug in the app | [an issue here](https://github.com/polilingo/web/issues/new/choose) |
-| Report a security or privacy concern | [privately](https://github.com/polilingo/web/security/advisories/new) |
+| Offer to record your voice                       | [polilingo/content](https://github.com/polilingo/content/issues/new/choose) |
+| Suggest a story, proverb or cultural note        | [polilingo/content](https://github.com/polilingo/content/issues/new/choose) |
+| Review a language as a native speaker            | `content/docs/reviewer-checklist.md`                                        |
+| Report a bug in the app                          | [an issue here](https://github.com/polilingo/web/issues/new/choose)         |
+| Report a security or privacy concern             | [privately](https://github.com/polilingo/web/security/advisories/new)       |
 
 **You do not need to know how to use git or GitHub to improve the language content.** The
 content repository has web forms for every kind of contribution. See

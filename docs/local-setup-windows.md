@@ -9,8 +9,8 @@ If you are the second developer joining the project, this is your first page.
 
 ## 1. Install the tools
 
-Open **PowerShell as Administrator** (right-click the Start button → *Windows PowerShell
-(Admin)*) and run:
+Open **PowerShell as Administrator** (right-click the Start button → _Windows PowerShell
+(Admin)_) and run:
 
 ```powershell
 winget install --id Git.Git --exact --accept-source-agreements --accept-package-agreements
@@ -59,7 +59,7 @@ Two of those settings are not the usual Windows advice and are deliberate:
 gh auth login --hostname github.com --git-protocol https --web
 ```
 
-Choose *Yes* when asked whether to authenticate Git with your GitHub credentials.
+Choose _Yes_ when asked whether to authenticate Git with your GitHub credentials.
 
 ## 4. Clone and run
 
@@ -98,12 +98,12 @@ that is a real problem — say so rather than working around it.
 
 If you have worked on React projects before, some of this will look wrong. It is not.
 
-| You might expect | This project uses | Why |
-| --- | --- | --- |
-| ESLint | **oxlint** | Rust-based, much faster, type-aware via `oxlint-tsgolint` |
-| Prettier | **oxfmt** | Same family as oxlint |
-| Jest or Vitest | **`node --test`** | Built into Node. No test framework dependency at all |
-| `npm run format:check` | `npm run format` then check `git diff` | oxfmt formats in place |
+| You might expect       | This project uses                      | Why                                                       |
+| ---------------------- | -------------------------------------- | --------------------------------------------------------- |
+| ESLint                 | **oxlint**                             | Rust-based, much faster, type-aware via `oxlint-tsgolint` |
+| Prettier               | **oxfmt**                              | Same family as oxlint                                     |
+| Jest or Vitest         | **`node --test`**                      | Built into Node. No test framework dependency at all      |
+| `npm run format:check` | `npm run format` then check `git diff` | oxfmt formats in place                                    |
 
 Do not add ESLint, Prettier, Jest or Vitest. That choice is recorded in ADR-0011 in the
 docs repository, along with when it should be revisited.

@@ -48,7 +48,7 @@ voice talent, physical attacks, and automated scanner output with no demonstrate
 - **The Supabase anonymous key is in the JavaScript bundle.** It is designed to be public.
   It identifies the project and authorises nothing on its own; access is controlled by Row
   Level Security policies. If you can use it to read or write data you should not be able
-  to, *that* is a real finding and we would very much like to hear about it.
+  to, _that_ is a real finding and we would very much like to hear about it.
 - **The repository is public and has no licence.** Deliberate. Public is not open source —
   no licence means all rights reserved.
 - **Learner progress is in `localStorage` and readable by the user.** By design. It is

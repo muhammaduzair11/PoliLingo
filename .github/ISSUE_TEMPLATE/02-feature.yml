@@ -1,6 +1,6 @@
 name: Feature
 description: A new capability for learners or contributors
-labels: ["type/feature"]
+labels: ['type/feature']
 body:
   - type: textarea
     id: problem

@@ -104,14 +104,14 @@ here is what I checked manually" is fine. Silence is not.
 
 ## What we deliberately do not do
 
-| Not doing | Why | Revisit when |
-| --- | --- | --- |
-| Coverage thresholds | Produces gaming, not tests | Never, probably |
-| Component render tests | Framework cost vs a UI still changing weekly | UI stabilises, or a third developer joins |
-| End-to-end suite in weeks 1–4 | Tests against a moving target get deleted | ~week 6, after auth lands: three Playwright smoke tests, no more |
-| Visual regression testing | Needs a stable design and a budget | Stage 2 |
-| Load testing | Fewer than a thousand learners on managed infrastructure | Before any paid acquisition |
-| Mutation testing | Interesting; not at this size | No |
+| Not doing                     | Why                                                      | Revisit when                                                     |
+| ----------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------- |
+| Coverage thresholds           | Produces gaming, not tests                               | Never, probably                                                  |
+| Component render tests        | Framework cost vs a UI still changing weekly             | UI stabilises, or a third developer joins                        |
+| End-to-end suite in weeks 1–4 | Tests against a moving target get deleted                | ~week 6, after auth lands: three Playwright smoke tests, no more |
+| Visual regression testing     | Needs a stable design and a budget                       | Stage 2                                                          |
+| Load testing                  | Fewer than a thousand learners on managed infrastructure | Before any paid acquisition                                      |
+| Mutation testing              | Interesting; not at this size                            | No                                                               |
 
 ---
 

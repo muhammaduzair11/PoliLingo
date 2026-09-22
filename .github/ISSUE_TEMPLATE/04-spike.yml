@@ -1,6 +1,6 @@
 name: Spike
 description: Time-boxed investigation to answer a question before committing to work
-labels: ["type/spike"]
+labels: ['type/spike']
 body:
   - type: markdown
     attributes:

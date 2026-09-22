@@ -14,7 +14,6 @@ in the docs repository for the full list of types.
 <!-- One paragraph. What changes for a learner, a contributor, or the next developer?
      Not a list of files — the diff already says that. -->
 
-
 ## Deliverable
 
 <!-- Which investor deliverable this advances. D1..D12, or `none` for genuine
@@ -26,12 +25,10 @@ Deliverable: D
 
 Closes #
 
-
 ## How I know it works
 
 <!-- Be specific. "Tested locally" tells the reviewer nothing. Name the case you
      actually exercised, or the test you added, or the preview URL and what to click. -->
-
 
 ## Checklist
 
@@ -45,11 +42,9 @@ Closes #
 <!-- Delete any that do not apply, and say why. An unticked box with a reason is
      fine. An unticked box with no reason means the pull request is not ready. -->
 
-
 ## Anything the reviewer should look at hardest
 
 <!-- Where you are least sure. Naming it gets you a better review than "LGTM?". -->
-
 
 ---
 

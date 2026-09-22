@@ -96,12 +96,12 @@ Almost always one of:
 ## When the site is up but wrong
 
 **Stale assets.** Vercel's CDN caches `public/` aggressively. A new image width or audio
-file needs a deploy to appear. If a *replaced* asset shows the old version, it was
+file needs a deploy to appear. If a _replaced_ asset shows the old version, it was
 overwritten at the same path instead of published at a new one — which is exactly why audio
 uses immutable revision prefixes.
 
 **Content looks wrong.** Check `NEXT_PUBLIC_CONTENT_VERSION` on the deployment. Content is
-baked in at build time, so a content fix needs a content release *and* a redeploy of the
+baked in at build time, so a content fix needs a content release _and_ a redeploy of the
 app.
 
 **One learner's progress is wrong, nobody else's.** Their `localStorage` state. Ask for
@@ -127,14 +127,14 @@ Different situation, different priority. Stop deploying.
 
 ## Contacts and access
 
-| | Where |
-| --- | --- |
-| Who can access what | `docs/ops/access-register.md` in the docs repository |
-| Vercel | <https://vercel.com/dashboard> |
-| Supabase | <https://supabase.com/dashboard> |
-| Cloudflare R2 | <https://dash.cloudflare.com> |
-| Status of GitHub Actions | <https://www.githubstatus.com> |
-| Status of Vercel | <https://www.vercel-status.com> |
+|                          | Where                                                |
+| ------------------------ | ---------------------------------------------------- |
+| Who can access what      | `docs/ops/access-register.md` in the docs repository |
+| Vercel                   | <https://vercel.com/dashboard>                       |
+| Supabase                 | <https://supabase.com/dashboard>                     |
+| Cloudflare R2            | <https://dash.cloudflare.com>                        |
+| Status of GitHub Actions | <https://www.githubstatus.com>                       |
+| Status of Vercel         | <https://www.vercel-status.com>                      |
 
 Before assuming your change broke something, check those last two. It is occasionally not
 your fault.
