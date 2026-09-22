@@ -5,7 +5,7 @@ repository squash-merges. Write it as a Conventional Commit:
     feat(lesson): add listen-and-repeat recorder to the study card
     fix(progress): stop awarding replay XP twice after a refresh
 
-CI will reject the title if it does not match. See docs/process/engineering-workflow.md
+CI will reject the title if it does not match. See process/engineering-workflow.md
 in the docs repository for the full list of types.
 -->
 
@@ -19,7 +19,7 @@ in the docs repository for the full list of types.
 <!-- Which investor deliverable this advances. D1..D12, or `none` for genuine
      maintenance. This line is how the week-12 evidence pack assembles itself, so it
      is not optional. If you cannot name one, ask whether this work should be
-     happening this week. Reference: docs/release/deliverables.md -->
+     happening this week. Reference: plan/stage1-plan.md in the docs repository -->
 
 Deliverable: D
 

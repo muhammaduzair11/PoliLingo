@@ -4,14 +4,14 @@
 
 This repository is the **application code**. Most contributions are not code.
 
-| You want to                                      | Go to                                                                       |
-| ------------------------------------------------ | --------------------------------------------------------------------------- |
-| Correct a phrase, translation or transliteration | [polilingo/content](https://github.com/polilingo/content/issues/new/choose) |
-| Offer to record your voice                       | [polilingo/content](https://github.com/polilingo/content/issues/new/choose) |
-| Suggest a story, proverb or cultural note        | [polilingo/content](https://github.com/polilingo/content/issues/new/choose) |
-| Review a language as a native speaker            | `content/docs/reviewer-checklist.md`                                        |
-| Report a bug in the app                          | [an issue here](https://github.com/polilingo/web/issues/new/choose)         |
-| Report a security or privacy concern             | [privately](https://github.com/polilingo/web/security/advisories/new)       |
+| You want to                                      | Go to                                                                                                       |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| Correct a phrase, translation or transliteration | [muhammaduzair11/polilingo-content](https://github.com/muhammaduzair11/polilingo-content/issues/new/choose) |
+| Offer to record your voice                       | [muhammaduzair11/polilingo-content](https://github.com/muhammaduzair11/polilingo-content/issues/new/choose) |
+| Suggest a story, proverb or cultural note        | [muhammaduzair11/polilingo-content](https://github.com/muhammaduzair11/polilingo-content/issues/new/choose) |
+| Review a language as a native speaker            | `content/docs/reviewer-checklist.md`                                                                        |
+| Report a bug in the app                          | [an issue here](https://github.com/muhammaduzair11/PoliLingo/issues/new/choose)                             |
+| Report a security or privacy concern             | [privately](https://github.com/muhammaduzair11/PoliLingo/security/advisories/new)                           |
 
 **You do not need to know how to use git or GitHub to improve the language content.** The
 content repository has web forms for every kind of contribution. See
@@ -21,8 +21,8 @@ content repository has web forms for every kind of contribution. See
 
 ## If you are working on the code
 
-Full process: `docs/process/sdlc-handbook.md` in the [docs
-repository](https://github.com/polilingo/docs). The short version:
+Full process: `process/how-we-work.md` in the [docs
+repository](https://github.com/muhammaduzair11/polilingo-docs). The short version:
 
 1. **Set up your machine** — [`docs/local-setup-windows.md`](docs/local-setup-windows.md)
 2. **Branch from `main`** — `feat/`, `fix/`, `chore/`, `docs/` or `spike/` then a short
@@ -40,7 +40,7 @@ repository](https://github.com/polilingo/docs). The short version:
    fix(progress): stop awarding replay XP twice after a refresh
    ```
 6. **Name the deliverable** in the pull request body (`Deliverable: D6`). This is how the
-   week-12 evidence pack assembles itself. See `docs/release/deliverables.md`.
+   week-12 evidence pack assembles itself. See `plan/stage1-plan.md` in the docs repository.
 7. **One approval, then squash-merge.** Never push to `main`.
 
 ---
@@ -48,7 +48,7 @@ repository](https://github.com/polilingo/docs). The short version:
 ## Things about this codebase that will surprise you
 
 - **No ESLint, no Prettier, no Jest.** It uses `oxlint`, `oxfmt` and `node --test`. Do not
-  add the usual ones — ADR-0011 and ADR-0012 explain why, and name when to reconsider.
+  add the usual ones — ADR-0011 and ADR-0012 in the docs repository explain why, and name when to reconsider.
 - **No environment variables, no database, no server functions** — today. The app is
   static content plus `localStorage`. This changes during Stage 1; see
   [`docs/configuration.md`](docs/configuration.md).
@@ -88,4 +88,4 @@ whether a phrase is really Hindko or actually Punjabi.
 
 Disagreement about language is expected and useful. Dismissiveness about someone's variety
 is not. When two native speakers disagree, the answer is usually "both are attested, label
-them" rather than "one of you is wrong" — see `docs/content-ops/dialect-policy.md`.
+them" rather than "one of you is wrong" — see `content-ops/dialect-policy.md` in the docs repository.
