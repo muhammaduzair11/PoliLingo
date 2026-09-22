@@ -7,7 +7,7 @@ body:
       value: |
         For a mistake in a **phrase, translation or pronunciation**, this is the wrong
         place — open a content report instead, so it reaches a language reviewer:
-        https://github.com/polilingo/content/issues/new/choose
+        https://github.com/muhammaduzair11/polilingo-content/issues/new/choose
 
   - type: textarea
     id: what-happened

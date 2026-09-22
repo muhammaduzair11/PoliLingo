@@ -65,7 +65,7 @@ Choose _Yes_ when asked whether to authenticate Git with your GitHub credentials
 
 ```powershell
 cd D:\Polilingo
-git clone https://github.com/polilingo/web.git web
+git clone https://github.com/muhammaduzair11/PoliLingo.git web
 cd web
 npm install
 npm run dev
@@ -162,5 +162,5 @@ after the first run. A cold build of two to three minutes is normal.
 1. [`../README.md`](../README.md) — what the app is and how it is laid out
 2. [`architecture.md`](architecture.md) — how it works today
 3. [`testing.md`](testing.md) — what to test and how
-4. `docs/process/sdlc-handbook.md` in the **docs** repository — how the two of you work
+4. `process/how-we-work.md` in the **docs** repository — how the two of you work
    together. Read this before opening a pull request.

@@ -11,7 +11,7 @@ maintained branches.
 **Please do not open a public issue.**
 
 Use GitHub's private vulnerability reporting:
-<https://github.com/polilingo/web/security/advisories/new>
+<https://github.com/muhammaduzair11/PoliLingo/security/advisories/new>
 
 Tell us:
 

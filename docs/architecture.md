@@ -1,159 +1,177 @@
-# PoliLingo Architecture
+# PoliLingo architecture — as built
 
-How the app is put together: routing, state, content, the image pipeline,
-quality gates and the deployment contract. Visual decisions live in
-`docs/design.md`; content provenance in `docs/content-notes.md`; asset
-generation prompts in `docs/assets-prompts.md`; the verification checklist in
-`docs/validation.md`.
+> **Scope.** This document describes **what is deployed today**, and nothing else. If a
+> sentence here is not true of the current `main` branch, it is a bug in this document.
+>
+> The *target* architecture — seven layers, Supabase, Cloudflare R2, a content database,
+> community review workflows — lives in `technical/architecture-target.md` in the
+> [docs repository](https://github.com/muhammaduzair11/polilingo-docs), together with the ordered path
+> from here to there.
+>
+> Keeping the two apart is deliberate. A document that mixes what exists with what is
+> planned stops being usable for either purpose within a month.
+
+## Overview
+
+PoliLingo is a language-learning web app with a client-first architecture. Content is
+static, state lives in the browser, and there is no backend. That is a real property, not
+an omission: it is why the app has no credentials to leak, no database to migrate and no
+server to fall over.
 
 ## 1. Stack
 
-- **Next.js 16** (App Router, Turbopack build), **React 19**, **TypeScript**
-  in strict mode.
-- **Tailwind CSS v4** through `@tailwindcss/postcss` (`postcss.config.mjs`);
-  theme tokens are bridged from CSS custom properties in `app/globals.css`.
-- **shadcn / Base UI** primitives under `components/ui/`. The product screens
-  mostly use bespoke classes in `app/globals.css`; the primitives exist for
-  dialogs, switches, progress and similar controls.
-- **oxlint** (type-aware) and **oxfmt** for lint and format; `node --test`
-  for tests. No ESLint, no Jest.
-- No database, no server functions, no environment variables. The app is
-  fully static-plus-client-state.
+- **Next.js 16** with App Router and Turbopack, **React 19**, **TypeScript** in strict mode
+- **Tailwind CSS v4** via `@tailwindcss/postcss`, with theme tokens bridged through CSS
+  custom properties in `app/globals.css`
+- **shadcn / Base UI** primitives in `components/ui/`
+- **oxlint** (type-aware, through `oxlint-tsgolint`) and **oxfmt**, replacing ESLint and
+  Prettier
+- **`node --test`** for testing, rather than Jest or Vitest
+- Node `>= 22.13.0`, `"type": "module"`
+- **No database, no server functions, no environment variables** — fully static plus
+  client state
 
 ## 2. Routes
 
 | Route | Rendering | Purpose |
 | --- | --- | --- |
-| `/` | Static | Marketing landing: hero, language cards, how-it-works, sample lesson teaser |
-| `/onboarding/[course]` | Dynamic | Two-step course intro and commitment |
+| `/` | Static | Landing: hero, language cards, how it works, sample lesson teaser |
+| `/onboarding/[course]` | Dynamic | Two-step course introduction and commitment |
 | `/learn/[course]` | Dynamic | Learning map: lesson path, streak, badges |
 | `/lesson/[course]/[lesson]` | Dynamic | Study cards plus eight exercises |
 | `/settings` | Static | Sound, motion, goal and reset controls |
 | `/_not-found` | Static | Fallback |
 
-Course slugs are `pashto`, `hindko`, `urdu` (the `id` field in
-`lib/courses.ts`).
+Course identifiers are `pashto`, `hindko` and `urdu`, mapped in `lib/courses.ts`.
 
 ## 3. State model
 
-All learner state is client-side, in `localStorage` under
-`polilingo.progress.v1`, wrapped by `LearningProvider`
-(`components/learning-provider.tsx`). There are no accounts and no sync.
+All learner progress is in `localStorage` under `polilingo.progress.v1`, managed by
+`components/learning-provider.tsx`. There are no accounts and no synchronisation.
 
-`lib/progress.ts` holds the pure state machine, which is what makes the
-model testable:
+Pure state logic lives in `lib/progress.ts` and contains no React and no browser APIs, so
+it can be tested directly:
 
-- `initialState()` / `parseState(raw)` — schema-tolerant hydration; unknown
-  or corrupt payloads fall back to defaults.
-- `newSession(course, lesson, id)` — a session carries a caller-supplied id
-  so a refresh cannot double-award XP.
-- `recordAnswer(session, correct)` — queues mistakes for repeat practice;
-  repeated checks cannot duplicate an attempt.
-- `advanceSession(state, key, date)` — completes lessons, awards 20 XP first
-  run and 5 XP on replay, updates the calendar-streak map.
-- `unlocked(state, course, lesson)` — sequential unlocking per course,
-  independent across courses.
-- `streak(activity, now)` / `localDate(date)` — calendar streaks computed in
-  the learner's browser-local timezone.
+- **Hydration** — `initialState()` and `parseState(raw)` load tolerantly, falling back to
+  defaults rather than throwing on corrupt data
+- **Sessions** — `newSession(course, lesson, id)` takes a caller-supplied ID, which is what
+  prevents a refresh from awarding XP twice
+- **Recording** — `recordAnswer(session, correct)` queues mistakes and ignores duplicate
+  attempts
+- **Advancement** — `advanceSession(state, key, date)` completes a lesson, awards XP (20 on
+  first completion, 5 on replay) and updates the activity record
+- **Unlocking** — `unlocked(state, course, lesson)` enforces sequential progression
+- **Streaks** — `streak(activity, now)` and `localDate(date)` compute calendar streaks in
+  the learner's browser-local timezone
 
-`tests/learning.test.mjs` covers all of the above, including serialization
-recovery and idempotent rewards. Keep new state rules as pure functions and
-extend that file.
+`tests/learning.test.mjs` covers serialisation recovery and idempotent rewards. New state
+rules belong in this file as pure functions, with a test.
+
+> This module is the highest-consequence code in the repository. A rendering bug is
+> visible and fixable; a wrongly reset streak is gone. It is flagged in `CODEOWNERS` for
+> that reason.
 
 ## 4. Content model
 
-`lib/courses.ts` defines `Course`, `Phrase` and the exercise union
-(`assemble`, `match`, `select`-style kinds). Each course has three lessons,
-each lesson four phrases and eight exercises. Every phrase records a
-`source` URL; the corpus is a seeded sample, not a certified curriculum —
-see `docs/content-notes.md` before extending it.
+`lib/courses.ts` defines the `Course` and `Phrase` types and the exercise union
+(`assemble`, `match`, `select`). Each course has three lessons; each lesson has four
+phrases and eight exercises — **36 phrases and 72 exercises in total**.
+
+Every phrase carries a `source` URL and a `note`. This is a seeded sample, not a certified
+curriculum; see `provenance.md` in the content repository for what each source is and what
+it does and does not establish.
+
+> **This file is scheduled to be replaced.** During v0.2, curriculum moves out of the
+> codebase into the `content` repository as reviewed data with stable IDs. See
+> `archive/technical/migration-content-to-db.md` in the docs repository. Until then, changes here
+> are content changes in a TypeScript costume and deserve the same scrutiny.
 
 ## 5. Components
 
-- `components/polilingo.tsx` — the product UI: `Header`, page sections,
-  `Native` (script-safe text), `Poli` and `Art` (image delivery),
-  `MotionButton`, dialogs.
-- `components/lesson-player.tsx` — exercise flow, feedback, completion.
-- `components/learning-provider.tsx` — state provider, persistence, and the
-  `data-motion` attribute that drives the in-app reduced-motion switch.
+- **`components/polilingo.tsx`** — the main product UI: `Header`, page sections, `Native`
+  (script-safe text with correct `lang` and `dir`), `Poli` and `Art` (image delivery),
+  `MotionButton`, dialogs
+- **`components/lesson-player.tsx`** — exercise flow, feedback, completion
+- **`components/learning-provider.tsx`** — state provider, persistence, and the
+  `data-motion` attribute that drives reduced-motion behaviour
+
+> `polilingo.tsx` is 41 KB and `app/globals.css` is 71 KB. With two developers working in
+> parallel these are the main source of merge conflicts. Splitting them is scheduled for
+> week 1; until then the hot-file protocol in `process/how-we-work.md` (docs repository)
+> applies.
 
 ## 6. Image pipeline
 
-Art is the heaviest content in the product, so it is pre-baked at build time
-and served verbatim. **No runtime image optimizer is in the path** — letting
-one re-encode the ladder previously caused a visible quality regression
-(double lossy compression) and `next/image`'s srcset produced ~1:1 variants
-with no supersampling margin.
+Art is pre-baked at build time. Nothing is optimised at runtime, which avoids
+double-compression.
 
-1. **Masters** — lossless PNGs in `assets-src/` (tracked in git, never
-   deployed): five Poli poses at 900×900 and three world dioramas at
-   1000×1000.
-2. **`npm run optimize-assets`** (`scripts/optimize-assets.mjs`, sharp):
-   - builds a **2× Lanczos intermediate** per master, so every output rung is
-     a downsample rather than an upscale;
-   - emits a **360 / 560 / 840 / 1200 / 1600** width ladder (the single source
-     of truth for rungs is `lib/art-widths.mjs`);
-   - encodes each rung as **AVIF (q60)** and **WebP (q90)** into
-     `public/assets/<name>-<width>.<ext>`.
-3. **Delivery** — the `Art` component renders a `<picture>` with AVIF and
-   WebP `<source>` srcsets plus a WebP `<img>` fallback, native
-   `loading`/`fetchPriority`/`decoding`, and explicit `width`/`height` for
-   layout stability. `picture { display: contents; }` in `app/globals.css`
-   keeps existing CSS selectors matching the inner `img`.
-4. **`sizes` discipline** — every slot declares its true rendered width
-   (hero mascot 560px, language cards 36vw, onboarding world 60vw, map banner
-   200px). A shared or understated `sizes` makes the browser upscale a small
-   rung, which reads as blur; this has bitten the project twice.
+1. **Masters** — lossless PNGs in `assets-src/`, tracked in git but never deployed: five
+   character poses at 900×900 and three dioramas at 1000×1000
+2. **Optimisation** — `npm run optimize-assets` runs `scripts/optimize-assets.mjs` with
+   `sharp`. It builds a 2× Lanczos intermediate per master, then emits a **360 / 560 / 840
+   / 1200 / 1600** width ladder (defined in `lib/art-widths.mjs`) as AVIF q60 and WebP q90
+   into `public/assets/`
+3. **Delivery** — the `Art` component renders a `<picture>` with AVIF and WebP srcsets,
+   native loading hints, and explicit dimensions so layout does not shift
+4. **`sizes` discipline** — every slot declares its true rendered width, so no image is
+   ever upscaled
 
-Resulting landing-page image weight: **189 KB at DPR1, 494 KB at DPR2**,
-against 4.66 MB for the original PNGs. Above-the-fold art (hero, onboarding
-world, map banner) is eager; below-the-fold cards stay lazy.
+Landing-page image weight is **189 KB at DPR1 and 494 KB at DPR2**, against 4.66 MB for the
+original PNGs. Above-the-fold art loads eagerly; below-the-fold cards stay lazy.
 
-Masters cap at 900–1000px. The 2× intermediates keep everything up to 1600
-device px crisp; slots needing more require new higher-res renders dropped
-into `assets-src/` followed by `npm run optimize-assets`.
+Masters are capped at 900–1000 px, and the 2× intermediate keeps output crisp to 1600
+device pixels. Anything higher needs new renders in `assets-src/` and a re-run.
 
 ## 7. Quality gates
 
-Run all four before pushing; CI-less repos live or die by these:
+All four run on every pull request via `.github/workflows/ci.yml`, and should be run
+locally before pushing:
 
 ```sh
 npm run typecheck   # tsc --noEmit, strict
-npm test            # node --test tests/*.test.mjs
 npm run lint        # oxlint, type-aware, 0 errors expected
+npm test            # node --test tests/*.test.mjs
 npm run build       # next build; all routes must compile
 ```
 
-`.oxlintrc.json` enables type-aware rules project-wide and scopes
-`typescript/no-floating-promises` off for `tests/**/*.mjs`, where the
-`node:test` runner owns the promise that `test()` returns.
+`.oxlintrc.json` enables type-aware rules and exempts `typescript/no-floating-promises` for
+test files.
 
 ## 8. Deployment contract
 
-- Vercel deploys from the GitHub repository `muhammaduzair11/PoliLingo`,
-  branch `main`, via the Git integration. Next.js is detected automatically;
-  there is no `vercel.json` and no custom build/output configuration. Keep
-  `next.config.ts` empty unless a change truly requires it.
-- The build needs **no environment variables** and produces no server
-  runtime state.
-- **Commit identity must be a valid, GitHub-matching email.** A placeholder
-  author email once blocked a deployment outright; the repo is configured
-  with the account's noreply address
-  (`71087478+muhammaduzair11@users.noreply.github.com`).
-- Because the app is static-first, Vercel serves `public/` from its CDN with
-  strong caching; new asset rungs therefore need a deploy to become visible.
+- **Source** — Vercel deploys from `muhammaduzair11/PoliLingo` on `main` via the Git integration
+- **Configuration** — no `vercel.json`, no custom build settings; Next.js is auto-detected
+- **Environment** — no environment variables, no server runtime state
+- **Commit identity** — commits must use a GitHub-recognised email, or the deployment can
+  be rejected. Use your GitHub no-reply address
+- **Caching** — the Vercel CDN serves `public/` with strong caching, so a new asset width
+  requires a deploy to become visible
+
+Rollback and incident steps are in [`runbook-deploy.md`](runbook-deploy.md).
 
 ## 9. Directory map
 
 ```
-app/            Routes and global styles (globals.css holds the design system)
+app/            Routes and global styles (globals.css is the design system)
 assets-src/     Lossless PNG masters (tracked, not deployed)
 components/     Product UI, lesson player, state provider
 components/ui/  shadcn / Base UI primitives
-docs/           Design, architecture, content, asset and validation notes
+docs/           This folder — as-built notes only
 hooks/          use-mobile
 lib/            courses.ts (content), progress.ts (state), art-widths.mjs
 public/assets/  Generated AVIF/WebP ladder (deployed)
 scripts/        optimize-assets.mjs
 tests/          learning.test.mjs
 ```
+
+## 10. What this architecture does not have
+
+Stated plainly, because the gap between this and the target is the whole of Stage 1:
+
+no accounts · no cloud sync · no database · no server-side code · no environment variables
+· no native-speaker audio · no speaking practice · no speech recognition · no content
+management system · no review workflow · no community contributions · no analytics · no
+payments · no leaderboards · no offline support beyond ordinary browser caching
+
+Each of these is a numbered deliverable. See `plan/stage1-plan.md` in the docs
+repository.

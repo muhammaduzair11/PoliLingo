@@ -21,7 +21,7 @@ body:
     attributes:
       label: Which deliverable does this belong to
       description: |
-        From docs/release/deliverables.md. If the honest answer is "none", say so —
+        From plan/stage1-plan.md in the docs repository. If the honest answer is "none", say so —
         but then it needs a reason to exist before week 12.
       options:
         - D1 — Production web/PWA
