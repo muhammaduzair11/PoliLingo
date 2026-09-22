@@ -22,7 +22,7 @@ server to fall over.
 
 - **Next.js 16** with App Router and Turbopack, **React 19**, **TypeScript** in strict mode
 - **Tailwind CSS v4** via `@tailwindcss/postcss`, with theme tokens bridged through CSS
-  custom properties in `app/globals.css`
+  custom properties in `app/styles/tokens.css`
 - **shadcn / Base UI** primitives in `components/ui/`
 - **oxlint** (type-aware, through `oxlint-tsgolint`) and **oxfmt**, replacing ESLint and
   Prettier
@@ -152,7 +152,8 @@ Rollback and incident steps are in [`runbook-deploy.md`](runbook-deploy.md).
 ## 9. Directory map
 
 ```
-app/            Routes and global styles (globals.css is the design system)
+app/            Routes; globals.css imports the design system from app/styles/ in cascade order
+app/styles/     The design system, one partial per screen or concern, imported in order
 assets-src/     Lossless PNG masters (tracked, not deployed)
 components/     Product UI, lesson player, state provider
 components/ui/  shadcn / Base UI primitives

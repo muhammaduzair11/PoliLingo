@@ -1,0 +1,146 @@
+.onboarding-page {
+  max-width: 1200px;
+  margin: 50px auto 70px;
+  display: grid;
+  grid-template-columns: 0.95fr 1fr;
+  gap: 90px;
+  padding: 0 50px;
+  min-height: 620px;
+}
+.onboard-art {
+  border-radius: 30px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.onboard-art h2 {
+  font-size: 60px;
+  margin-top: 16px;
+}
+.onboard-art h2 .native {
+  display: block;
+  font-size: 43px;
+  font-weight: 400;
+  margin-top: 3px;
+}
+.onboard-world {
+  width: 120%;
+  max-width: 120%;
+  height: 340px;
+  align-self: center;
+  margin-top: 0;
+}
+.onboard-note {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+  margin-top: auto;
+}
+.onboard-content {
+  padding: 14px 0;
+}
+.onboard-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.onboard-top > span {
+  font-size: 11px;
+  letter-spacing: 0.11em;
+  color: #8b789b;
+}
+.onboard-content > .eyebrow {
+  display: block;
+  margin-top: 35px;
+  font-size: 10px;
+}
+.onboard-content h1 {
+  font-size: 54px;
+  margin: 14px 0 19px;
+}
+.lead {
+  font-size: 17px;
+  color: #7b6c89;
+  line-height: 1.65;
+}
+.course-facts {
+  margin: 24px 0;
+}
+.course-facts p {
+  display: flex;
+  gap: 14px;
+  padding: 12px 0;
+  font-size: 13px;
+  color: #7b6c89;
+  line-height: 1.55;
+}
+.course-facts svg {
+  color: var(--purple);
+  width: 22px;
+}
+.course-facts strong {
+  display: block;
+  color: var(--ink);
+  font-size: 15px;
+  margin-bottom: 3px;
+}
+.lesson-progress [data-slot='progress-track'] {
+  height: 10px;
+  border-radius: 20px;
+}
+.lesson-progress [data-slot='progress-indicator'] {
+  border-radius: 20px;
+  background: var(--purple);
+}
+.goal-options {
+  margin: 26px 0;
+  gap: 12px;
+}
+.goal-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 2px solid #e4daed;
+  border-radius: 15px;
+  padding: 19px;
+  cursor: pointer;
+}
+.goal-option.chosen {
+  border-color: var(--purple);
+  background: #f3edfc;
+  box-shadow: 0 3px 0 #d8c3f1;
+}
+.goal-option > span {
+  flex: 1;
+}
+.goal-option strong {
+  display: block;
+  font-size: 17px;
+}
+.goal-option small {
+  display: block;
+  font-size: 13px;
+  color: #877397;
+  margin-top: 2px;
+}
+.goal-option > svg {
+  color: #966abf;
+}
+.kind-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #7f6891;
+  margin: 20px 0;
+}
+.saved-note {
+  font-size: 11px;
+  text-align: center;
+  color: #887398;
+  margin-top: 20px;
+}

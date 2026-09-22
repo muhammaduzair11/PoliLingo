@@ -29,8 +29,9 @@ never preachy. Examples in product: "A little daily. A lot more connection.",
 
 ## 2. Colour
 
-All tokens live in `:root` in `app/globals.css` and are mapped into Tailwind
-theme variables at the top of the same file.
+All tokens live in `:root` in `app/styles/tokens.css` and are mapped into Tailwind
+theme variables in the `@theme` block of the same file, which `app/globals.css`
+imports first.
 
 | Token | Value | Role |
 | --- | --- | --- |
@@ -157,7 +158,7 @@ Rules:
 
 ## 6. Motion
 
-Keyframes in `app/globals.css`: `float` (translate −14px with a −2deg→1deg
+Keyframes in `app/styles/keyframes.css`: `float` (translate −14px with a −2deg→1deg
 rotate), `wiggle` (±15deg rotate), `marquee` (translateX −50%).
 
 - Hero Poli floats; decorative stars wiggle on long periods (5–7s).
@@ -196,8 +197,9 @@ explicit user gesture, gated by a settings/header toggle. Nothing autoplay.
 
 ## 8. Responsive strategy
 
-Type is fluid via `clamp()`; layout refinements land in media queries around
-1500px, 1024px, 768px, 640px and 480px in `app/globals.css`.
+Type is fluid via `clamp()`; layout refinements land in media queries at
+1500px, 1100px, 800px, 580px and 350px — one file per breakpoint in `app/styles/`
+(`responsive-*.css`), with late narrow-viewport fixes in `refinements.css`.
 
 - Language cards collapse 3 → 1 column; the world frame keeps its bleed.
 - The hero stacks copy above art; display type scales down but never below

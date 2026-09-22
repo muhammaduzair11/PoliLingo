@@ -1,0 +1,126 @@
+.settings-page {
+  max-width: 900px;
+  padding-top: 40px;
+  padding-bottom: 70px;
+}
+.settings-page > .text-link {
+  font-size: 13px;
+  margin-bottom: 30px;
+}
+.settings-page h1 {
+  font-size: 44px;
+  margin: 13px 0;
+}
+.settings-page > .lead {
+  font-size: 15px;
+  margin-bottom: 30px;
+}
+.settings-card {
+  background: #fff;
+  border: 1px solid #e5dceb;
+  border-radius: 21px;
+  padding: 6px 27px;
+  margin-bottom: 25px;
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  padding: 24px 0;
+  border-bottom: 1px solid #eee7f3;
+}
+.setting-row > div {
+  flex: 1;
+}
+.setting-row h3 {
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+.setting-row p {
+  font-size: 12px;
+  color: #8b779a;
+  max-width: 460px;
+}
+.setting-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 39px;
+  height: 39px;
+  background: #f1e9fc;
+  color: var(--purple);
+  border-radius: 11px;
+}
+.setting-icon svg {
+  width: 19px;
+}
+.setting-row [data-slot='switch'] {
+  min-width: 40px;
+  height: 24px;
+}
+.daily-setting {
+  padding: 24px 0;
+}
+.daily-setting > p {
+  font-size: 12px;
+  color: #8b779a;
+  margin: 5px 0 16px;
+}
+.inline-goals {
+  display: flex;
+  gap: 22px;
+}
+.inline-goals label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.sources-card {
+  padding: 27px;
+}
+.sources-card h2 {
+  font-size: 24px;
+  letter-spacing: -0.035em;
+  margin-bottom: 15px;
+}
+.sources-card p {
+  font-size: 13px;
+  color: #806c91;
+  margin-bottom: 13px;
+}
+.source-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 11px 20px;
+  margin-top: 18px;
+}
+.source-links a {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--purple);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.reset-card {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  padding: 20px 0;
+}
+.reset-card > div:first-child {
+  flex: 1;
+}
+.reset-card p {
+  font-size: 12px;
+  color: #8b779a;
+  margin-top: 8px;
+}
+.reset-card .button {
+  font-size: 13px;
+  min-height: 43px;
+  white-space: nowrap;
+}

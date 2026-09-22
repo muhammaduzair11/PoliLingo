@@ -1,0 +1,40 @@
+.site-header {
+  border-bottom: 1px solid #e9e3ef;
+  background: var(--background);
+  position: relative;
+  z-index: 10;
+}
+.header-inner {
+  max-width: 1440px;
+  margin: auto;
+  padding: 20px 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 86px;
+}
+.site-header nav {
+  display: flex;
+  gap: 30px;
+  font-size: 14px;
+  font-weight: 500;
+  align-items: center;
+}
+.site-header nav a {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  position: relative;
+}
+.site-header nav a:hover {
+  color: var(--purple);
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.home-header .button-ink {
+  box-shadow: 0 3px 0 #c5bbce;
+}

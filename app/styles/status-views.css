@@ -1,0 +1,39 @@
+.loading-page,
+.empty-page {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  text-align: center;
+  padding: 40px;
+}
+.loading-mark {
+  background: var(--purple);
+  color: #fff;
+  padding: 24px;
+  border-radius: 28px;
+  animation: float 2s infinite;
+}
+.empty-page .poli {
+  width: 200px;
+  height: 200px;
+}
+.empty-page h1 {
+  font-size: 44px;
+}
+.storage-warning {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  max-width: calc(100% - 24px);
+  padding: 12px 20px;
+  background: #fff1ce;
+  border: 1px solid #b98c37;
+  border-radius: 12px;
+  box-shadow: 0 5px 30px #0002;
+  font-size: 14px;
+}
