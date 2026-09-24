@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ART_WIDTHS } from '@/lib/art-widths.mjs';
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   ArrowUpRight,
@@ -11,13 +10,10 @@ import {
   Flame,
   Star,
   Sparkles,
-  Mountain,
   Heart,
   BookOpen,
-  Settings2,
   Volume2,
   Pause,
-  Play,
   Lock,
   Flag,
   RotateCcw,
@@ -41,7 +37,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useLearning } from '@/components/learning-provider';
-import { courses, getCourse, type Course, type Phrase } from '@/lib/courses';
+import { courses, getCourse } from '@/lib/courses';
 import {
   initialState,
   lessonKey,
@@ -50,191 +46,13 @@ import {
   streak,
   unlocked,
 } from '@/lib/progress';
-
-function Art({
-  name,
-  alt,
-  className = '',
-  sizes,
-  priority = false,
-  width = 1000,
-  height = 1000,
-}: {
-  name: string;
-  alt: string;
-  className?: string;
-  sizes: string;
-  priority?: boolean;
-  width?: number;
-  height?: number;
-}) {
-  const srcSet = (ext: string) =>
-    ART_WIDTHS.map((w) => `/assets/${name}-${w}.${ext} ${w}w`).join(', ');
-  return (
-    <picture>
-      <source type="image/avif" srcSet={srcSet('avif')} sizes={sizes} />
-      <source type="image/webp" srcSet={srcSet('webp')} sizes={sizes} />
-      <img
-        className={className}
-        src={`/assets/${name}-840.webp`}
-        srcSet={srcSet('webp')}
-        sizes={sizes}
-        width={width}
-        height={height}
-        alt={alt}
-        decoding="async"
-        loading={priority ? 'eager' : 'lazy'}
-        fetchPriority={priority ? 'high' : 'auto'}
-      />
-    </picture>
-  );
-}
-
-export function Poli({
-  pose = 'welcome',
-  className = '',
-  priority = false,
-}: {
-  pose?: string;
-  className?: string;
-  priority?: boolean;
-}) {
-  return (
-    <Art
-      name={`poli-${pose}`}
-      className={`poli ${className}`}
-      sizes="(min-width: 768px) 560px, 92vw"
-      priority={priority}
-      width={900}
-      height={900}
-      alt={
-        pose === 'welcome'
-          ? 'Poli, your cream-colored markhor buddy with violet horns and an orange bag'
-          : ''
-      }
-    />
-  );
-}
-export function Native({
-  phrase,
-  course,
-  large = false,
-}: {
-  phrase: Pick<Phrase, 'native' | 'roman'>;
-  course: Course;
-  large?: boolean;
-}) {
-  const { state } = useLearning();
-  return (
-    <span className={`phrase ${large ? 'phrase-large' : ''}`}>
-      <span className="native" lang={course.lang} dir="rtl">
-        {phrase.native}
-      </span>
-      {state.prefs.transliteration && (
-        <span className="roman" dir="ltr">
-          {phrase.roman}
-        </span>
-      )}
-    </span>
-  );
-}
-export function Brand() {
-  return (
-    <Link href="/" className="brand" aria-label="PoliLingo home">
-      <span className="brand-icon">
-        <Mountain size={23} strokeWidth={3} />
-      </span>
-      poli<span>lingo</span>
-      <span className="brand-dot">®</span>
-    </Link>
-  );
-}
-export function MotionButton() {
-  const { state, update } = useLearning();
-  return (
-    <button
-      className="icon-button motion-button"
-      aria-label={
-        state.prefs.reducedMotion
-          ? 'Enable decorative motion'
-          : 'Pause decorative motion'
-      }
-      title={state.prefs.reducedMotion ? 'Enable motion' : 'Pause motion'}
-      onClick={() =>
-        update((s) => ({
-          ...s,
-          prefs: { ...s.prefs, reducedMotion: !s.prefs.reducedMotion },
-        }))
-      }
-    >
-      {state.prefs.reducedMotion ? <Play size={17} /> : <Pause size={17} />}
-    </button>
-  );
-}
-export function Header({ home = false }: { home?: boolean }) {
-  const { state } = useLearning();
-  return (
-    <header className={`site-header ${home ? 'home-header' : ''}`}>
-      <div className="header-inner">
-        <Brand />
-        <nav aria-label="Main navigation">
-          {home ? (
-            <>
-              <a href="#languages">The languages</a>
-              <a href="#how-it-works">The adventure</a>
-              <a href="#meet-poli">
-                Meet Poli <Heart size={13} />
-              </a>
-            </>
-          ) : (
-            <Link href={state.selected ? `/learn/${state.selected}` : '/'}>
-              My adventure
-            </Link>
-          )}
-        </nav>
-        <div className="header-actions">
-          <MotionButton />
-          {!home && (
-            <Link
-              href="/settings"
-              className="icon-button"
-              aria-label="Settings"
-            >
-              <Settings2 size={20} />
-            </Link>
-          )}
-          <Link
-            className="button button-small button-ink"
-            href={
-              state.selected
-                ? `/learn/${state.selected}`
-                : home
-                  ? '#languages'
-                  : '/'
-            }
-          >
-            {state.selected ? 'Keep going' : 'Let’s go'}
-            <ArrowUpRight size={17} />
-          </Link>
-        </div>
-      </div>
-    </header>
-  );
-}
-export function Footer() {
-  return (
-    <footer className="site-footer">
-      <Brand />
-      <p>Many languages. A little more together.</p>
-      <div>
-        <span>Made for connection.</span>
-        <Link href="/settings">
-          Settings & sources <ArrowUpRight size={14} />
-        </Link>
-      </div>
-    </footer>
-  );
-}
+import { Art, Poli } from './art';
+import { Header, Footer } from './site-chrome';
+import { Loading, NotFoundView } from './status-views';
+export { Poli } from './art';
+export { Native } from './native';
+export { Brand, MotionButton, Header, Footer } from './site-chrome';
+export { Loading, NotFoundView } from './status-views';
 export function Home() {
   const { state } = useLearning();
   const [sample, setSample] = useState<string | null>(null);
@@ -603,31 +421,6 @@ export function Home() {
   );
 }
 
-export function Loading() {
-  return (
-    <main id="main-content" className="loading-page" aria-busy="true">
-      <div className="loading-mark">
-        <Mountain size={42} />
-      </div>
-      <p>Getting your adventure ready…</p>
-    </main>
-  );
-}
-export function NotFoundView() {
-  return (
-    <>
-      <Header />
-      <main id="main-content" className="empty-page">
-        <Poli pose="thinking" />
-        <h1>A little off the trail.</h1>
-        <p>This lesson or language could not be found.</p>
-        <Link href="/" className="button button-purple">
-          Find your way back <ArrowRight size={18} />
-        </Link>
-      </main>
-    </>
-  );
-}
 export function Onboarding({ courseId }: { courseId: string }) {
   const { state, ready, update } = useLearning();
   const router = useRouter();
