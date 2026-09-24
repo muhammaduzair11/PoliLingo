@@ -13,7 +13,7 @@ import {
   Trophy,
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { useLearning } from '@/components/learning-provider';
+import { useLearning } from './learning-provider';
 import { courses, getCourse, selectedCourse } from '@/lib/courses';
 import {
   lessonKey,

@@ -1,5 +1,5 @@
 'use client';
-import { useLearning } from '@/components/learning-provider';
+import { useLearning } from './learning-provider';
 import { type Course, type Phrase } from '@/lib/courses';
 export function Native({
   phrase,

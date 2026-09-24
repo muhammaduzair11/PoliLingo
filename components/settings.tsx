@@ -21,7 +21,7 @@ import {
   AlertDialogAction,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useLearning } from '@/components/learning-provider';
+import { useLearning } from './learning-provider';
 import { selectedCourse } from '@/lib/courses';
 import { initialState } from '@/lib/progress';
 import { Header, Footer } from './site-chrome';

@@ -16,10 +16,13 @@
 # -----------------------------------------------------------------------------
 # components/polilingo.tsx (41 KB) was split into per-area modules under
 # components/ in #12, so the hot-file protocol no longer applies to it.
-# app/globals.css stays listed: it is the design system's entry point and a
-# change to it affects every screen.
+# app/globals.css was split the same way: it now only imports the ordered
+# partials under app/styles/, where the rules live. Both stay listed - the
+# partials are the design system, and their order is the cascade, so a change
+# to either affects every screen.
 
 /app/globals.css                @muhammaduzair11 @junaidaslam2006
+/app/styles/                    @muhammaduzair11 @junaidaslam2006
 
 # -----------------------------------------------------------------------------
 # Things that are expensive to get wrong

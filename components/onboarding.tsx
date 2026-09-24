@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useLearning } from '@/components/learning-provider';
+import { useLearning } from './learning-provider';
 import { getCourse } from '@/lib/courses';
 import { Art } from './art';
 import { Header } from './site-chrome';

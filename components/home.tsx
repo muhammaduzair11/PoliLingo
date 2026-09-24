@@ -13,7 +13,7 @@ import {
   MousePointer2,
   Globe2,
 } from 'lucide-react';
-import { useLearning } from '@/components/learning-provider';
+import { useLearning } from './learning-provider';
 import { courses, selectedCourse } from '@/lib/courses';
 import { Art, Poli } from './art';
 import { Header, Footer } from './site-chrome';
