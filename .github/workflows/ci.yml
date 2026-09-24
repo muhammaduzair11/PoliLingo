@@ -5,8 +5,9 @@
 name: CI
 
 on:
+  # Every pull request, whatever its base. A stacked PR (base = another feature
+  # branch) used to get no verify at all, and its Merge button was still green.
   pull_request:
-    branches: [main]
   push:
     branches: [main]
 
