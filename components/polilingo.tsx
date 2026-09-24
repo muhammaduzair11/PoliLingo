@@ -37,7 +37,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useLearning } from '@/components/learning-provider';
-import { courses, getCourse } from '@/lib/courses';
+import { courses, getCourse, selectedCourse } from '@/lib/courses';
 import {
   initialState,
   lessonKey,
@@ -53,8 +53,11 @@ export { Poli } from './art';
 export { Native } from './native';
 export { Brand, MotionButton, Header, Footer } from './site-chrome';
 export { Loading, NotFoundView } from './status-views';
+const LANGUAGE_COUNT = ['NO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'];
+
 export function Home() {
   const { state } = useLearning();
+  const remembered = selectedCourse(state.selected);
   const [sample, setSample] = useState<string | null>(null);
   const { play } = useLearning();
   return (
@@ -105,9 +108,9 @@ export function Home() {
                   </Link>
                 ))}
               </nav>
-              {state.selected && (
-                <Link className="return-link" href={`/learn/${state.selected}`}>
-                  Welcome back! Continue {getCourse(state.selected)?.name}{' '}
+              {remembered && (
+                <Link className="return-link" href={`/learn/${remembered.id}`}>
+                  Welcome back! Continue {remembered.name}{' '}
                   <ArrowRight size={16} />
                 </Link>
               )}
@@ -165,7 +168,8 @@ export function Home() {
           <div className="section-heading">
             <div>
               <div className="eyebrow purple">
-                THREE LANGUAGES. SO MANY POSSIBILITIES.
+                {LANGUAGE_COUNT[courses.length] ?? courses.length} LANGUAGES. SO
+                MANY POSSIBILITIES.
               </div>
               <h2>
                 Where will your
@@ -589,13 +593,22 @@ export function Onboarding({ courseId }: { courseId: string }) {
 export function Dashboard({ courseId }: { courseId?: string }) {
   const { state, ready, update } = useLearning();
   const router = useRouter();
-  const course = getCourse(courseId || state.selected || 'pashto');
+  // /learn opens the remembered course. With none the learner can see -
+  // nothing chosen yet, or a hidden one such as Hindko - it shows the
+  // language picker instead of choosing a language for them, and the
+  // stored choice is left as it is.
+  const course = courseId
+    ? getCourse(courseId)
+    : selectedCourse(state.selected);
   useEffect(() => {
     if (ready && course && state.selected !== course.id)
       update((s) => ({ ...s, selected: course.id }));
   }, [ready, course, state.selected, update]);
+  useEffect(() => {
+    if (ready && !courseId && !course) router.replace('/#languages');
+  }, [ready, courseId, course, router]);
   if (!ready) return <Loading />;
-  if (!course) return <NotFoundView />;
+  if (!course) return courseId ? <NotFoundView /> : <Loading />;
   const completed = course.lessons.filter(
     (l) => state.completed[lessonKey(course.id, l.id)],
   ).length;
@@ -838,6 +851,7 @@ function SettingRow({
 }
 export function Settings() {
   const { state, ready, update } = useLearning();
+  const remembered = selectedCourse(state.selected);
   const [resetOpen, setResetOpen] = useState(false);
   const [notice, setNotice] = useState('');
   if (!ready) return <Loading />;
@@ -847,7 +861,7 @@ export function Settings() {
       <main id="main-content" className="settings-page section-wrap">
         <Link
           className="text-link"
-          href={state.selected ? `/learn/${state.selected}` : '/'}
+          href={remembered ? `/learn/${remembered.id}` : '/'}
         >
           <ArrowLeft size={17} /> Back to your adventure
         </Link>
@@ -931,10 +945,8 @@ export function Settings() {
             approximations, not pronunciation recordings.
           </p>
           <p>
-            Pashto uses a Northern/Peshawar starting point. Hindko targets
-            Hazara/Abbottabad; available references are not always
-            dialect-specific, so local wording needs further speaker review.
-            Urdu uses everyday Pakistani expressions.
+            Pashto uses a Northern/Peshawar starting point. Urdu uses everyday
+            Pakistani expressions.
           </p>
           <div className="source-links">
             <a
@@ -950,20 +962,6 @@ export function Settings() {
               rel="noreferrer"
             >
               Urdu phrase reference <ArrowUpRight size={15} />
-            </a>
-            <a
-              href="https://www.hindko.org/hno/contact"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Hindko Language & Culture Society <ArrowUpRight size={15} />
-            </a>
-            <a
-              href="https://worldschoolbooks.com/hindko-for-beginners/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Hindko beginner reference <ArrowUpRight size={15} />
             </a>
           </div>
         </section>

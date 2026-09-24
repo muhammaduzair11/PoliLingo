@@ -394,7 +394,10 @@ function makeLessons(course: CourseId): Lesson[] {
     };
   });
 }
-export const courses: Course[] = [
+// Every course the MVP shipped. Stored progress is validated against all of
+// them (lib/progress.ts), so a learner's saved lessons in a hidden course
+// stay valid and reappear when it is shown again.
+export const allCourses: Course[] = [
   {
     id: 'pashto',
     name: 'Pashto',
@@ -429,8 +432,29 @@ export const courses: Course[] = [
     lessons: makeLessons('urdu'),
   },
 ];
+// Hindko is not shown to learners until it has been reviewed (decided
+// 2026-09-24). No card, no tab, no "coming soon": the course is simply
+// absent, and its URLs redirect temporarily to /learn (next.config.ts).
+// A learner's stored Hindko progress is kept. The content release's publish
+// gates replace this list in #15.
+const HIDDEN: ReadonlySet<CourseId> = new Set(['hindko']);
+
+/** The courses a learner can see, in display order. */
+export const courses: Course[] = allCourses.filter((c) => !HIDDEN.has(c.id));
+
+/** A course the learner can see, by slug. Hidden courses are not found. */
 export function getCourse(id: string): Course | undefined {
   return courses.find((c) => c.id === id);
+}
+
+/**
+ * The learner's remembered course, resolved when it is read: undefined when
+ * nothing is chosen or the stored choice is a course they cannot see, and
+ * the caller then offers the language picker. The stored value is never
+ * rewritten from this - a returning Hindko learner keeps their choice.
+ */
+export function selectedCourse(selected: string | null): Course | undefined {
+  return selected ? getCourse(selected) : undefined;
 }
 export function evaluate(
   exercise: Exercise,

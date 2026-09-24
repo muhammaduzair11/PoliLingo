@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { courses, evaluate } from '../lib/courses.ts';
+import {
+  allCourses,
+  courses,
+  evaluate,
+  getCourse,
+  selectedCourse,
+} from '../lib/courses.ts';
+import nextConfig from '../next.config.ts';
 import {
   initialState,
   newSession,
@@ -14,8 +21,8 @@ import {
 } from '../lib/progress.ts';
 
 test('nine complete, sourced lessons with eight exercises each', () => {
-  assert.equal(courses.length, 3);
-  for (const c of courses) {
+  assert.equal(allCourses.length, 3);
+  for (const c of allCourses) {
     assert.equal(c.lessons.length, 3);
     for (const l of c.lessons) {
       assert.equal(l.exercises.length, 8);
@@ -29,7 +36,7 @@ test('nine complete, sourced lessons with eight exercises each', () => {
   }
 });
 test('all answer types accept correct answers and reject incorrect answers', () => {
-  for (const c of courses)
+  for (const c of allCourses)
     for (const l of c.lessons)
       for (const e of l.exercises) {
         const correct =
@@ -63,7 +70,7 @@ test('all answer types accept correct answers and reject incorrect answers', () 
 test('all three courses unlock sequentially and preserve independent progress', () => {
   let s = initialState();
   let id = 0;
-  for (const c of courses) {
+  for (const c of allCourses) {
     for (const [i, l] of c.lessons.entries()) {
       assert.equal(unlocked(s, c.id, l.id), true);
       if (i < 2) assert.equal(unlocked(s, c.id, c.lessons[i + 1].id), false);
@@ -88,6 +95,40 @@ test('all three courses unlock sequentially and preserve independent progress', 
   assert.equal(Object.keys(s.completed).length, 9);
   assert.equal(s.activity['2026-09-08'], 9);
   assert.equal(streak(s.activity, new Date(2026, 8, 8)), 1);
+});
+test('Hindko is hidden from learners, and a Hindko learner keeps their progress', () => {
+  assert.deepEqual(
+    courses.map((c) => c.id),
+    ['pashto', 'urdu'],
+  );
+  assert.equal(getCourse('hindko'), undefined);
+  assert.equal(selectedCourse('hindko'), undefined);
+  assert.equal(selectedCourse(null), undefined);
+  assert.equal(selectedCourse('urdu')?.id, 'urdu');
+
+  // A returning Hindko learner: their choice, completions, XP and an
+  // unfinished session all survive a reload unchanged.
+  const s = initialState();
+  s.selected = 'hindko';
+  s.xp = 45;
+  s.completed['hindko/greetings'] = true;
+  s.completed['pashto/greetings'] = true;
+  s.rewarded.push('hindko/greetings');
+  s.sessions['hindko/introductions'] = recordAnswer(
+    { ...newSession('hindko', 'introductions', 'kept'), studied: true },
+    true,
+  );
+  assert.deepEqual(parseState(JSON.stringify(s)), s);
+  assert.equal(unlocked(s, 'hindko', 'introductions'), true);
+});
+test('Hindko URLs redirect temporarily to /learn', async () => {
+  const rules = await nextConfig.redirects();
+  const hindko = rules.filter((r) => r.source.includes('hindko'));
+  assert.equal(hindko.length, 1);
+  assert.equal(hindko[0].destination, '/learn');
+  // Never permanent: browsers cache a 308, and these links must work again
+  // the day Hindko returns.
+  assert.equal(hindko[0].permanent, false);
 });
 test('mistakes reappear and repeated checking cannot duplicate an attempt', () => {
   const key = 'urdu/greetings';
