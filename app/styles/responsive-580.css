@@ -1,0 +1,942 @@
+@media (max-width: 580px) {
+  .section-wrap {
+    padding-left: 22px;
+    padding-right: 22px;
+  }
+  .header-inner {
+    padding: 15px 20px;
+    gap: 10px;
+    min-height: 72px;
+  }
+  .site-header nav {
+    display: none;
+  }
+  .brand {
+    font-size: 24px;
+  }
+  .brand-icon {
+    width: 31px;
+    height: 31px;
+    border-radius: 9px;
+  }
+  .brand-icon svg {
+    width: 21px;
+  }
+  .button-small {
+    font-size: 12px;
+    min-height: 40px;
+    padding: 9px 13px;
+    gap: 10px;
+  }
+  .header-actions {
+    gap: 1px;
+  }
+  .motion-button {
+    width: 34px;
+    height: 40px;
+  }
+  .hero-inner {
+    display: flex;
+    flex-direction: column;
+    padding: 41px 24px 28px;
+    min-height: unset;
+    gap: 5px;
+  }
+  .hero-copy {
+    width: 100%;
+    text-align: center;
+  }
+  .hero-copy .eyebrow {
+    justify-content: center;
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    margin-bottom: 22px;
+  }
+  .hero h1 {
+    font-size: clamp(55px, 12.7vw, 75px);
+    line-height: 1.01;
+  }
+  .hero h1 br:nth-of-type(2) {
+    display: none;
+  }
+  .connection {
+    display: block;
+  }
+  .connection svg {
+    width: 87%;
+    left: 7%;
+    bottom: -13px;
+  }
+  .hero-copy > p {
+    font-size: 13px;
+    margin: 24px 0 21px;
+    line-height: 1.65;
+  }
+  .hero-copy .button {
+    min-height: 51px;
+    font-size: 14px;
+    padding: 14px 23px;
+    gap: 24px;
+  }
+  .hero-footnote {
+    justify-content: center;
+    font-size: 10px;
+    margin-top: 17px;
+    gap: 18px;
+  }
+  .hero-art {
+    width: 100%;
+    max-width: 340px;
+    height: 340px;
+    margin: 10px auto 0;
+  }
+  .hero-halo {
+    width: 266px;
+    height: 266px;
+    top: 49%;
+  }
+  .hero-poli {
+    inset: 0 0 0 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+  }
+  .hello-sticker {
+    top: 22px;
+    right: -1px;
+    font-size: 30px !important;
+    transform: rotate(10deg);
+  }
+  .poli-sticker {
+    left: 0;
+    bottom: 54px;
+    font-size: 9px;
+    transform: rotate(-10deg);
+  }
+  .star-one {
+    left: 12px;
+    top: 32px;
+    font-size: 39px;
+  }
+  .star-two {
+    right: 4px;
+    top: 146px;
+    font-size: 27px;
+  }
+  .little-flower {
+    right: 18px;
+    bottom: 34px;
+    font-size: 39px;
+  }
+  .poli-caption {
+    bottom: 0;
+    right: 51px;
+    font-size: 10px;
+  }
+  .orbit-one {
+    inset: 25px 0;
+  }
+  .orbit-two {
+    inset: 72px -16px;
+  }
+  .hero-bottom {
+    margin: 0 24px;
+    padding: 15px 0;
+    font-size: 7px;
+    letter-spacing: 0.07em;
+  }
+  .hero-bottom span:first-child {
+    display: none;
+  }
+  .hero-bottom span:last-child {
+    margin: auto;
+  }
+  .languages-section {
+    padding-top: 48px;
+    padding-bottom: 48px;
+  }
+  .section-heading {
+    display: block;
+    margin-bottom: 25px;
+  }
+  .section-heading h2 {
+    font-size: 36px;
+    margin-top: 12px;
+  }
+  .section-heading > p {
+    max-width: none;
+    font-size: 13px;
+    padding-top: 16px;
+  }
+  .section-heading .eyebrow {
+    font-size: 8px;
+    letter-spacing: 0.13em;
+  }
+  .mobile-break {
+    display: block;
+  }
+  .language-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .language-card {
+    padding: 19px 22px 16px;
+    border-radius: 22px;
+  }
+  .language-card-top .native {
+    font-size: 27px;
+  }
+  .course-number {
+    font-size: 9px;
+  }
+  .world-frame {
+    height: 195px;
+    margin: -16px 12px -3px;
+  }
+  .language-card-bottom {
+    align-items: center;
+    padding-top: 0;
+  }
+  .language-card h3 {
+    font-size: 32px;
+  }
+  .language-card p {
+    font-size: 12px;
+    max-width: none;
+    min-height: auto;
+  }
+  .round-arrow {
+    min-width: 42px;
+    height: 42px;
+  }
+  .round-arrow svg {
+    width: 24px;
+  }
+  .language-card-meta {
+    font-size: 9px;
+    margin-top: 19px;
+    padding-top: 11px;
+  }
+  .marquee {
+    padding: 17px 0;
+  }
+  .marquee > div > span {
+    font-size: 17px;
+    gap: 22px;
+    margin-right: 22px;
+  }
+  .marquee span span {
+    font-size: 23px;
+  }
+  .how-section {
+    display: block;
+    padding-top: 50px;
+    padding-bottom: 47px;
+  }
+  .how-intro h2 {
+    font-size: 43px;
+    margin-top: 15px;
+  }
+  .how-intro > p {
+    font-size: 14px;
+  }
+  .how-intro .eyebrow {
+    font-size: 9px;
+  }
+  .steps {
+    margin-top: 36px;
+  }
+  .steps article {
+    gap: 19px;
+    padding: 25px 0;
+  }
+  .step-icon {
+    min-width: 50px;
+    height: 50px;
+  }
+  .steps h3 {
+    font-size: 22px;
+  }
+  .steps p {
+    font-size: 13px;
+  }
+  .step-label {
+    font-size: 9px;
+  }
+  .sample-section {
+    display: block;
+    margin: 0 16px 48px;
+    padding: 31px 21px 32px;
+    border-radius: 24px;
+  }
+  .sample-copy h2 {
+    font-size: 40px;
+    margin-top: 19px;
+  }
+  .sample-copy > p {
+    font-size: 13px;
+  }
+  .pill {
+    font-size: 8px;
+  }
+  .handwritten {
+    margin: 17px 0 25px;
+    font-size: 15px;
+    text-align: right;
+  }
+  .sample-card {
+    padding: 21px 17px;
+    transform: rotate(1deg);
+  }
+  .sample-top {
+    font-size: 8px;
+  }
+  .sample-top span:last-child {
+    display: flex;
+    font-size: 8px;
+  }
+  .sample-card h3 {
+    font-size: 21px;
+    margin-top: 23px;
+  }
+  .sample-options {
+    gap: 9px;
+  }
+  .sample-option {
+    font-size: 11px;
+    padding: 14px 6px;
+  }
+  .sample-option .native {
+    font-size: 26px;
+  }
+  .sample-response {
+    font-size: 11px;
+  }
+  .meet-inner {
+    display: flex;
+    flex-direction: column-reverse;
+    padding: 44px 24px 25px;
+    gap: 14px;
+  }
+  .meet-copy {
+    width: 100%;
+  }
+  .meet-copy h2 {
+    font-size: 48px;
+  }
+  .meet-copy p {
+    font-size: 14px;
+    max-width: 100%;
+  }
+  .meet-copy .eyebrow {
+    font-size: 8px;
+  }
+  .meet-copy .button {
+    font-size: 14px;
+  }
+  .meet-art {
+    width: 100%;
+    max-width: 350px;
+    height: 335px;
+  }
+  .meet-circle {
+    width: 270px;
+    height: 270px;
+    left: 35px;
+    top: 30px;
+  }
+  .speech-bubble {
+    font-size: 12px;
+    left: 4px;
+    top: 26px;
+  }
+  .meet-art .deco-star {
+    right: 15px;
+  }
+  .closing {
+    padding-top: 52px;
+    padding-bottom: 54px;
+  }
+  .closing .eyebrow {
+    font-size: 8px;
+    letter-spacing: 0.09em;
+  }
+  .closing h2 {
+    font-size: 43px;
+    margin: 20px 0 25px;
+  }
+  .closing .button {
+    font-size: 14px;
+  }
+  .site-footer {
+    padding: 24px 22px;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  .site-footer .brand {
+    font-size: 21px;
+  }
+  .site-footer .brand-icon {
+    width: 25px;
+    height: 27px;
+  }
+  .site-footer .brand-icon svg {
+    width: 18px;
+  }
+  .site-footer > div {
+    font-size: 9px;
+    gap: 8px;
+    text-align: right;
+  }
+  .site-footer > div a {
+    font-size: 9px;
+  }
+  .onboarding-page {
+    display: flex;
+    flex-direction: column;
+    margin: 22px auto 40px;
+    padding: 0 22px;
+    gap: 22px;
+  }
+  .onboard-art {
+    height: 175px;
+    min-height: 175px;
+    padding: 25px;
+    border-radius: 23px;
+  }
+  .onboard-art h2 {
+    font-size: 39px;
+    position: relative;
+    z-index: 1;
+    margin-top: 11px;
+  }
+  .onboard-art h2 .native {
+    font-size: 26px;
+    margin-top: 0;
+  }
+  .onboard-art .eyebrow {
+    font-size: 8px;
+  }
+  .onboard-world {
+    position: absolute;
+    width: 195px;
+    height: 190px;
+    right: -2px;
+    top: -5px;
+    max-width: 55%;
+  }
+  .onboard-note {
+    display: none;
+  }
+  .onboard-content {
+    padding: 0 3px;
+  }
+  .onboard-content > .eyebrow {
+    font-size: 9px;
+    margin-top: 24px;
+  }
+  .onboard-content h1 {
+    font-size: 43px;
+    margin-top: 12px;
+  }
+  .onboard-content .lead {
+    font-size: 15px;
+  }
+  .course-facts p {
+    font-size: 12px;
+    padding: 12px 0;
+  }
+  .course-facts strong {
+    font-size: 15px;
+  }
+  .onboard-top {
+    margin-bottom: 13px;
+  }
+  .onboard-top > span {
+    font-size: 10px;
+  }
+  .goal-option {
+    padding: 19px 17px;
+  }
+  .onboard-content > .button {
+    margin-top: 10px;
+  }
+  .dashboard {
+    padding-top: 28px;
+  }
+  .dashboard-heading {
+    display: block;
+    margin-bottom: 23px;
+  }
+  .dashboard-heading h1 {
+    font-size: 30px;
+    max-width: 320px;
+    margin: 12px 0;
+  }
+  .dashboard-heading p {
+    font-size: 13px;
+  }
+  .stats-pills {
+    margin-top: 20px;
+  }
+  .stats-pills small {
+    display: inline;
+    font-size: 10px;
+  }
+  .stats-pills > span {
+    flex: 1;
+    justify-content: center;
+    padding: 12px;
+  }
+  .dashboard-heading .eyebrow {
+    font-size: 8px;
+  }
+  .dashboard-grid {
+    gap: 20px;
+  }
+  .course-tabs {
+    padding: 10px 9px;
+    gap: 5px;
+  }
+  .course-tabs a {
+    flex-direction: column;
+    gap: 0;
+    font-size: 12px;
+    padding: 5px;
+  }
+  .course-tabs .native {
+    font-size: 20px;
+  }
+  .map-banner {
+    padding: 20px 19px;
+    min-height: 143px;
+  }
+  .map-banner h2 {
+    font-size: 25px;
+    line-height: 1.1;
+    max-width: 185px;
+  }
+  .map-banner .eyebrow {
+    font-size: 7px;
+    letter-spacing: 0.07em;
+  }
+  .map-banner p {
+    font-size: 10px;
+    max-width: 170px;
+  }
+  .map-banner img {
+    width: 148px;
+    height: 153px;
+    right: -21px;
+    bottom: -7px;
+  }
+  .map-banner > div {
+    max-width: 75%;
+  }
+  .path-area {
+    padding: 32px 15px 25px;
+    min-height: 530px;
+  }
+  .map-poli {
+    width: 88px;
+    left: 0;
+    top: 27px;
+  }
+  .map-poli img {
+    width: 95px;
+    height: 110px;
+  }
+  .map-poli > span {
+    font-size: 7px;
+    left: 3px;
+    padding: 6px;
+  }
+  .lesson-stop {
+    gap: 15px;
+    min-height: 100px;
+    margin-bottom: 27px;
+  }
+  .path-node {
+    width: 63px;
+    min-width: 63px;
+    height: 62px;
+    border-radius: 23px;
+  }
+  .path-node svg {
+    width: 25px;
+  }
+  .stop-0 {
+    margin-left: 27%;
+  }
+  .stop-1 {
+    margin-left: 9%;
+  }
+  .stop-2 {
+    margin-left: 25%;
+  }
+  .stop-label h3 {
+    font-size: 13px;
+    max-width: 130px;
+  }
+  .stop-label p {
+    font-size: 9px;
+    max-width: 135px;
+  }
+  .start-here {
+    font-size: 7px;
+  }
+  .path-line {
+    left: 19%;
+    width: 63%;
+    height: 410px;
+  }
+  .path-trophy {
+    margin-top: 14px;
+  }
+  .map-footer {
+    padding: 18px 16px;
+    gap: 12px;
+  }
+  .map-footer > span {
+    font-size: 9px;
+  }
+  .dashboard-aside {
+    gap: 12px;
+  }
+  .daily-card,
+  .badge-card {
+    padding: 18px 14px;
+    border-radius: 17px;
+  }
+  .card-title h3 {
+    font-size: 15px;
+  }
+  .card-title > svg {
+    width: 18px;
+  }
+  .daily-card > p {
+    font-size: 11px;
+  }
+  .goal-dots {
+    gap: 6px;
+    margin: 18px 0 13px;
+  }
+  .goal-dots > span {
+    width: 34px;
+    height: 35px;
+    border-radius: 11px;
+  }
+  .goal-dots svg {
+    width: 18px;
+  }
+  .daily-card > a {
+    font-size: 10px;
+  }
+  .daily-card > strong {
+    font-size: 10px;
+  }
+  .badge-row {
+    gap: 7px;
+    margin: 24px 0 21px;
+  }
+  .badge-row > div > span {
+    width: 32px;
+    height: 40px;
+    border-radius: 10px 10px 15px 15px;
+  }
+  .badge-row svg {
+    width: 17px;
+  }
+  .badge-row small {
+    font-size: 8px;
+  }
+  .badge-card > p {
+    font-size: 10px;
+  }
+  .settings-page {
+    padding-top: 28px;
+    padding-bottom: 40px;
+  }
+  .settings-page h1 {
+    font-size: 39px;
+  }
+  .settings-page .eyebrow {
+    font-size: 9px;
+  }
+  .settings-card {
+    padding: 4px 17px;
+  }
+  .setting-row {
+    gap: 12px;
+    padding: 22px 0;
+  }
+  .setting-icon {
+    width: 31px;
+    min-width: 31px;
+    height: 33px;
+  }
+  .setting-icon svg {
+    width: 16px;
+  }
+  .setting-row h3 {
+    font-size: 14px;
+  }
+  .setting-row p {
+    font-size: 11px;
+  }
+  .setting-row [data-slot='switch'] {
+    min-width: 32px;
+    width: 32px;
+    height: 20px;
+  }
+  .inline-goals {
+    gap: 15px;
+  }
+  .inline-goals label {
+    font-size: 12px;
+    gap: 7px;
+  }
+  .sources-card {
+    padding: 22px;
+  }
+  .sources-card h2 {
+    font-size: 23px;
+  }
+  .sources-card p {
+    font-size: 12px;
+  }
+  .reset-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 17px;
+  }
+  .lesson-header {
+    padding: 17px 16px;
+    gap: 11px;
+  }
+  .lesson-header > .icon-button {
+    width: 32px;
+    height: 38px;
+  }
+  .lesson-header .lesson-count {
+    font-size: 10px;
+  }
+  .lesson-tools .icon-button {
+    width: 30px;
+    height: 36px;
+  }
+  .lesson-tools .icon-button svg {
+    width: 17px;
+  }
+  .lesson-shell {
+    padding: 22px 22px 25px;
+  }
+  .lesson-label {
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    margin-bottom: 25px;
+  }
+  .lesson-shell h1 {
+    font-size: 29px;
+  }
+  .lesson-mascot-row {
+    gap: 15px;
+    margin: 21px 0;
+    min-height: 119px;
+  }
+  .lesson-mascot-row .poli {
+    width: 92px;
+    height: 118px;
+  }
+  .prompt-bubble {
+    min-width: 0;
+    flex: 1;
+    padding: 17px 14px;
+    max-width: 260px;
+    border-radius: 16px;
+  }
+  .phrase-large .native {
+    font-size: 30px;
+  }
+  .phrase-large .roman {
+    font-size: 13px;
+  }
+  .prompt-bubble .english-meaning {
+    font-size: 21px;
+  }
+  .answer-options {
+    gap: 12px;
+  }
+  .answer-option {
+    padding: 20px 10px;
+    min-height: 82px;
+    font-size: 15px;
+  }
+  .answer-option > .phrase {
+    padding: 0 7px;
+  }
+  .answer-option .native {
+    font-size: 25px;
+  }
+  .answer-option .roman {
+    font-size: 11px;
+  }
+  .option-index {
+    top: 6px;
+    left: 6px;
+    width: 17px;
+    height: 17px;
+    font-size: 9px;
+  }
+  .lesson-help {
+    margin-top: 22px;
+    font-size: 12px;
+  }
+  .lesson-footer {
+    padding: 21px 22px 28px;
+    margin-top: 0;
+    gap: 15px;
+  }
+  .lesson-footer > p {
+    font-size: 10px;
+    max-width: 145px;
+  }
+  .lesson-footer > .button {
+    min-width: 145px;
+    padding: 15px 17px;
+    font-size: 14px;
+    gap: 12px;
+  }
+  .feedback {
+    margin: 10px 17px 25px;
+    padding: 20px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 17px;
+  }
+  .feedback h3 {
+    font-size: 18px;
+  }
+  .feedback p {
+    font-size: 12px;
+  }
+  .feedback .button {
+    width: 100%;
+    font-size: 14px;
+    min-height: 48px;
+  }
+  .match-grid {
+    gap: 13px;
+  }
+  .match-column .answer-option {
+    padding: 10px 6px;
+    font-size: 13px;
+    min-height: 81px;
+  }
+  .match-column .native {
+    font-size: 23px;
+  }
+  .assembly-tray {
+    min-height: 104px;
+    padding: 15px 10px;
+  }
+  .word-tile {
+    font-size: 15px;
+    padding: 11px 14px;
+  }
+  .word-bank {
+    padding: 23px 0;
+    gap: 9px;
+  }
+  .study-grid {
+    gap: 11px;
+  }
+  .study-card {
+    padding: 16px 10px;
+  }
+  .study-card .native {
+    font-size: 25px;
+  }
+  .study-card .roman {
+    font-size: 11px;
+  }
+  .study-card > strong {
+    font-size: 13px;
+  }
+  .study-card > p {
+    font-size: 10px;
+  }
+  .study-intro {
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+  .study-intro > .poli {
+    width: 90px;
+    height: 120px;
+  }
+  .study-intro h1 {
+    font-size: 27px;
+  }
+  .study-intro p {
+    font-size: 12px;
+  }
+  .study-note {
+    font-size: 11px;
+  }
+  .resume-card {
+    margin: 25px 20px;
+    padding: 30px 24px;
+  }
+  .resume-card h1 {
+    font-size: 32px;
+  }
+  .resume-card p {
+    font-size: 14px;
+  }
+  .resume-card > .poli {
+    width: 180px;
+    height: 190px;
+  }
+  .celebration {
+    padding: 5px 24px 45px;
+  }
+  .celebration-art {
+    width: 265px;
+    height: 260px;
+  }
+  .celebration h1 {
+    font-size: 43px;
+  }
+  .celebration > p {
+    font-size: 14px;
+  }
+  .result-stats {
+    gap: 10px;
+    margin: 25px 0;
+  }
+  .result-stat {
+    padding: 18px 7px;
+  }
+  .result-stat strong {
+    font-size: 25px;
+  }
+  .result-stat small {
+    font-size: 8px;
+  }
+  .badge-earned {
+    padding: 17px 19px;
+  }
+  .badge-earned h3 {
+    font-size: 15px;
+  }
+  .badge-earned p {
+    font-size: 11px;
+  }
+  .empty-page h1 {
+    font-size: 34px;
+  }
+  [data-slot='alert-dialog-content'] {
+    max-width: calc(100% - 40px) !important;
+  }
+}

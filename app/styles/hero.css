@@ -1,0 +1,235 @@
+.hero {
+  background: #6633c7;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+.hero-inner {
+  max-width: 1370px;
+  padding: 74px 70px 58px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1.04fr 1fr;
+  align-items: center;
+  min-height: 670px;
+  gap: 10px;
+}
+.hero-copy {
+  position: relative;
+  z-index: 3;
+}
+.hero-copy .eyebrow {
+  color: #e3d4fa;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 25px;
+}
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffdb57;
+  box-shadow: 0 0 0 4px #ffdb5719;
+}
+.hero h1 {
+  font-size: clamp(64px, 6.7vw, 94px);
+  letter-spacing: -0.065em;
+  font-weight: 700;
+  line-height: 1.015;
+}
+.connection {
+  color: var(--yellow);
+  position: relative;
+  display: inline-block;
+}
+.connection svg {
+  position: absolute;
+  left: 0;
+  bottom: -13px;
+  width: 100%;
+  height: 18px;
+  fill: none;
+  stroke: #ffcb49;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.hero-copy > p {
+  font-size: 17px;
+  color: #eee4fc;
+  margin: 30px 0 25px;
+  line-height: 1.65;
+  font-weight: 400;
+}
+.hero-footnote {
+  display: flex;
+  gap: 19px;
+  font-size: 12px;
+  color: #ebddfc;
+  margin-top: 22px;
+}
+.hero-footnote span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.hero-footnote svg {
+  color: #ffda57;
+}
+.return-link {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+  margin-top: 20px;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.hero-art {
+  position: relative;
+  height: 510px;
+  isolation: isolate;
+  --tilt: 0deg;
+}
+.hero-halo {
+  width: 430px;
+  height: 430px;
+  background: var(--yellow);
+  border-radius: 50%;
+  position: absolute;
+  left: 50%;
+  top: 49%;
+  transform: translate(-50%, -50%);
+  box-shadow: inset -20px -20px 0 #f4bd4122;
+}
+.hero-halo:after {
+  content: '';
+  position: absolute;
+  inset: 20px;
+  border: 1px solid #edb63188;
+  border-radius: 50%;
+}
+.hero-orbit {
+  position: absolute;
+  inset: 25px -30px;
+  border: 1px solid #ba94ee48;
+  border-radius: 50%;
+  transform: rotate(-27deg);
+  z-index: -1;
+}
+.orbit-two {
+  inset: 85px -48px;
+  transform: rotate(27deg);
+}
+.hero-poli {
+  position: absolute;
+  inset: -40px -8% -10px 2%;
+  width: 106%;
+  height: 110%;
+  filter: drop-shadow(0 25px 16px #35176040);
+  animation: float 5s ease-in-out infinite;
+  transform: rotate(var(--tilt));
+}
+picture {
+  display: contents;
+}
+.poli {
+  object-fit: contain;
+}
+.deco-star {
+  position: absolute;
+  line-height: 1;
+  user-select: none;
+}
+.star-one {
+  font-size: 64px;
+  color: #bcf2d0;
+  left: -20px;
+  top: 55px;
+  transform: rotate(15deg);
+  animation: wiggle 7s infinite;
+}
+.star-two {
+  font-size: 45px;
+  color: #ffadc8;
+  right: -20px;
+  top: 170px;
+}
+.hello-sticker {
+  position: absolute;
+  right: 4px;
+  top: 9px;
+  background: white;
+  color: var(--purple);
+  padding: 0 29px 3px;
+  font-size: 42px !important;
+  border-radius: 21px 21px 21px 3px;
+  transform: rotate(11deg);
+  z-index: 3;
+  box-shadow: 0 6px 0 #38236c30;
+}
+.poli-sticker {
+  position: absolute;
+  left: 5px;
+  bottom: 67px;
+  z-index: 3;
+  background: #ffadc7;
+  color: #4e275f;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 14px 18px;
+  border-radius: 8px;
+  transform: rotate(-12deg);
+  box-shadow: 0 5px 0 #4c227833;
+}
+.poli-sticker svg {
+  position: absolute;
+  right: -9px;
+  top: -8px;
+  color: var(--yellow);
+  fill: var(--yellow);
+}
+.poli-caption {
+  position: absolute;
+  bottom: -15px;
+  right: 45px;
+  font-size: 14px;
+  color: #e7d6fd;
+  transform: rotate(-5deg);
+}
+.caption-line {
+  display: inline-block;
+  border-bottom: 1.5px solid currentColor;
+  width: 38px;
+  transform: rotate(28deg);
+  margin: 0 10px 9px 0;
+}
+.little-flower {
+  position: absolute;
+  right: 0;
+  bottom: 34px;
+  font-size: 60px;
+  color: #c2eccb;
+  transform: rotate(15deg);
+}
+.hero-bottom {
+  max-width: 1240px;
+  margin: auto;
+  display: flex;
+  justify-content: space-between;
+  padding: 18px 0 21px;
+  border-top: 1px solid #ffffff21;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #dfcdfb;
+}
+.hero-bottom span:last-child {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.hero-bottom svg {
+  transform: rotate(-90deg);
+}

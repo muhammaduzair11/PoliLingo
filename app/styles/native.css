@@ -1,0 +1,22 @@
+.phrase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+.phrase .native {
+  font-size: 27px;
+  color: var(--ink);
+}
+.phrase .roman {
+  font-size: 13px;
+  color: #8e75a2;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.phrase-large .native {
+  font-size: 39px;
+}
+.phrase-large .roman {
+  font-size: 16px;
+}

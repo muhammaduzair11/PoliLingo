@@ -115,7 +115,7 @@ docs repository, along with when it should be revisited.
 Extensions worth having:
 
 - **Tailwind CSS IntelliSense** — this project uses Tailwind v4 with theme tokens defined
-  as CSS custom properties in `app/globals.css`, so autocomplete matters more than usual.
+  as CSS custom properties in `app/styles/tokens.css`, so autocomplete matters more than usual.
 - **oxc** (the official oxlint extension) — shows lint errors inline.
 - **EditorConfig for VS Code**.
 

@@ -1,0 +1,348 @@
+@media (max-width: 800px) {
+  .header-inner {
+    padding: 16px 25px;
+    min-height: 76px;
+  }
+  .site-header nav {
+    gap: 20px;
+    font-size: 12px;
+  }
+  .site-header nav a:nth-child(2) {
+    display: none;
+  }
+  .brand {
+    font-size: 25px;
+  }
+  .hero-inner {
+    grid-template-columns: 1.08fr 1fr;
+    min-height: 580px;
+    padding: 55px 30px 60px;
+  }
+  .hero h1 {
+    font-size: 60px;
+  }
+  .hero-copy .eyebrow {
+    font-size: 8px;
+    letter-spacing: 0.08em;
+  }
+  .hero-copy > p {
+    font-size: 13px;
+  }
+  .hero .button {
+    font-size: 14px;
+    padding: 15px 18px;
+    gap: 13px;
+  }
+  .hero-footnote {
+    font-size: 10px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .hero-art {
+    height: 370px;
+  }
+  .hero-halo {
+    width: 290px;
+    height: 290px;
+  }
+  .hero-poli {
+    inset: 5px -15% 0 -5%;
+    width: 120%;
+    max-width: 120%;
+    height: 108%;
+  }
+  .hello-sticker {
+    right: -3px;
+    top: 0;
+    font-size: 30px !important;
+    padding: 0 19px;
+  }
+  .poli-sticker {
+    bottom: 20px;
+    left: -15px;
+    font-size: 9px;
+    padding: 10px;
+  }
+  .little-flower {
+    bottom: 0;
+    font-size: 45px;
+    right: -10px;
+  }
+  .poli-caption {
+    bottom: -35px;
+    right: 0;
+    font-size: 11px;
+  }
+  .star-one {
+    font-size: 44px;
+    left: -12px;
+    top: 50px;
+  }
+  .star-two {
+    font-size: 31px;
+    right: -10px;
+  }
+  .hero-orbit {
+    inset: 20px -10px;
+  }
+  .hero-bottom {
+    margin: 0 30px;
+    font-size: 8px;
+  }
+  .section-wrap {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+  .languages-section {
+    padding-top: 55px;
+    padding-bottom: 60px;
+  }
+  .section-heading {
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .section-heading h2 {
+    font-size: 36px;
+  }
+  .section-heading .eyebrow {
+    font-size: 9px;
+  }
+  .section-heading > p {
+    font-size: 12px;
+    max-width: 235px;
+    padding-top: 21px;
+  }
+  .language-grid {
+    gap: 14px;
+  }
+  .language-card {
+    padding: 17px 14px;
+  }
+  .world-frame {
+    height: 150px;
+    margin: 0 -7px;
+  }
+  .language-card-top .native {
+    font-size: 22px;
+  }
+  .course-number {
+    font-size: 8px;
+  }
+  .language-card-bottom {
+    align-items: flex-start;
+  }
+  .language-card h3 {
+    font-size: 25px;
+  }
+  .language-card p {
+    font-size: 10px;
+    max-width: 120px;
+    min-height: 34px;
+  }
+  .round-arrow {
+    min-width: 31px;
+    height: 31px;
+  }
+  .round-arrow svg {
+    width: 19px;
+  }
+  .language-card-meta {
+    font-size: 7px;
+    gap: 8px;
+  }
+  .how-section {
+    padding-top: 70px;
+    padding-bottom: 65px;
+    gap: 35px;
+  }
+  .how-intro h2 {
+    font-size: 41px;
+  }
+  .how-intro > p {
+    font-size: 13px;
+  }
+  .how-intro .eyebrow {
+    font-size: 9px;
+  }
+  .steps article {
+    gap: 14px;
+    padding: 22px 0;
+  }
+  .step-icon {
+    min-width: 43px;
+    height: 43px;
+  }
+  .steps h3 {
+    font-size: 18px;
+  }
+  .steps p {
+    font-size: 12px;
+  }
+  .step-label {
+    font-size: 8px;
+  }
+  .sample-section {
+    margin-left: 28px;
+    margin-right: 28px;
+    gap: 30px;
+    padding: 35px 25px;
+    grid-template-columns: 0.9fr 1.1fr;
+    margin-bottom: 65px;
+  }
+  .sample-copy h2 {
+    font-size: 35px;
+  }
+  .sample-copy > p {
+    font-size: 12px;
+  }
+  .pill {
+    font-size: 8px;
+    padding: 7px;
+  }
+  .sample-options {
+    gap: 6px;
+  }
+  .sample-option {
+    font-size: 10px;
+  }
+  .sample-option .native {
+    font-size: 22px;
+  }
+  .sample-card {
+    padding: 17px;
+  }
+  .sample-top span:last-child {
+    display: none;
+  }
+  .sample-card h3 {
+    font-size: 18px;
+  }
+  .sample-response {
+    font-size: 10px;
+  }
+  .handwritten {
+    font-size: 14px;
+    margin-left: 0;
+  }
+  .meet-inner {
+    gap: 25px;
+    padding-top: 50px;
+    padding-bottom: 50px;
+  }
+  .meet-copy h2 {
+    font-size: 43px;
+  }
+  .meet-copy p {
+    font-size: 13px;
+  }
+  .meet-copy .button {
+    font-size: 13px;
+    padding: 13px 17px;
+    gap: 12px;
+  }
+  .meet-art {
+    height: 330px;
+  }
+  .meet-circle {
+    width: 250px;
+    height: 250px;
+    top: 45px;
+  }
+  .speech-bubble {
+    font-size: 11px;
+    padding: 11px;
+    left: -5px;
+  }
+  .meet-art .deco-star {
+    font-size: 45px;
+    right: 10px;
+    bottom: 40px;
+  }
+  .closing h2 {
+    font-size: 49px;
+  }
+  .site-footer > p {
+    display: none;
+  }
+  .onboarding-page {
+    margin: 35px auto;
+    gap: 30px;
+    padding: 0 28px;
+    grid-template-columns: 0.8fr 1fr;
+  }
+  .onboard-art {
+    padding: 25px;
+  }
+  .onboard-art h2 {
+    font-size: 46px;
+  }
+  .onboard-world {
+    height: 260px;
+  }
+  .onboard-note {
+    font-size: 11px;
+  }
+  .onboard-content h1 {
+    font-size: 43px;
+  }
+  .onboard-content .lead {
+    font-size: 14px;
+  }
+  .course-facts p {
+    font-size: 11px;
+  }
+  .course-facts strong {
+    font-size: 13px;
+  }
+  .onboard-content > .eyebrow {
+    font-size: 8px;
+  }
+  .dashboard-aside {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .poli-tip {
+    display: none;
+  }
+  .dashboard-heading h1 {
+    font-size: 28px;
+  }
+  .dashboard-heading p {
+    font-size: 12px;
+  }
+  .stats-pills > span {
+    padding: 10px;
+    font-size: 14px;
+  }
+  .dashboard-heading {
+    gap: 15px;
+  }
+  .path-area {
+    max-width: 540px;
+  }
+  .map-poli {
+    left: 30px;
+  }
+  .map-banner h2 {
+    font-size: 28px;
+  }
+  .map-banner img {
+    width: 200px;
+    height: 185px;
+  }
+  .stop-label h3 {
+    font-size: 16px;
+  }
+  .stop-label p {
+    font-size: 12px;
+  }
+  .dashboard {
+    padding-top: 30px;
+  }
+  .settings-page h1 {
+    font-size: 38px;
+  }
+}

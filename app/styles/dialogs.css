@@ -1,0 +1,53 @@
+.dashboard-heading .eyebrow {
+  font-size: 10px;
+}
+.onboard-art .eyebrow {
+  font-size: 10px;
+}
+[data-slot='alert-dialog-content'] {
+  font-family: 'Outfit', sans-serif;
+  padding: 25px !important;
+  border-radius: 20px !important;
+  max-width: 440px !important;
+  gap: 20px !important;
+}
+[data-slot='alert-dialog-title'] {
+  font-size: 23px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.03em;
+}
+[data-slot='alert-dialog-description'] {
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  margin-top: 12px;
+}
+[data-slot='alert-dialog-footer'] {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: none !important;
+  border: 0 !important;
+  gap: 12px !important;
+}
+[data-slot='alert-dialog-action'],
+[data-slot='alert-dialog-cancel'] {
+  min-height: 44px !important;
+  padding: 12px 17px !important;
+  border-radius: 10px !important;
+  font-size: 13px !important;
+}
+[data-slot='alert-dialog-action'] {
+  background: var(--purple);
+  color: white;
+}
+.locked-message {
+  text-align: center;
+  padding: 60px 30px;
+}
+.locked-message h1 {
+  margin: 15px 0;
+}
+.locked-message p {
+  margin: 15px 0 25px;
+  color: #8b759b;
+}

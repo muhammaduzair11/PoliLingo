@@ -1,0 +1,145 @@
+@media (max-width: 1100px) {
+  .section-wrap {
+    padding-left: 38px;
+    padding-right: 38px;
+  }
+  .header-inner {
+    padding: 20px 38px;
+  }
+  .hero-inner {
+    padding: 62px 40px 55px;
+  }
+  .hero h1 {
+    font-size: 72px;
+  }
+  .hero-art {
+    height: 445px;
+  }
+  .hero-halo {
+    width: 350px;
+    height: 350px;
+  }
+  .hero-poli {
+    inset: -12px -3% 0 0;
+    width: 104%;
+    height: 106%;
+  }
+  .hero-bottom {
+    margin: 0 40px;
+  }
+  .hero-copy .eyebrow {
+    font-size: 9px;
+  }
+  .hero-copy > p {
+    font-size: 15px;
+  }
+  .poli-sticker {
+    left: -6px;
+    bottom: 51px;
+  }
+  .poli-caption {
+    right: 30px;
+  }
+  .language-card {
+    padding: 18px;
+  }
+  .world-frame {
+    height: 185px;
+  }
+  .language-card p {
+    font-size: 11px;
+  }
+  .language-card h3 {
+    font-size: 29px;
+  }
+  .language-card-meta {
+    font-size: 8px;
+  }
+  .how-section {
+    gap: 55px;
+  }
+  .sample-section {
+    margin-left: 38px;
+    margin-right: 38px;
+    padding: 40px;
+    gap: 35px;
+  }
+  .sample-copy h2 {
+    font-size: 43px;
+  }
+  .sample-card {
+    padding: 20px;
+  }
+  .sample-card h3 {
+    font-size: 19px;
+  }
+  .sample-top {
+    font-size: 8px;
+  }
+  .meet-copy h2 {
+    font-size: 52px;
+  }
+  .meet-art {
+    height: 370px;
+  }
+  .meet-circle {
+    width: 285px;
+    height: 285px;
+    left: 0;
+  }
+  .onboarding-page {
+    gap: 45px;
+    padding: 0 38px;
+  }
+  .onboard-art {
+    padding: 30px;
+  }
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr) 250px;
+    gap: 23px;
+  }
+  .dashboard-heading {
+    align-items: flex-start;
+  }
+  .dashboard-heading h1 {
+    font-size: 30px;
+  }
+  .stats-pills small {
+    display: none;
+  }
+  .path-area {
+    padding-left: 35px;
+    padding-right: 30px;
+  }
+  .map-poli {
+    width: 95px;
+    left: 5px;
+    top: 29px;
+  }
+  .map-poli img {
+    width: 100px;
+    height: 110px;
+  }
+  .map-poli > span {
+    font-size: 8px;
+  }
+  .stop-label h3 {
+    font-size: 14px;
+  }
+  .stop-label p {
+    font-size: 10px;
+  }
+  .map-banner {
+    padding: 24px;
+  }
+  .map-banner h2 {
+    font-size: 24px;
+  }
+  .map-banner img {
+    width: 160px;
+    height: 170px;
+  }
+  .site-footer {
+    padding: 30px 38px;
+  }
+}

@@ -1,0 +1,131 @@
+.section-wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-left: 64px;
+  padding-right: 64px;
+}
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1.6;
+}
+.purple {
+  color: var(--purple);
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  min-height: 56px;
+  border: 1.5px solid transparent;
+  padding: 16px 25px;
+  border-radius: 13px;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.3;
+  box-shadow: 0 4px 0 #0002;
+}
+.button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 7px 0 #0002;
+}
+.button-small {
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  gap: 16px;
+}
+.button-yellow {
+  background: var(--yellow);
+  color: var(--ink);
+  border-color: #ffe58f;
+  box-shadow: 0 4px 0 #d2a32c;
+}
+.button-ink {
+  background: var(--ink);
+  color: #fff;
+}
+.button-purple {
+  background: var(--purple);
+  color: white;
+  border-color: #7241c7;
+  box-shadow: 0 4px 0 #3b197b;
+}
+.button-outline {
+  background: transparent;
+  color: var(--purple);
+  border-color: var(--border);
+  box-shadow: 0 3px 0 #ece6f3;
+}
+.button:disabled {
+  background: #e7e1eb;
+  color: #93849f;
+  box-shadow: none;
+  border-color: transparent;
+  transform: none;
+}
+.full-width {
+  width: 100%;
+}
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--purple);
+}
+.text-link:hover {
+  gap: 16px;
+}
+.quiet-link {
+  display: block;
+  text-align: center;
+  color: #786689;
+  font-size: 14px;
+  margin-top: 22px;
+}
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+}
+.icon-button:hover {
+  background: #7852ab14;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  font-size: 27px;
+  letter-spacing: -1.3px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.brand > span:not(.brand-icon):not(.brand-dot) {
+  font-weight: 500;
+}
+.brand-icon {
+  background: var(--purple);
+  color: white;
+  width: 35px;
+  height: 35px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 11px;
+  margin-right: 8px;
+  transform: rotate(-8deg);
+}
+.brand-dot {
+  font-size: 10px;
+  align-self: flex-start;
+  margin: 7px 0 0 3px;
+  letter-spacing: 0;
+}

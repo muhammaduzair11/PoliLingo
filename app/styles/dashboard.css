@@ -1,0 +1,396 @@
+.dashboard {
+  padding-top: 42px;
+  padding-bottom: 65px;
+}
+.dashboard-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 25px;
+  align-items: center;
+  margin-bottom: 30px;
+}
+.dashboard-heading h1 {
+  font-size: 37px;
+  margin: 10px 0;
+}
+.dashboard-heading p {
+  font-size: 14px;
+  color: #897593;
+}
+.stats-pills {
+  display: flex;
+  gap: 10px;
+}
+.stats-pills > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 14px;
+  border: 1px solid #e6deec;
+  border-radius: 12px;
+  background: white;
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.stats-pills svg {
+  width: 18px;
+  color: #df8239;
+}
+.stats-pills > span:last-child svg {
+  color: var(--purple);
+  fill: #dfd0f4;
+}
+.stats-pills small {
+  font-size: 10px;
+  font-weight: 400;
+  color: #85718e;
+}
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 292px;
+  gap: 30px;
+}
+.learning-map {
+  background: #fff;
+  border: 1px solid #e5ddeb;
+  border-radius: 23px;
+  overflow: hidden;
+}
+.course-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5ddeb;
+  padding: 12px 18px;
+  gap: 10px;
+}
+.course-tabs a {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  padding: 8px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #8f7f9c;
+}
+.course-tabs .native {
+  font-size: 20px;
+}
+.course-tabs a.active {
+  background: #eee4fc;
+  color: var(--purple);
+}
+.course-tabs a:hover {
+  background: #f5f0fa;
+}
+.map-banner {
+  padding: 24px 30px;
+  position: relative;
+  overflow: hidden;
+  min-height: 146px;
+  display: flex;
+  align-items: center;
+}
+.map-banner h2 {
+  font-size: 29px;
+  margin: 9px 0;
+}
+.map-banner .eyebrow {
+  font-size: 9px;
+}
+.map-banner p {
+  font-size: 12px;
+  color: #615b70;
+}
+.map-banner > div {
+  position: relative;
+  z-index: 1;
+  max-width: 72%;
+}
+.map-banner img {
+  position: absolute;
+  width: 200px;
+  height: 190px;
+  right: -16px;
+  bottom: -20px;
+  opacity: 0.9;
+}
+.path-area {
+  position: relative;
+  padding: 30px 60px 24px;
+  min-height: 535px;
+  max-width: 660px;
+  margin: auto;
+  background: radial-gradient(circle, #dacbe580 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.path-line {
+  position: absolute;
+  left: 18%;
+  top: 40px;
+  width: 60%;
+  height: 420px;
+  fill: none;
+  stroke: #e6def0;
+  stroke-width: 11px;
+  stroke-linecap: round;
+  stroke-dasharray: 1 22;
+  z-index: 0;
+}
+.lesson-stop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 34px;
+  min-height: 90px;
+  z-index: 1;
+}
+.stop-0 {
+  margin-left: 25%;
+}
+.stop-1 {
+  margin-left: 9%;
+}
+.stop-2 {
+  margin-left: 29%;
+}
+.path-node {
+  width: 78px;
+  min-width: 78px;
+  height: 74px;
+  border-radius: 27px;
+  border: 3px solid #ffffff6b;
+  background: var(--purple);
+  color: white;
+  box-shadow:
+    0 7px 0 #412078,
+    0 11px 0 #ece4f5;
+  transform: rotate(-8deg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.path-node:hover:not(:disabled) {
+  transform: translateY(-4px) rotate(0deg);
+  box-shadow:
+    0 10px 0 #412078,
+    0 14px 0 #ece4f5;
+}
+.path-node.completed {
+  background: #58a578;
+  box-shadow:
+    0 7px 0 #387250,
+    0 11px 0 #e7f1eb;
+}
+.path-node.locked {
+  background: #e7e0ed;
+  color: #b9a8c5;
+  box-shadow:
+    0 7px 0 #cfc1da,
+    0 11px 0 #f4eef7;
+  border-color: #f4eff9;
+}
+.stop-label h3 {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+  max-width: 180px;
+}
+.stop-label p {
+  font-size: 11px;
+  color: #9a89a5;
+  margin-top: 4px;
+}
+.start-here {
+  font-size: 8px;
+  letter-spacing: 0.09em;
+  font-weight: 700;
+  color: var(--purple);
+  background: #f1e8fe;
+  padding: 4px 6px;
+  border-radius: 5px;
+  display: inline-block;
+  margin-bottom: 7px;
+}
+.map-poli {
+  position: absolute;
+  left: 15px;
+  top: 24px;
+  width: 120px;
+  z-index: 2;
+  pointer-events: none;
+}
+.map-poli img {
+  height: 125px;
+  width: 125px;
+}
+.map-poli > span {
+  position: absolute;
+  bottom: -22px;
+  left: -3px;
+  font-size: 10px;
+  background: #fff1b2;
+  white-space: nowrap;
+  padding: 7px 9px;
+  border-radius: 7px;
+  transform: rotate(-7deg);
+}
+.path-trophy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 13px;
+  margin-top: 27px;
+  color: #c6b3d4;
+  position: relative;
+  z-index: 1;
+}
+.path-trophy span {
+  font-size: 12px;
+  color: #947fa3;
+}
+.path-trophy.earned {
+  color: #d59a25;
+}
+.path-trophy.earned span {
+  color: var(--purple);
+  font-weight: 600;
+}
+.map-footer {
+  border-top: 1px solid #efe9f4;
+  padding: 19px 30px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.map-footer > [data-slot='progress'] {
+  flex: 1;
+}
+.map-footer > span {
+  font-size: 11px;
+  color: #8c7a98;
+}
+.dashboard-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.daily-card,
+.badge-card {
+  border: 1px solid #e5ddeb;
+  background: white;
+  padding: 23px;
+  border-radius: 19px;
+}
+.card-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.card-title h3 {
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+.daily-card .card-title svg {
+  color: #d6862d;
+}
+.daily-card > p {
+  font-size: 12px;
+  color: #8e7a9b;
+  margin-top: 8px;
+}
+.goal-dots {
+  display: flex;
+  gap: 12px;
+  margin: 23px 0 17px;
+}
+.goal-dots > span {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 15px;
+  border: 2px dashed #ddd0e5;
+  color: #c5afd3;
+}
+.goal-dots > span.filled {
+  background: #ffdf7c;
+  border: 2px solid #f4c44b;
+  color: #7e5423;
+}
+.daily-card > strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.daily-card > a {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--purple);
+  font-size: 11px;
+  margin-top: 14px;
+}
+.poli-tip {
+  background: #ede5f7;
+  border: 1px solid #e2d5f2;
+  border-radius: 19px;
+  padding: 16px 23px 24px;
+  text-align: center;
+}
+.poli-tip img {
+  height: 150px;
+  width: 170px;
+  margin: auto;
+}
+.poli-tip h3 {
+  font-size: 19px;
+  margin-top: 2px;
+}
+.poli-tip p {
+  font-size: 12px;
+  color: #806d90;
+  margin-top: 10px;
+}
+.poli-tip > span {
+  display: block;
+  font-size: 10px;
+  color: #9c85ad;
+  margin-top: 12px;
+}
+.badge-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 22px 0 18px;
+  gap: 12px;
+}
+.badge-row > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #9b88a7;
+}
+.badge-row > div > span {
+  width: 51px;
+  height: 54px;
+  background: #f0eaf5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 16px 16px 23px 23px;
+}
+.badge-row > div.earned {
+  color: var(--purple);
+}
+.badge-row small {
+  font-size: 10px;
+}
+.badge-card > p {
+  font-size: 11px;
+  color: #9b88a7;
+}

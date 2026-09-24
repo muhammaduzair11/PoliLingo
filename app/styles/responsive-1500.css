@@ -1,0 +1,12 @@
+@media (min-width: 1500px) {
+  .hero-inner {
+    min-height: 730px;
+  }
+  .hero-art {
+    height: 550px;
+  }
+  .hero-halo {
+    width: 480px;
+    height: 480px;
+  }
+}
