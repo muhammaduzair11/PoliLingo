@@ -198,8 +198,11 @@ explicit user gesture, gated by a settings/header toggle. Nothing autoplay.
 ## 8. Responsive strategy
 
 Type is fluid via `clamp()`; layout refinements land in media queries at
-1500px, 1100px, 800px, 580px and 350px — one file per breakpoint in `app/styles/`
-(`responsive-*.css`), with late narrow-viewport fixes in `refinements.css`.
+1500px, 1100px, 800px, 580px and 350px. The first four each have a file in
+`app/styles/` (`responsive-*.css`). **Check `refinements.css` before editing one of
+them:** it is imported last and holds the only 350px block, a second 800px and
+580px block, and a 581–1100px tablet range, all of which win over the matching
+`responsive-*.css` rules.
 
 - Language cards collapse 3 → 1 column; the world frame keeps its bleed.
 - The hero stacks copy above art; display type scales down but never below
