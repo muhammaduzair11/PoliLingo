@@ -1,8 +1,8 @@
 {
   "format": "polilingo.learner@1",
   "schemaVersion": 1,
-  "release": "content@2026.09.dev+f76adfa",
-  "commit": "f76adfaeca572bbc0e1c3b9a565dc24a32c6497e",
+  "release": "content@2026.09.1",
+  "commit": "4ffac978c74d89384990807c08b40fe0573d717b",
   "contentHash": "sha256-72e4f8ef514ca10c7d72bcebed4c0ec3c6fdd59de6227bcae7f6b503ef29824f",
   "languages": [
     {
