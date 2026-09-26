@@ -39,7 +39,7 @@ server to fall over.
 | `/onboarding/[course]`      | Dynamic   | Two-step course introduction and commitment                       |
 | `/learn/[course]`           | Dynamic   | Learning map: lesson path, streak, badges                         |
 | `/lesson/[course]/[lesson]` | Dynamic   | Study cards plus eight exercises                                  |
-| `/settings`                 | Static    | Sound, motion, goal and reset controls                            |
+| `/settings`                 | Static    | Sound, motion, goal, export/import and reset controls             |
 | `/_not-found`               | Static    | Fallback                                                          |
 
 Course identifiers are `pashto`, `hindko` and `urdu`, mapped in `lib/courses.ts`.
@@ -52,14 +52,48 @@ choosing one for them.
 
 ## 3. State model
 
-All learner progress is in `localStorage` under `polilingo.progress.v1`, managed by
-`components/learning-provider.tsx`. There are no accounts and no synchronisation.
+All learner progress is in `localStorage` under `polilingo.progress.v2`, managed by
+`components/learning-provider.tsx`. There are no accounts and no synchronisation. The
+pre-v0.2 key, `polilingo.progress.v1`, is copied verbatim to
+`polilingo.progress.v1.bak-<date>` once, before the v2 key is first written, and is never
+written again; its reader is never deleted.
+
+The v1 key is still read on every load. Builds before v0.2 write only that key, so whatever
+a learner adds there during a rollback, or in a tab left open from before, is merged into
+the v2 state with `mergeProgress()` on the next load. The v2 state records a fingerprint of
+the v1 blob it last merged (`v1Fingerprint`), so an unchanged v1 blob is not merged again.
+A v1 blob this build cannot read is left in place and not recorded, so a later build that
+can read it still merges it. A reset keeps the fingerprint, the v1 key and its backups, so
+it stays reset unless an older build writes to the v1 key again.
+
+A blob in the v2 key from a newer app version is kept verbatim under
+`polilingo.progress.unknown-<version>` before anything replaces it. The learner then sees
+their pre-v0.2 progress from the v1 key if there is any, otherwise a fresh start.
+
+The provider writes the v2 key only after hydration succeeds. If storage cannot be read, or
+the backup or the unknown-version stash cannot be written, the session runs in memory with
+the storage warning showing, and the v2 key is not written until a later load succeeds.
 
 Pure state logic lives in `lib/progress.ts` and contains no React and no browser APIs, so
 it can be tested directly:
 
-- **Hydration** — `initialState()` and `parseState(raw)` load tolerantly, falling back to
-  defaults rather than throwing on corrupt data
+- **Hydration** — `parseState(raw)` reads a v1 or v2 blob and always returns v2, falling
+  back to `initialState()` rather than throwing on corrupt data. `loadProgress()` decides
+  the backup, the unknown-version stash and the v1 merge without touching storage.
+  `hydrateProgress(storage, today, newId)` runs it against any Storage-like object, makes
+  those writes and says whether the session may persist, so every rule is unit-tested with
+  a stub storage. Device and lesson-run IDs come from `randomId()` in `lib/random-id.ts`,
+  which still works where `crypto.randomUUID` is missing, such as plain http on a LAN
+  address
+- **Export and import** — `exportProgress()` writes a dated envelope; `importProgress()`
+  accepts an envelope or a bare blob of either version and merges it with
+  `mergeProgress()`, the ADR-0010 algebra: sets grow, per-day counts take the maximum,
+  ledgers append, XP takes the maximum, preferences stay the learner's own. For each lesson
+  a finished run beats an unfinished one, a local unfinished run that has already been
+  rewarded gives way to the other side's newer run, and otherwise the local run stays.
+  Importing the same file twice changes nothing
+- **Reset** — `resetProgress(state)` is a clean state that keeps the device ID and the v1
+  fingerprint
 - **Sessions** — `newSession(course, lesson, id)` takes a caller-supplied ID, which is what
   prevents a refresh from awarding XP twice
 - **Recording** — `recordAnswer(session, correct)` queues mistakes and ignores duplicate
@@ -70,8 +104,9 @@ it can be tested directly:
 - **Streaks** — `streak(activity, now)` and `localDate(date)` compute calendar streaks in
   the learner's browser-local timezone
 
-`tests/learning.test.mjs` covers serialisation recovery and idempotent rewards. New state
-rules belong in this file as pure functions, with a test.
+`tests/learning.test.mjs` covers serialisation recovery and idempotent rewards, and tests
+the migration against a v1 blob written by the MVP's own code (`tests/fixtures/`). New
+state rules belong in this file as pure functions, with a test.
 
 > This module is the highest-consequence code in the repository. A rendering bug is
 > visible and fixable; a wrongly reset streak is gone. It is flagged in `CODEOWNERS` for

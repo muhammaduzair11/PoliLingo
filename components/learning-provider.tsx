@@ -9,11 +9,13 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  hydrateProgress,
   initialState,
-  parseState,
+  localDate,
   STORAGE_KEY,
   type ProgressState,
 } from '@/lib/progress';
+import { randomId } from '@/lib/random-id';
 type Context = {
   state: ProgressState;
   ready: boolean;
@@ -22,27 +24,45 @@ type Context = {
   play: (correct: boolean) => void;
 };
 const LearningContext = createContext<Context | null>(null);
+/** `localStorage`, or null when the browser blocks even reaching it. */
+function browserStorage(): Storage | null {
+  try {
+    return localStorage;
+  } catch {
+    return null;
+  }
+}
 export function LearningProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState(initialState);
   const [ready, setReady] = useState(false);
   const [storageError, setStorageError] = useState(false);
   const audio = useRef<AudioContext | null>(null);
+  // False until hydration says the live key may be written. It stays false for
+  // the whole session when storage could not be read or the backup could not
+  // be made, so a failed load can never save a blank state over progress.
+  const canPersist = useRef(false);
   useEffect(() => {
-    try {
-      setState(parseState(localStorage.getItem(STORAGE_KEY)));
-    } catch {
-      setStorageError(true);
-    }
+    // All of the first-load rules live in hydrateProgress(): it makes the
+    // backup and stash writes itself, before the live key is ever written.
+    const { state, persist } = hydrateProgress(
+      browserStorage(),
+      localDate(),
+      randomId,
+    );
+    canPersist.current = persist;
+    setState(state);
+    setStorageError(!persist);
     setReady(true);
   }, []);
   useEffect(() => {
     if (!ready) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      setStorageError(false);
-    } catch {
-      setStorageError(true);
-    }
+    if (canPersist.current)
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        setStorageError(false);
+      } catch {
+        setStorageError(true);
+      }
     document.documentElement.dataset.motion = state.prefs.reducedMotion
       ? 'reduced'
       : 'full';

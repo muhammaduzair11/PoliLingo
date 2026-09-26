@@ -5,7 +5,7 @@ Validated locally on 2026-09-09.
 ## Automated checks
 
 - TypeScript no-emit check and application lint.
-- Nine Node tests cover all 72 exercises, all three course unlock sequences, incorrect-answer review, answer ordering, pair matching, reward idempotency, 5-XP replays, local calendar streaks, restoring unfinished feedback, malformed storage, and reset defaults.
+- Twenty-five Node tests cover all 72 exercises, all three course unlock sequences, incorrect-answer review, answer ordering, pair matching, reward idempotency, 5-XP replays, local calendar streaks, restoring unfinished feedback, malformed storage, reset defaults, the v1-to-v2 migration of a blob written by the MVP's own code and its verbatim backup, merging back a second blob the MVP's own code wrote to v1 during a rollback, a lesson finished and started again elsewhere replacing the unfinished copy so it can still be finished, a v1 blob this build cannot read being left for a build that can, a reset staying reset across reloads, unknown-version stashing with and without a v1 blob beside it, hydration that never writes the live key after a failed backup or stash, storage that cannot be read at all or fails part-way through reading, an ID generator that throws or has no `crypto.randomUUID`, and the export/import merge and its idempotency.
 - Next.js production build completes with all six route patterns.
 - Lint excludes the untouched generated component catalog and its mobile helper. The two client state modules document their deliberate post-hydration effects; the application does not enable React Compiler.
 

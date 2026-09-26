@@ -74,6 +74,12 @@ Open a pull request either way. The branch ruleset applies during an incident to
 documented solo-merge bypass if the other developer is unreachable, and say in the pull
 request that you did and why.
 
+**Learner progress earned during a rollback is merged back on roll-forward.** Builds before
+v0.2 read and write only `polilingo.progress.v1`, so during a rollback past v0.2 learners
+see their progress as it was before v0.2, and what they add goes into that key. Their
+first load after rolling forward merges it into `polilingo.progress.v2`: lessons and streak
+days are combined, and XP shows the higher of the two totals.
+
 ---
 
 ## When the build fails on `main` but preview passed
@@ -105,9 +111,15 @@ baked in at build time, so a content fix needs a content release _and_ a redeplo
 app.
 
 **One learner's progress is wrong, nobody else's.** Their `localStorage` state. Ask for
-the output of `localStorage.getItem('polilingo.progress.v1')` from the browser console —
-it contains only their own learning progress, no personal details. Nearly every state bug
-is solved in one step from that blob.
+the output of the console one-liner in the bug form. It gives `polilingo.progress.v2`
+without the device ID and account fields — what is left is only their own learning
+progress, no personal details. Where v0.2 has not saved yet, for example because the first
+load could not make the backup, it gives `polilingo.progress.v1` instead, and `{}` when
+nothing is saved. For a migration or merge bug, also ask for
+`localStorage.getItem('polilingo.progress.v1')`: v0.2 never writes that key, and it holds
+no device ID, so it can be pasted as it is. A learner from before v0.2 also holds a
+verbatim copy of their old state under `polilingo.progress.v1.bak-<date>`. Nearly every
+state bug is solved in one step from those blobs.
 
 ---
 

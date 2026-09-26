@@ -22,6 +22,7 @@ import {
   streak,
   unlocked,
 } from '@/lib/progress';
+import { randomId } from '@/lib/random-id';
 import { Art, Poli } from './art';
 import { Header, Footer } from './site-chrome';
 import { Loading, NotFoundView } from './status-views';
@@ -58,7 +59,7 @@ export function Dashboard({ courseId }: { courseId?: string }) {
         ...s,
         sessions: {
           ...s.sessions,
-          [key]: newSession(course!.id, lesson, crypto.randomUUID()),
+          [key]: newSession(course!.id, lesson, randomId()),
         },
       }));
     router.push(`/lesson/${course!.id}/${lesson}`);
