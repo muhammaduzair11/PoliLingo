@@ -777,10 +777,12 @@ export function hydrateProgress(
  * release it was first completed in. An older file's `true` imports as
  * MVP_RELEASE.
  *
- * TODO(D2): `state.importedIntoAccounts` is in the file only because the whole
- * state is, and it is not part of this format's promise. mergeProgress()
- * unions it on import, so a file can make this device claim account merges it
- * never made. Decide before sign-in whether an export carries it at all.
+ * The file keeps the device's account bookkeeping (`userId`, `lastSyncedAt`,
+ * `importedIntoAccounts`), because it is the state exactly as stored and a
+ * faithful backup of it. It is not part of what an import brings in:
+ * mergeProgress() keeps the importing device's own, so a file can never make
+ * a device claim account merges it did not make (lib/sync.ts accountChoice()
+ * reads them).
  */
 export function exportProgress(
   state: ProgressState,
@@ -826,14 +828,10 @@ export function mergeProgress(
     )
       sessions[key] = theirs;
   }
-  // TODO(D2): an imported file's accounts are not this device's merges. Before
-  // sign-in reads this list, stop unioning it here (see exportProgress()).
-  const importedIntoAccounts = [
-    ...local.importedIntoAccounts,
-    ...incoming.importedIntoAccounts.filter(
-      (a) => !local.importedIntoAccounts.includes(a),
-    ),
-  ];
+  // The account fields (`userId`, `lastSyncedAt`, `importedIntoAccounts`)
+  // stay local with the rest of the device's own: an imported file's accounts
+  // are not merges this device made. Only lib/sync.ts applySnapshot() adds
+  // an account, after a sync to it succeeds.
   return {
     ...local,
     selected: local.selected ?? incoming.selected,
@@ -842,7 +840,6 @@ export function mergeProgress(
     activity,
     rewarded,
     sessions,
-    importedIntoAccounts,
   };
 }
 /** Why a file did not import. */
