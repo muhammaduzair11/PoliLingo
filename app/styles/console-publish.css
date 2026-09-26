@@ -4,3 +4,317 @@
  * tokens.css and the console kit's classes from console.css; semantic class
  * names only.
  */
+
+.publish-page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.publish-page > .console-page-header {
+  margin-bottom: 0;
+}
+
+/* Live now → next release --------------------------------------------- */
+
+.publish-status {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.25fr);
+  align-items: stretch;
+  gap: 14px;
+}
+.publish-status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 22px 24px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+}
+.publish-status-card p {
+  margin: 0;
+}
+.publish-status-next {
+  background: #f8f4ff;
+  border: 1.5px solid #cdb8f5;
+}
+.publish-status-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.publish-status-next .publish-status-label {
+  color: var(--purple);
+}
+.publish-status-name {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.publish-status-meta {
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+.publish-status-arrow {
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--purple);
+}
+.publish-status-arrow::before {
+  content: '→';
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* The publish control and its outcome */
+.publish-control {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 10px;
+}
+.publish-control-note {
+  font-weight: 600;
+  color: #1d5a31;
+}
+.publish-control .console-notice {
+  align-self: stretch;
+}
+.publish-outcome {
+  align-self: stretch;
+}
+.publish-outcome:empty {
+  display: none;
+}
+.publish-optional {
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+
+/* Sections ------------------------------------------------------------- */
+
+.publish-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.publish-section-heading h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.publish-section-heading p {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+.publish-groups,
+.publish-carried,
+.publish-countersign {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.publish-carried-intro {
+  margin: 0;
+  padding: 14px 16px;
+  background: #fffdf9;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  line-height: 1.55;
+}
+
+/* Table cells ------------------------------------------------------------ */
+
+.publish-lesson {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.publish-lesson-title {
+  font-weight: 600;
+}
+.publish-lesson-meta {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.publish-lesson .native-text {
+  font-size: 20px;
+  line-height: 1.6;
+}
+.publish-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.publish-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.publish-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0 0 0 16px;
+  line-height: 1.45;
+}
+.publish-reasons li::marker {
+  color: var(--purple);
+}
+.publish-release-name {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.publish-note {
+  display: -webkit-box;
+  margin-top: 2px;
+  font-size: 13px;
+  max-width: 36ch;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  overflow-wrap: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+.publish-muted {
+  color: var(--muted-foreground);
+}
+.publish-link {
+  color: var(--purple);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Loading -------------------------------------------------------------- */
+
+.publish-loading-text {
+  display: block;
+  margin: 0;
+  color: var(--muted-foreground);
+}
+.publish-skeleton {
+  min-height: 150px;
+  background: linear-gradient(90deg, #f3eef8 0%, #faf7fd 50%, #f3eef8 100%);
+  background-size: 200% 100%;
+  border-color: transparent;
+  animation: publish-shimmer 1.4s ease-in-out infinite;
+}
+.publish-skeleton-table {
+  min-height: 180px;
+  border-radius: var(--radius);
+}
+@keyframes publish-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+/* motion.css turns animations off under both reduced-motion switches;
+   this keeps the placeholder still even if it loads first. */
+@media (prefers-reduced-motion: reduce) {
+  .publish-skeleton {
+    animation: none;
+  }
+}
+html[data-motion='reduced'] .publish-skeleton {
+  animation: none;
+}
+
+/* Narrow screens --------------------------------------------------------- */
+
+@media (max-width: 800px) {
+  .publish-status {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .publish-status-arrow {
+    justify-self: center;
+    width: 34px;
+    height: 34px;
+  }
+  .publish-status-arrow::before {
+    content: '↓';
+  }
+}
+
+@media (max-width: 580px) {
+  .publish-page {
+    gap: 22px;
+  }
+  .publish-status-card {
+    padding: 18px;
+  }
+  .publish-status-name {
+    font-size: 21px;
+  }
+  .publish-control,
+  .publish-control .console-button {
+    align-self: stretch;
+    width: 100%;
+  }
+  /* Stacked table cards: the lesson and its chips sit right, like other values. */
+  .data-table td .publish-lesson {
+    align-items: flex-end;
+    text-align: right;
+  }
+  .data-table td .publish-chips {
+    justify-content: flex-end;
+  }
+  /* Reasons read better as a paragraph under their label. */
+  .data-table td:has(.publish-reasons) {
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+  }
+}
+
+/* Release history ------------------------------------------------------- */
+
+.publish-history {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Four figures: one row when there's room, otherwise two by two. */
+.publish-page .console-stat-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 1000px) {
+  .publish-page .console-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.publish-history .console-button {
+  white-space: nowrap;
+}
