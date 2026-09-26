@@ -8,6 +8,7 @@ import {
   Pause,
   Download,
   Upload,
+  UserRound,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -36,6 +37,8 @@ import {
   resetProgress,
 } from '@/lib/progress';
 import { Header, Footer } from './site-chrome';
+import { accountsEnabled } from './account/accounts-enabled';
+import { useAccount } from '@/lib/account-store';
 import { Loading } from './status-views';
 function SettingRow({
   icon,
@@ -57,6 +60,45 @@ function SettingRow({
       </div>
       {children}
     </div>
+  );
+}
+/**
+ * Signed out: an invitation to keep progress on every device. Signed in:
+ * the email and a link to the account page. Nothing while the build has no
+ * accounts.
+ */
+function AccountRow() {
+  const account = useAccount();
+  if (!accountsEnabled) return null;
+  const signedIn = account.status === 'signed-in';
+  return (
+    <section className="settings-card account-setting" aria-label="Account">
+      <SettingRow
+        icon={<UserRound />}
+        title={signedIn ? 'Your account' : 'Save your progress'}
+        description={
+          account.status === 'unknown'
+            ? 'Checking…'
+            : signedIn
+              ? (account.email ?? 'Signed in')
+              : 'Sign in to keep your progress on every device.'
+        }
+      >
+        {account.status === 'anonymous' && (
+          <Link
+            className="button button-small button-purple"
+            href="/sign-in?next=%2Fsettings"
+          >
+            Sign in
+          </Link>
+        )}
+        {signedIn && (
+          <Link className="button button-small button-outline" href="/account">
+            Manage
+          </Link>
+        )}
+      </SettingRow>
+    </section>
   );
 }
 export function Settings() {
@@ -122,6 +164,7 @@ export function Settings() {
         <p className="lead">
           A few little things to make this feel more like you.
         </p>
+        <AccountRow />
         <section className="settings-card">
           <SettingRow
             icon={<Volume2 />}
