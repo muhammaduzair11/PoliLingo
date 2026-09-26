@@ -1,0 +1,74 @@
+'use client';
+import { ConfirmAction } from '@/components/console/confirm-action';
+import type { ActionResult } from '@/lib/console/action-result';
+
+type FormAction = (
+  previous: ActionResult<unknown> | null,
+  formData: FormData,
+) => Promise<ActionResult<unknown>>;
+
+/**
+ * Accept or Decline one suggested fix. Accept sends the fingerprint of the
+ * phrase as shown, so it applies only to the text on screen.
+ */
+export function SuggestionActions({
+  suggestionId,
+  fingerprint,
+  suggesterName,
+  canAccept,
+  accept,
+  decline,
+}: {
+  suggestionId: string;
+  fingerprint: string;
+  suggesterName: string;
+  canAccept: boolean;
+  accept: FormAction;
+  decline: FormAction;
+}) {
+  return (
+    <div className="console-actions review-suggestion-actions">
+      {canAccept && (
+        <ConfirmAction
+          action={accept}
+          triggerTone="primary"
+          triggerLabel="Accept"
+          title="Apply this fix?"
+          description={`The phrase changes exactly as shown, with ${suggesterName} as its author. It goes back into review, and another reviewer approves the new text.`}
+          confirmLabel="Apply fix"
+          pendingLabel="Applying…"
+          fields={{
+            suggestion_id: suggestionId,
+            seen_fingerprint: fingerprint,
+          }}
+        />
+      )}
+      <ConfirmAction
+        action={decline}
+        triggerTone="outline"
+        triggerLabel="Decline"
+        title="Decline this fix?"
+        description={`${suggesterName} sees your reason next to their suggestion.`}
+        confirmLabel="Decline"
+        pendingLabel="Declining…"
+        tone="danger"
+        fields={{ suggestion_id: suggestionId }}
+      >
+        <div className="console-field review-dialog-field">
+          <label className="console-label" htmlFor={`decline-${suggestionId}`}>
+            Reason
+          </label>
+          <textarea
+            id={`decline-${suggestionId}`}
+            name="reason"
+            rows={3}
+            maxLength={2000}
+            required
+            className="console-input"
+            placeholder="For example: the current meaning is the more common one."
+          />
+        </div>
+      </ConfirmAction>
+    </div>
+  );
+}
