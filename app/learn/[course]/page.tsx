@@ -1,4 +1,4 @@
-import { Dashboard } from '@/components/polilingo';
+import { Dashboard } from '@/components/dashboard';
 export default async function Page({
   params,
 }: {

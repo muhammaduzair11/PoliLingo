@@ -8,7 +8,7 @@ import {
   Play,
   Settings2,
 } from 'lucide-react';
-import { useLearning } from '@/components/learning-provider';
+import { useLearning } from './learning-provider';
 import { selectedCourse } from '@/lib/courses';
 export function Brand() {
   return (

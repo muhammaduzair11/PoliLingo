@@ -3,7 +3,7 @@
 The shipped visual language of PoliLingo: a warm, storybook-meets-product
 system built around a mascot companion, poster-scale typography and
 course-tinted surfaces. This document describes what is actually implemented
-in `app/globals.css`, `app/layout.tsx`, `components/polilingo.tsx` and
+in `app/globals.css`, `app/layout.tsx`, the `components/` modules and
 `lib/courses.ts`. Treat it as the source of truth for visual decisions; when
 this document and the code disagree, fix the document.
 
@@ -102,7 +102,7 @@ change alone.
 ### Script handling
 
 Native-script runs are always rendered through the `Native` component in
-`components/polilingo.tsx`, which sets `lang` and `dir="rtl"` on the element.
+`components/native.tsx`, which sets `lang` and `dir="rtl"` on the element.
 Never paste Arabic-script text into a Latin-text node; screen readers and
 shaping both depend on the attributes.
 

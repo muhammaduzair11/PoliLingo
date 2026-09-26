@@ -83,7 +83,7 @@ Almost always one of:
 - **A dependency resolved differently.** `npm ci` in CI uses the lockfile exactly; a local
   `npm install` may not. Check `package-lock.json` is committed and current.
 - **A case-sensitive import.** Windows and macOS do not care that you wrote
-  `components/Polilingo.tsx` instead of `components/polilingo.tsx`. Vercel's Linux builders
+  `components/Dashboard.tsx` instead of `components/dashboard.tsx`. Vercel's Linux builders
   do. This is the single most common cause.
 - **An environment variable exists in Preview but not Production**, or vice versa. Check
   the tick boxes in Vercel → Settings → Environment Variables.
