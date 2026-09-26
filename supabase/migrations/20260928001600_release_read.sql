@@ -16,8 +16,10 @@
 --   null                                   the overlay kill switch is off
 --                                          (private.app_settings
 --                                          overlay_enabled), or nothing has
---                                          been released yet: learners keep
---                                          the content they have.
+--                                          been released yet: the server
+--                                          vouches for no copy, and the
+--                                          route tells browsers to go back to
+--                                          the build's own content.
 --   {release, contentHash, unchanged: true} p_known_hash is the latest
 --                                          release's hash.
 --   {release, contentHash, payload}        otherwise: the whole copy.

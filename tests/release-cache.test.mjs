@@ -17,6 +17,7 @@ import {
   RELEASE_STORAGE_KEY,
   activateCachedRelease,
   fitSessions,
+  forgetRelease,
   storeRelease,
 } from '../lib/release-cache.ts';
 import { learnerContentHash } from '../lib/release-verify.ts';
@@ -42,8 +43,16 @@ function stubStorage(entries = {}, { fail } = {}) {
       }
       map.set(key, String(value));
     },
+    removeItem(key) {
+      if (fail === 'write') throw new Error('SecurityError');
+      map.delete(key);
+    },
   };
 }
+
+/** This build's Supabase project, and another one. */
+const HERE = 'https://here.supabase.co';
+const THERE = 'http://127.0.0.1:54321';
 
 /** The baseline under another name, its first lesson one exercise longer. */
 function release(name, { grow = true } = {}) {
@@ -60,7 +69,9 @@ function release(name, { grow = true } = {}) {
   copy.contentHash = learnerContentHash(copy);
   return copy;
 }
-const stored = (copy) => ({ [RELEASE_STORAGE_KEY]: JSON.stringify(copy) });
+const stored = (copy, source = HERE) => ({
+  [RELEASE_STORAGE_KEY]: JSON.stringify({ source, copy }),
+});
 
 test.afterEach(() => resetToBaseline());
 
@@ -70,7 +81,7 @@ test.afterEach(() => resetToBaseline());
 
 test('a stored newer release is verified, activated and named', () => {
   const copy = release('content@2026.10.1');
-  const name = activateCachedRelease(stubStorage(stored(copy)));
+  const name = activateCachedRelease(stubStorage(stored(copy)), HERE);
   assert.equal(name, 'content@2026.10.1');
   assert.equal(content.contentVersion, 'content@2026.10.1');
   assert.equal(content.learnerCopy.contentHash, copy.contentHash);
@@ -79,14 +90,18 @@ test('a stored newer release is verified, activated and named', () => {
 });
 
 test('nothing stored, or no storage at all, keeps the baseline', () => {
-  assert.equal(activateCachedRelease(stubStorage()), baselineCopy.release);
-  assert.equal(activateCachedRelease(null), baselineCopy.release);
+  assert.equal(
+    activateCachedRelease(stubStorage(), HERE),
+    baselineCopy.release,
+  );
+  assert.equal(activateCachedRelease(null, HERE), baselineCopy.release);
   assert.equal(content.learnerCopy, baselineCopy);
 });
 
 test('corrupt or refused data keeps the baseline and never throws', () => {
   const tampered = release('content@2026.10.1');
   tampered.courses[0].units[0].lessons[0].title = 'Tampered';
+  const wrapped = (copy) => JSON.stringify({ source: HERE, copy });
   for (const raw of [
     '',
     '{',
@@ -94,15 +109,22 @@ test('corrupt or refused data keeps the baseline and never throws', () => {
     '"text"',
     '[]',
     '{"format":"polilingo.learner@1"}',
-    JSON.stringify({
+    wrapped({ format: 'polilingo.learner@1' }),
+    wrapped({
       ...baselineCopy,
       release: 'content@2026.10.1',
       schemaVersion: 2,
     }),
-    JSON.stringify(tampered),
+    wrapped(tampered),
+    // A bare copy, without the project it came from.
+    JSON.stringify(release('content@2026.10.1')),
   ]) {
     const storage = stubStorage({ [RELEASE_STORAGE_KEY]: raw });
-    assert.equal(activateCachedRelease(storage), baselineCopy.release, raw);
+    assert.equal(
+      activateCachedRelease(storage, HERE),
+      baselineCopy.release,
+      raw,
+    );
     assert.equal(content.learnerCopy, baselineCopy);
   }
 });
@@ -111,7 +133,7 @@ test('storage that throws on reading keeps the baseline and never throws', () =>
   const storage = stubStorage(stored(release('content@2026.10.1')), {
     fail: 'read',
   });
-  assert.equal(activateCachedRelease(storage), baselineCopy.release);
+  assert.equal(activateCachedRelease(storage, HERE), baselineCopy.release);
   assert.equal(content.learnerCopy, baselineCopy);
 });
 
@@ -124,7 +146,7 @@ test('a stored copy that is not newer than the baseline is not activated', () =>
     release(baselineCopy.release),
   ]) {
     assert.equal(
-      activateCachedRelease(stubStorage(stored(copy))),
+      activateCachedRelease(stubStorage(stored(copy)), HERE),
       baselineCopy.release,
       copy.release,
     );
@@ -132,32 +154,76 @@ test('a stored copy that is not newer than the baseline is not activated', () =>
   }
 });
 
-// ---------------------------------------------------------------------------
-// storeRelease
-// ---------------------------------------------------------------------------
-
-test('storeRelease keeps the copy for the next visit', () => {
-  const copy = release('content@2026.10.1');
-  const storage = stubStorage();
-  assert.equal(storeRelease(storage, copy), true);
-  assert.deepEqual(JSON.parse(storage.map.get(RELEASE_STORAGE_KEY)), copy);
-  // And the next visit starts from it.
-  assert.equal(activateCachedRelease(storage), 'content@2026.10.1');
+test('a copy stored from another Supabase project, or with none configured, is not activated', () => {
+  // The founder ran the app against the local fixture stack, then pointed it
+  // at the hosted project: the fixture's copy must not come back.
+  const storage = stubStorage(stored(release('content@2026.10.1'), THERE));
+  assert.equal(activateCachedRelease(storage, HERE), baselineCopy.release);
+  assert.equal(content.learnerCopy, baselineCopy);
+  // Without Supabase settings nothing stored is shown.
+  const here = stubStorage(stored(release('content@2026.10.1')));
+  assert.equal(activateCachedRelease(here, null), baselineCopy.release);
+  assert.equal(content.learnerCopy, baselineCopy);
+  // Back on the project it came from, it is.
+  assert.equal(activateCachedRelease(storage, THERE), 'content@2026.10.1');
 });
 
-test('storeRelease replaces an older stored copy', () => {
+// ---------------------------------------------------------------------------
+// storeRelease and forgetRelease
+// ---------------------------------------------------------------------------
+
+test('storeRelease keeps the copy, with its project, for the next visit', () => {
+  const copy = release('content@2026.10.1');
+  const storage = stubStorage();
+  storeRelease(storage, copy, HERE);
+  assert.deepEqual(JSON.parse(storage.map.get(RELEASE_STORAGE_KEY)), {
+    source: HERE,
+    copy,
+  });
+  // And the next visit starts from it.
+  assert.equal(activateCachedRelease(storage, HERE), 'content@2026.10.1');
+});
+
+test('storeRelease replaces a stored copy, even one of the same name', () => {
   const storage = stubStorage(stored(release('content@2026.10.1')));
-  storeRelease(storage, release('content@2026.10.2', { grow: false }));
+  storeRelease(storage, release('content@2026.10.2', { grow: false }), HERE);
   assert.equal(
-    JSON.parse(storage.map.get(RELEASE_STORAGE_KEY)).release,
+    JSON.parse(storage.map.get(RELEASE_STORAGE_KEY)).copy.release,
     'content@2026.10.2',
   );
+  // The same name with other content: the server's copy wins.
+  const same = release('content@2026.10.2');
+  storeRelease(storage, same, HERE);
+  assert.equal(activateCachedRelease(storage, HERE), 'content@2026.10.2');
+  assert.equal(content.learnerCopy.contentHash, same.contentHash);
+});
+
+test('storeRelease stores nothing without a project', () => {
+  const storage = stubStorage();
+  storeRelease(storage, release('content@2026.10.1'), null);
+  assert.equal(storage.map.size, 0);
 });
 
 test('a full quota, blocked storage or none at all never throws', () => {
   const copy = release('content@2026.10.1');
-  assert.equal(storeRelease(stubStorage({}, { fail: 'write' }), copy), false);
-  assert.equal(storeRelease(null, copy), false);
+  const full = stubStorage({}, { fail: 'write' });
+  assert.equal(storeRelease(full, copy, HERE), undefined);
+  assert.equal(full.map.size, 0);
+  assert.equal(storeRelease(null, copy, HERE), undefined);
+  forgetRelease(full);
+  forgetRelease(null);
+});
+
+test('forgetRelease makes the next visit start from the baseline', () => {
+  const storage = stubStorage(stored(release('content@2026.10.1')));
+  forgetRelease(storage);
+  assert.equal(storage.map.has(RELEASE_STORAGE_KEY), false);
+  assert.equal(activateCachedRelease(storage, HERE), baselineCopy.release);
+  // Storage without removeItem is emptied instead.
+  const bare = stubStorage(stored(release('content@2026.10.1')));
+  delete bare.removeItem;
+  forgetRelease(bare);
+  assert.equal(activateCachedRelease(bare, HERE), baselineCopy.release);
 });
 
 // ---------------------------------------------------------------------------

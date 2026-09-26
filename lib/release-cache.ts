@@ -7,6 +7,12 @@
  * it and keeps it here, under polilingo.content.release, so the next visit
  * starts from it rather than from the baseline.
  *
+ * A stored copy is tied to the Supabase project it came from: the value is
+ * `{ source, copy }`, where `source` is the project URL. A browser that has
+ * run the app against one project (a local fixture stack, say) and then
+ * against another never shows the first project's copy, even when both
+ * hold a release of the same name.
+ *
  * Nothing here may cost a learner their place: a stored copy that cannot be
  * read, parsed or verified is ignored, a full or blocked storage is shrugged
  * off, and none of these functions throws. Progress (completions, XP,
@@ -25,24 +31,52 @@ import { isNewerRelease, verifyLearnerCopy } from './release-verify.ts';
 
 export const RELEASE_STORAGE_KEY = 'polilingo.content.release';
 
+/** Storage that may also remove a key, as the browser's does. */
+type ReleaseStorage = StorageLike & { removeItem?: (key: string) => void };
+
 /**
- * Activates the stored learner copy when it verifies and is newer than the
- * baseline this build ships with, and returns the active release's name.
- * Called once, from the provider's mount effect, before progress is
- * hydrated. A copy that is missing, corrupt, refused or not newer (say the
- * app has since been rebuilt with a later baseline) leaves the active copy
- * as it is.
+ * Where this build's published releases come from: the Supabase project
+ * URL, or null without Supabase settings (then no release is ever fetched,
+ * and none stored earlier is shown). Read literally, like lib/supabase/env.ts,
+ * so Next inlines it; learner code may not import that module.
  */
-export function activateCachedRelease(storage: StorageLike | null): string {
+export function releaseSource(): string | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  return url && key ? url : null;
+}
+
+/**
+ * Activates the stored learner copy when it came from `source` (this
+ * build's Supabase project), verifies and is newer than the baseline this
+ * build ships with, and returns the active release's name. Called once,
+ * from the provider's mount effect, before progress is hydrated. A copy
+ * that is missing, corrupt, refused, from another project or not newer (say
+ * the app has since been rebuilt with a later baseline) leaves the active
+ * copy as it is.
+ */
+export function activateCachedRelease(
+  storage: StorageLike | null,
+  source: string | null = releaseSource(),
+): string {
   try {
-    const raw = storage?.getItem(RELEASE_STORAGE_KEY);
+    const raw = source ? storage?.getItem(RELEASE_STORAGE_KEY) : null;
     if (raw) {
-      const verified = verifyLearnerCopy(JSON.parse(raw));
+      const stored: unknown = JSON.parse(raw);
       if (
-        verified.ok &&
-        isNewerRelease(verified.copy.release, baselineCopy.release)
-      )
-        activateRelease(verified.copy);
+        stored &&
+        typeof stored === 'object' &&
+        'source' in stored &&
+        stored.source === source &&
+        'copy' in stored
+      ) {
+        const verified = verifyLearnerCopy(stored.copy);
+        if (
+          verified.ok &&
+          isNewerRelease(verified.copy.release, baselineCopy.release)
+        )
+          activateRelease(verified.copy);
+      }
     }
   } catch {
     // Unreadable storage or JSON that does not parse: keep what is active.
@@ -51,20 +85,35 @@ export function activateCachedRelease(storage: StorageLike | null): string {
 }
 
 /**
- * Keeps a verified learner copy for the next visit. Returns whether it was
- * stored: a full or blocked storage only means the next visit starts from
- * the baseline and fetches the copy again.
+ * Keeps a verified learner copy from `source` for the next visit. A full or
+ * blocked storage only means the next visit starts from the baseline and
+ * fetches the copy again.
  */
 export function storeRelease(
   storage: StorageLike | null,
   copy: LearnerCopy,
-): boolean {
-  if (!storage) return false;
+  source: string | null = releaseSource(),
+): void {
+  if (!storage || !source) return;
   try {
-    storage.setItem(RELEASE_STORAGE_KEY, JSON.stringify(copy));
-    return true;
+    storage.setItem(RELEASE_STORAGE_KEY, JSON.stringify({ source, copy }));
   } catch {
-    return false;
+    // The next visit fetches it again.
+  }
+}
+
+/**
+ * Forgets the stored copy, so the next visit starts from the baseline: the
+ * server no longer vouches for it (the kill switch, or a release that is
+ * not newer than this build's content).
+ */
+export function forgetRelease(storage: ReleaseStorage | null): void {
+  if (!storage) return;
+  try {
+    if (storage.removeItem) storage.removeItem(RELEASE_STORAGE_KEY);
+    else storage.setItem(RELEASE_STORAGE_KEY, '');
+  } catch {
+    // Blocked storage: a stale copy is still refused once the server answers.
   }
 }
 

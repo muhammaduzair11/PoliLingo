@@ -167,3 +167,62 @@ test('a later activation replaces an earlier one', () => {
   assert.equal(content.contentVersion, 'content@2026.10.2');
   assert.equal(content.learnerCopy, later);
 });
+
+test('a course in a language this build hides is not shown until a redeploy', () => {
+  // A release that adds Hindko: the build still redirects /learn/hindko and
+  // /lesson/hindko/… to /learn, so a card for it would lead nowhere.
+  assert.ok(hiddenCourseSlugs.includes('hindko'));
+  const { copy } = nextCopy();
+  const pashto = copy.courses.find((c) => c.language === 'ps');
+  const rename = (id) => id.replace(/^ps-/, 'hno-');
+  const hindko = structuredClone(pashto);
+  hindko.id = rename(pashto.id);
+  hindko.language = 'hno';
+  hindko.variety = 'hno-var-test';
+  for (const unit of hindko.units) {
+    unit.id = rename(unit.id);
+    for (const lesson of unit.lessons) {
+      lesson.id = rename(lesson.id);
+      lesson.variety = hindko.variety;
+    }
+  }
+  const hindkoLesson = hindko.units[0].lessons[0].id;
+  copy.languages.push({
+    code: 'hno',
+    name: 'Hindko',
+    native_name: 'ہندکو',
+    direction: 'rtl',
+  });
+  copy.varieties.push({
+    id: hindko.variety,
+    language: 'hno',
+    learner_label: 'Hindko',
+  });
+  copy.courses.push(hindko);
+  copy.keymap.lessons.push({
+    legacy_key: 'hindko/greetings',
+    lesson_id: hindkoLesson,
+    course_id: hindko.id,
+  });
+  copy.keymap.courses.push({ legacy_id: 'hindko', course_id: hindko.id });
+  copy.contentHash = learnerContentHash(copy);
+
+  activateRelease(copy);
+  // The copy itself is active, untouched...
+  assert.equal(content.learnerCopy, copy);
+  assert.equal(content.contentVersion, NEXT);
+  // ...but nothing on the learner's screens reaches Hindko.
+  assert.equal(getCourse('hindko'), undefined);
+  assert.equal(selectedCourse('hindko'), undefined);
+  assert.equal(
+    content.courses.some((c) => c.id === 'hindko'),
+    false,
+  );
+  assert.equal(knownLesson(hindkoLesson), false);
+  assert.equal(lessonSize(hindkoLesson), undefined);
+  assert.equal(content.legacyLessonIds['hindko/greetings'], undefined);
+  assert.equal(missingLessonRedirect('hindko', hindkoLesson), null);
+  // The courses the build shows still come through.
+  assert.equal(getCourse('pashto').lessons[0].title, 'Hello again');
+  assert.ok(getCourse('urdu'));
+});

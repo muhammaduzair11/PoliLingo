@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs';
 import {
   isNewerRelease,
   learnerContentHash,
-  newerCopyFrom,
+  releaseStep,
   releaseAnswer,
   verifyLearnerCopy,
 } from '../lib/release-verify.ts';
@@ -418,7 +418,7 @@ test('isNewerRelease: rubbish is never newer', () => {
 });
 
 // ---------------------------------------------------------------------------
-// releaseAnswer (the route) and newerCopyFrom (the refresher)
+// releaseAnswer (the route) and releaseStep (the refresher)
 // ---------------------------------------------------------------------------
 
 const UPSTREAM = {
@@ -432,13 +432,17 @@ test('releaseAnswer: the full copy for a client that does not have it', () => {
   assert.deepEqual(releaseAnswer(UPSTREAM, 'sha256-other'), UPSTREAM);
 });
 
+test('releaseAnswer: reset when the function answers null (the kill switch, or nothing released)', () => {
+  assert.deepEqual(releaseAnswer(null, null), { reset: true });
+  assert.deepEqual(releaseAnswer(null, FILE.contentHash), { reset: true });
+});
+
 test('releaseAnswer: unchanged for a client that has it, or when there is nothing to give', () => {
   assert.deepEqual(releaseAnswer(UPSTREAM, FILE.contentHash), {
     unchanged: true,
   });
   for (const upstream of [
-    null, // the kill switch, or nothing released yet
-    undefined,
+    undefined, // the route could not ask: no settings, unreachable, an error status
     'text',
     [],
     { release: 'content@2026.09.2', contentHash: FILE.contentHash }, // no payload
@@ -450,53 +454,134 @@ test('releaseAnswer: unchanged for a client that has it, or when there is nothin
     assert.deepEqual(releaseAnswer(upstream, null), { unchanged: true });
 });
 
-test('newerCopyFrom: a verified newer copy, or null', () => {
-  const copy = newerCopyFrom(UPSTREAM, FILE.release);
-  assert.ok(copy);
-  assert.equal(copy.release, 'content@2026.09.2');
-  assert.equal(copy.contentHash, FILE.contentHash);
+/** The baseline under a published name (content@YYYY.MM.N), for releaseStep's `baseline`. */
+const BASE = { release: 'content@2026.09.1', contentHash: FILE.contentHash };
+/** Another copy: the baseline with its first lesson retitled, re-hashed. */
+const OTHER = defect((c) => {
+  firstLesson(c).title = 'Hello again';
+});
+const other = (release) => ({
+  release,
+  contentHash: OTHER.contentHash,
+  payload: { ...OTHER, release, commit: null },
+});
 
-  assert.equal(newerCopyFrom({ unchanged: true }, FILE.release), null);
-  assert.equal(newerCopyFrom(null, FILE.release), null);
-  assert.equal(newerCopyFrom('x', FILE.release), null);
-  // Not newer than what is active.
-  assert.equal(newerCopyFrom(UPSTREAM, 'content@2026.09.2'), null);
-  assert.equal(newerCopyFrom(UPSTREAM, 'content@2026.10.1'), null);
-  // A development name from upstream is never adopted.
+test('releaseStep: adopts a verified newer copy', () => {
+  const step = releaseStep(other('content@2026.09.2'), BASE, BASE);
+  assert.equal(step.action, 'adopt');
+  assert.equal(step.copy.release, 'content@2026.09.2');
+  assert.equal(step.copy.contentHash, OTHER.contentHash);
+  // Against a development baseline, any published release is newer.
+  const dev = { release: FILE.release, contentHash: FILE.contentHash };
+  assert.equal(releaseStep(UPSTREAM, dev, dev).action, 'adopt');
+});
+
+test('releaseStep: the same name with other content is replaced', () => {
+  // A browser that stored the fixture stack's content@2026.09.2, now
+  // talking to the hosted project, whose content@2026.09.2 differs.
+  const active = {
+    release: 'content@2026.09.2',
+    contentHash: 'sha256-fixture',
+  };
+  const step = releaseStep(other('content@2026.09.2'), active, BASE);
+  assert.equal(step.action, 'adopt');
+  assert.equal(step.copy.contentHash, OTHER.contentHash);
+});
+
+test('releaseStep: a lower name from the server replaces a higher one (a reset project)', () => {
+  const active = { release: 'content@2026.09.5', contentHash: 'sha256-old' };
+  const step = releaseStep(other('content@2026.09.2'), active, BASE);
+  assert.equal(step.action, 'adopt');
+  assert.equal(step.copy.release, 'content@2026.09.2');
+});
+
+test('releaseStep: keeps a copy it already shows, and skips downloading it again', () => {
+  const active = {
+    release: 'content@2026.09.2',
+    contentHash: OTHER.contentHash,
+  };
+  assert.deepEqual(releaseStep(other('content@2026.09.2'), active, BASE), {
+    action: 'keep',
+    skip: OTHER.contentHash,
+  });
+});
+
+test('releaseStep: back to the baseline on reset, or when the server has nothing newer than the build', () => {
+  const active = {
+    release: 'content@2026.09.2',
+    contentHash: OTHER.contentHash,
+  };
+  assert.deepEqual(releaseStep({ reset: true }, active, BASE), {
+    action: 'baseline',
+  });
+  // Already on the baseline: nothing to do.
+  assert.deepEqual(releaseStep({ reset: true }, BASE, BASE), {
+    action: 'keep',
+  });
+  // The build ships a later release than the server's latest.
+  const later = { release: 'content@2026.10.1', contentHash: FILE.contentHash };
+  assert.deepEqual(releaseStep(other('content@2026.09.2'), active, later), {
+    action: 'baseline',
+    skip: OTHER.contentHash,
+  });
+  assert.deepEqual(releaseStep(other('content@2026.09.2'), later, later), {
+    action: 'keep',
+    skip: OTHER.contentHash,
+  });
+  // The baseline's own name is not newer than itself.
   assert.equal(
-    newerCopyFrom(
-      { ...UPSTREAM, release: 'content@2026.09.dev+f76adfa' },
-      'content@2026.09.1',
-    ),
-    null,
-  );
-  // A payload that fails verification, or hashes to something else.
-  assert.equal(
-    newerCopyFrom(
-      { ...UPSTREAM, payload: { ...UPSTREAM.payload, schemaVersion: 2 } },
-      FILE.release,
-    ),
-    null,
-  );
-  assert.equal(
-    newerCopyFrom(
-      { ...UPSTREAM, contentHash: `sha256-${'0'.repeat(64)}` },
-      FILE.release,
-    ),
-    null,
+    releaseStep(other('content@2026.09.1'), active, BASE).action,
+    'baseline',
   );
 });
 
-test('newerCopyFrom names a rolled-back payload after the release that published it', () => {
+test('releaseStep: keeps what it has for anything it cannot show', () => {
+  for (const answer of [
+    { unchanged: true },
+    null,
+    undefined,
+    'x',
+    [],
+    { ...UPSTREAM, release: 3 },
+    { ...UPSTREAM, contentHash: null },
+    // A development name from upstream is never adopted.
+    { ...UPSTREAM, release: 'content@2026.09.dev+f76adfa' },
+  ])
+    assert.deepEqual(releaseStep(answer, BASE, BASE), { action: 'keep' });
+  // A payload that fails verification, or hashes to something else: kept,
+  // and not downloaded again.
+  const bad = other('content@2026.09.2');
+  bad.payload = { ...bad.payload, schemaVersion: 2 };
+  assert.deepEqual(releaseStep(bad, BASE, BASE), {
+    action: 'keep',
+    skip: OTHER.contentHash,
+  });
+  const zero = `sha256-${'0'.repeat(64)}`;
+  assert.deepEqual(
+    releaseStep(
+      { ...other('content@2026.09.2'), contentHash: zero },
+      BASE,
+      BASE,
+    ),
+    { action: 'keep', skip: zero },
+  );
+});
+
+test('releaseStep names a rolled-back payload after the release that published it', () => {
   const rollback = {
     release: 'content@2026.09.3',
     contentHash: FILE.contentHash,
     payload: { ...FILE, release: 'content@2026.09.1', commit: null },
   };
-  const copy = newerCopyFrom(rollback, 'content@2026.09.2');
-  assert.ok(copy);
-  assert.equal(copy.release, 'content@2026.09.3');
-  assert.equal(verifyLearnerCopy(copy).ok, true);
+  const active = {
+    release: 'content@2026.09.2',
+    contentHash: OTHER.contentHash,
+  };
+  const dev = { release: FILE.release, contentHash: FILE.contentHash };
+  const step = releaseStep(rollback, active, dev);
+  assert.equal(step.action, 'adopt');
+  assert.equal(step.copy.release, 'content@2026.09.3');
+  assert.equal(verifyLearnerCopy(step.copy).ok, true);
   // The payload itself is left as it was.
   assert.equal(rollback.payload.release, 'content@2026.09.1');
 });

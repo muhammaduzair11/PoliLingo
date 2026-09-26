@@ -362,19 +362,29 @@ export function isNewerRelease(a: string, b: string): boolean {
 /** What GET /api/release answers (docs/platform.md 4.7). */
 export type ReleaseAnswer =
   | { unchanged: true }
+  | { reset: true }
   | { release: string; contentHash: string; payload: unknown };
 
 /**
  * The answer for a client that already has `known` (a contentHash, or null),
- * given what get_learner_release() returned upstream: `{ unchanged: true }`
- * when the client is up to date, when the overlay is switched off (null) and
- * whenever the upstream answer is not the shape the function returns, so a
- * fault upstream never reaches a learner as anything but "nothing new".
+ * given what get_learner_release() returned upstream, or `undefined` when
+ * the route could not ask (no Supabase settings, the database unreachable,
+ * an error status):
+ *
+ *   - `{ reset: true }` when the function answered null: the overlay kill
+ *     switch is off, or nothing has been released. The server then vouches
+ *     for no copy, so browsers go back to the build's own content.
+ *   - `{ unchanged: true }` when the client is up to date, and whenever the
+ *     route could not ask or the answer is not the shape the function
+ *     returns, so a fault upstream never reaches a learner as anything but
+ *     "nothing new".
+ *   - the whole copy otherwise.
  */
 export function releaseAnswer(
   upstream: unknown,
   known: string | null,
 ): ReleaseAnswer {
+  if (upstream === null) return { reset: true };
   if (!isRecord(upstream)) return { unchanged: true };
   const { release, contentHash, payload } = upstream;
   if (typeof release !== 'string' || typeof contentHash !== 'string')
@@ -384,34 +394,79 @@ export function releaseAnswer(
   return { release, contentHash, payload };
 }
 
+/** A learner copy, as far as telling copies apart goes. */
+export type CopyId = { release: string; contentHash: string };
+
 /**
- * The learner copy a client should switch to, from an answer of GET
- * /api/release, or null to keep what it has. `active` is the release the
- * client shows now (or is waiting to show).
+ * What a client does with an answer of GET /api/release:
  *
- * Null for "unchanged", for anything that is not the shape the route
- * returns, for a payload that fails verifyLearnerCopy() or does not hash to
- * the answer's contentHash, and for a release that is not newer than
- * `active`.
+ *   - `adopt`: store `copy` and show it.
+ *   - `baseline`: forget the stored copy and show the build's own content.
+ *   - `keep`: change nothing.
  *
- * The copy is named after the release that published it. A rollback is a
- * new release (content@2026.10.3) carrying an earlier payload, whose own
- * `release` field may still say content@2026.10.1; under that name it would
- * never count as newer, and learners would keep the content that was rolled
- * back. `release` is outside the hashed content, so renaming it keeps the
- * copy verifiable.
+ * `skip`, when present, is the contentHash to send as `known` from now on,
+ * so a copy that was refused, or that changes nothing, is not downloaded
+ * again every minute.
  */
-export function newerCopyFrom(
+export type ReleaseStep =
+  | { action: 'adopt'; copy: LearnerCopy }
+  | { action: 'baseline'; skip?: string }
+  | { action: 'keep'; skip?: string };
+
+/**
+ * The step a client takes on `answer`, given the copy it shows now (or is
+ * waiting to show), `active`, and the build's own copy, `baseline`.
+ *
+ * The server is authoritative for what it serves: its latest release
+ * replaces the active copy whenever the two differ, by name or by content,
+ * whichever name is higher. A project that was reset restarts its names,
+ * and two projects (a local fixture stack and the hosted one, say) can hold
+ * different content under the same name; comparing names alone would pin a
+ * browser to the wrong copy for good. Only the build's own content outranks
+ * the server: a release that is not newer than the baseline sends the client
+ * back to the baseline, and so does `{ reset: true }` (the kill switch, or
+ * nothing released).
+ *
+ * `keep` for "unchanged", for anything that is not the shape the route
+ * returns, for a development name, and for a payload that fails
+ * verifyLearnerCopy() or does not hash to the answer's contentHash: this
+ * build cannot show it, so the client keeps what it has.
+ *
+ * An adopted copy is named after the release that published it. A rollback
+ * is a new release (content@2026.10.3) carrying an earlier payload, whose
+ * own `release` field may still say content@2026.10.1. `release` is outside
+ * the hashed content, so renaming it keeps the copy verifiable.
+ */
+export function releaseStep(
   answer: unknown,
-  active: string,
-): LearnerCopy | null {
-  if (!isRecord(answer) || answer.unchanged === true) return null;
+  active: CopyId,
+  baseline: CopyId,
+): ReleaseStep {
+  const onBaseline =
+    active.release === baseline.release &&
+    active.contentHash === baseline.contentHash;
+  if (!isRecord(answer) || answer.unchanged === true) return { action: 'keep' };
+  if (answer.reset === true)
+    return { action: onBaseline ? 'keep' : 'baseline' };
   const { release, contentHash, payload } = answer;
-  if (typeof release !== 'string' || !RELEASE.test(release)) return null;
-  if (!isNewerRelease(release, active)) return null;
+  if (
+    typeof release !== 'string' ||
+    !RELEASE.test(release) ||
+    typeof contentHash !== 'string'
+  )
+    return { action: 'keep' };
+  if (!isNewerRelease(release, baseline.release))
+    return { action: onBaseline ? 'keep' : 'baseline', skip: contentHash };
+  if (release === active.release && contentHash === active.contentHash)
+    return { action: 'keep', skip: contentHash };
   const verified = verifyLearnerCopy(payload);
-  if (!verified.ok || verified.copy.contentHash !== contentHash) return null;
-  return verified.copy.release === release
-    ? verified.copy
-    : { ...verified.copy, release };
+  if (!verified.ok || verified.copy.contentHash !== contentHash)
+    return { action: 'keep', skip: contentHash };
+  return {
+    action: 'adopt',
+    copy:
+      verified.copy.release === release
+        ? verified.copy
+        : { ...verified.copy, release },
+  };
 }

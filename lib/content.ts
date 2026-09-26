@@ -494,6 +494,35 @@ export function lessonSize(id: string): number | undefined {
 /** legacy "pashto/greetings" -> "ps-lsn-0a41c2", from the keymap that travels with the release. */
 export let legacyLessonIds: Record<string, string> = legacyIndex(baselineCopy);
 
+/**
+ * `copy` without the courses whose slug this build hides (hiddenCourseSlugs),
+ * and without their keymap rows. The build's redirects send those slugs'
+ * URLs to /learn, so a course a published release adds in such a language
+ * (Hindko, once reviewed) would be a card whose every link bounces. It is
+ * shown from the next deploy, whose baseline holds it. The copy itself, and
+ * its hash, are left as they are.
+ */
+function shownCopy(copy: LearnerCopy): LearnerCopy {
+  const hidden = new Set(
+    copy.courses
+      .filter((c) => {
+        const slug = PRESENTATION[c.language]?.id;
+        return slug !== undefined && hiddenCourseSlugs.includes(slug);
+      })
+      .map((c) => c.id),
+  );
+  if (hidden.size === 0) return copy;
+  return {
+    ...copy,
+    courses: copy.courses.filter((c) => !hidden.has(c.id)),
+    keymap: {
+      ...copy.keymap,
+      lessons: copy.keymap.lessons.filter((row) => !hidden.has(row.course_id)),
+      courses: copy.keymap.courses.filter((row) => !hidden.has(row.course_id)),
+    },
+  };
+}
+
 // The baseline's derived views, kept so resetToBaseline() puts back the very
 // objects the module started with.
 const baseline = {
@@ -504,7 +533,8 @@ const baseline = {
 /**
  * Makes `copy` the active learner copy: every live binding above, and every
  * reader (getCourse, lessonSize, knownLesson, selectedCourse,
- * missingLessonRedirect), now answers from it. The caller has verified it
+ * missingLessonRedirect), now answers from it, less any course this build
+ * hides (shownCopy()). The caller has verified it
  * (lib/release-verify.ts). Called only from browser effects, never while the
  * server renders.
  */
@@ -515,10 +545,11 @@ export function activateRelease(copy: LearnerCopy): void {
   }
   // Everything is derived first, so a copy that cannot be read leaves the
   // active one exactly as it was.
+  const shown = shownCopy(copy);
   const next = {
-    courses: toCourses(copy),
-    everyLesson: lessonIndex(copy),
-    legacyLessonIds: legacyIndex(copy),
+    courses: toCourses(shown),
+    everyLesson: lessonIndex(shown),
+    legacyLessonIds: legacyIndex(shown),
   };
   learnerCopy = copy;
   contentVersion = copy.release;

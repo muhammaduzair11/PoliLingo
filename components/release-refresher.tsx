@@ -4,12 +4,15 @@
  * Brings a newly published content release to a learner who already has the
  * app open (docs/platform.md 4.7). Mounted once, by LearningProvider.
  *
- * It asks /api/release whether there is anything newer than what it has:
- * once the app is ready, whenever the tab becomes visible again, when the
- * browser comes back online, and every minute while the tab is visible. A
- * newer copy is verified (lib/release-verify.ts), stored for the next visit
- * (lib/release-cache.ts) and made active through the provider's
- * refreshContent(), which re-renders every screen.
+ * It asks /api/release whether the server's latest release differs from
+ * what it has: once the app is ready, whenever the tab becomes visible
+ * again, when the browser comes back online, and every minute while the tab
+ * is visible. The server is authoritative (releaseStep() in
+ * lib/release-verify.ts): a different copy is verified, stored for the next
+ * visit (lib/release-cache.ts) and made active through the provider's
+ * refreshContent(), which re-renders every screen; when the server vouches
+ * for nothing newer than this build (the kill switch, say), the stored copy
+ * is forgotten and the build's own content comes back.
  *
  * Never in the middle of a lesson: the player indexes into the lesson's
  * exercises, so a copy that arrives on /lesson/… waits until the learner
@@ -24,12 +27,12 @@ import { useEffect, useRef, useState } from 'react';
 import { useLearning } from './learning-provider';
 import {
   activateRelease,
-  contentVersion,
+  baselineCopy,
   learnerCopy,
   type LearnerCopy,
 } from '@/lib/content';
-import { storeRelease } from '@/lib/release-cache';
-import { newerCopyFrom } from '@/lib/release-verify';
+import { forgetRelease, storeRelease } from '@/lib/release-cache';
+import { releaseStep } from '@/lib/release-verify';
 
 const POLL_MS = 60_000;
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -48,11 +51,12 @@ export function ReleaseRefresher() {
   const { ready, refreshContent } = useLearning();
   const pathname = usePathname();
   const [announcement, setAnnouncement] = useState('');
-  // A verified newer copy waiting for the learner to leave a lesson.
+  // The copy to show once the learner leaves a lesson: a verified copy from
+  // the server, or baselineCopy to go back to the build's own content.
   const pending = useRef<LearnerCopy | null>(null);
-  // The newest contentHash the server has shown us, adopted or refused. It is
-  // what we send as `known`, so a copy this build refuses is not downloaded
-  // again every minute.
+  // A contentHash to send as `known` instead of the active copy's: one this
+  // build refused, or one that changes nothing, so it is not downloaded
+  // again every minute. Null sends the active copy's own hash.
   const seen = useRef<string | null>(null);
   const busy = useRef(false);
   // The latest render's values, for listeners and timers set up once.
@@ -70,14 +74,18 @@ export function ReleaseRefresher() {
 
   function applyPendingIfFree() {
     const copy = pending.current;
-    if (copy && !inLesson(latest.current.pathname)) activate(copy);
+    if (!copy || inLesson(latest.current.pathname)) return;
+    // Already showing it (a copy, then the baseline, both during a lesson).
+    if (copy === learnerCopy) pending.current = null;
+    else activate(copy);
   }
 
   async function check() {
     if (busy.current) return;
     busy.current = true;
     try {
-      const known = seen.current ?? learnerCopy.contentHash;
+      const active = pending.current ?? learnerCopy;
+      const known = seen.current ?? active.contentHash;
       const response = await fetch(
         `/api/release?known=${encodeURIComponent(known)}`,
         {
@@ -90,21 +98,16 @@ export function ReleaseRefresher() {
         },
       );
       if (!response.ok) return;
-      const answer: unknown = await response.json();
-      if (
-        answer &&
-        typeof answer === 'object' &&
-        'contentHash' in answer &&
-        typeof answer.contentHash === 'string'
-      )
-        seen.current = answer.contentHash;
-      const copy = newerCopyFrom(
-        answer,
-        pending.current?.release ?? contentVersion,
-      );
-      if (!copy) return;
-      storeRelease(browserStorage(), copy);
-      pending.current = copy;
+      const step = releaseStep(await response.json(), active, baselineCopy);
+      if (step.action === 'adopt') {
+        seen.current = null;
+        storeRelease(browserStorage(), step.copy);
+        pending.current = step.copy;
+      } else if (step.action === 'baseline') {
+        seen.current = step.skip ?? null;
+        forgetRelease(browserStorage());
+        pending.current = baselineCopy;
+      } else if (step.skip) seen.current = step.skip;
     } catch {
       // Offline, timed out, or not JSON: the next poll tries again.
     } finally {
