@@ -32,6 +32,12 @@ yarn-error.log*
 # and it contains no real values. See docs/configuration.md.
 !.env.example
 
+# Supabase CLI working files, and local-only seeds (real content never goes in
+# this public repository; supabase/seeds/zz-* is for a developer's own data)
+supabase/.temp/
+supabase/.branches/
+supabase/seeds/zz-*
+
 # deployment and generated files
 .vercel
 next-env.d.ts

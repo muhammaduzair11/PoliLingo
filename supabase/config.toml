@@ -1,0 +1,176 @@
+# Supabase CLI configuration for the LOCAL stack (docs/platform.md §2).
+# Structure follows `supabase init` from CLI 2.118. Reference:
+# https://supabase.com/docs/guides/local-development/cli/config
+#
+# Start once, for every worktree (the scripts `npm run db:start` / `db:stop`):
+#   npx supabase start -x studio,imgproxy,storage-api,realtime,edge-runtime,logflare,vector,postgres-meta,supavisor
+# API http://127.0.0.1:54321, DB postgresql://postgres:postgres@127.0.0.1:54322/postgres,
+# local mail (Mailpit) http://127.0.0.1:54324.
+#
+# The production project is configured in the dashboard, not from this file.
+# Never `supabase config push` from here: the [auth] values below are for the
+# local stack, and the dashboard must keep "Confirm email" on.
+project_id = "polilingo"
+
+[api]
+enabled = true
+port = 54321
+# Only public is exposed. content and private are never on the API (§3.1).
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+# New tables are never reachable by the API roles without an explicit GRANT;
+# the migrations revoke default privileges as well.
+auto_expose_new_tables = false
+
+[api.tls]
+enabled = false
+
+[db]
+port = 54322
+shadow_port = 54320
+health_timeout = "2m"
+major_version = 17
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[db.migrations]
+enabled = true
+schema_paths = []
+
+[db.seed]
+enabled = true
+# LOCAL STACK ONLY. seed.sql makes sure seeding mode is off for the session;
+# seeds/10_people.sql holds the local test accounts; seeds/20_content_fixture.sql
+# is the synthetic content fixture. Both seeds turn seeding mode on only inside
+# their own transaction and refuse to run on a database that holds anything but
+# local test data. Never run `supabase db push --include-seed` or
+# `supabase db reset --linked` against the hosted project.
+sql_paths = ["./seed.sql", "./seeds/*.sql"]
+
+[db.network_restrictions]
+enabled = false
+allowed_cidrs = ["0.0.0.0/0"]
+allowed_cidrs_v6 = ["::/0"]
+
+[realtime]
+enabled = false
+
+[studio]
+enabled = false
+port = 54323
+api_url = "http://127.0.0.1"
+
+# Email testing server (Mailpit). Emails the local stack sends are caught
+# here: `npm run otp -- <email>` reads the latest code from its API.
+[local_smtp]
+enabled = true
+port = 54324
+
+[storage]
+enabled = false
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = [
+  "http://localhost:3000/**",
+  "http://127.0.0.1:3000/**",
+]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+# Anonymous learning never creates server data (non-negotiable 3).
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
+minimum_password_length = 6
+password_requirements = ""
+
+[auth.rate_limit]
+# Generous locally: tests and agents request many codes.
+email_sent = 100
+sms_sent = 30
+anonymous_users = 30
+token_refresh = 150
+sign_in_sign_ups = 100
+token_verifications = 100
+web3 = 30
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = false
+# Confirmations stay ON, here and on the hosted project ("Confirm email" in
+# Authentication -> Sign In / Providers -> Email). With them off, anyone could
+# sign up with someone else's address (the password signup endpoint cannot be
+# turned off separately) and get a confirmed session without ever reading that
+# inbox, which defeats accept_invitation's email checks (403_EMAIL_UNVERIFIED,
+# 403_WRONG_EMAIL). The email-code sign-in is unaffected: a new address gets the
+# confirmation template, which carries the same 6-digit {{ .Token }}, and
+# verifyOtp({ type: 'email' }) confirms it. Never run `supabase config push`
+# with a weaker value.
+enable_confirmations = true
+secure_password_change = false
+max_frequency = "1s"
+otp_length = 6
+otp_expiry = 3600
+
+# One email carries both the 6-digit code and a sign-in link. GoTrue sends
+# the confirmation template to a new address and the magic link template to
+# a known one, so both use the same file.
+[auth.email.template.magic_link]
+subject = "Your PoliLingo sign-in code"
+content_path = "./supabase/templates/magic-link.html"
+
+[auth.email.template.confirmation]
+subject = "Your PoliLingo sign-in code"
+content_path = "./supabase/templates/magic-link.html"
+
+[auth.sms]
+enable_signup = false
+enable_confirmations = false
+template = "Your code is {{ .Code }}"
+max_frequency = "5s"
+
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = false
+verify_enabled = false
+
+[auth.mfa.phone]
+enroll_enabled = false
+verify_enabled = false
+otp_length = 6
+template = "Your code is {{ .Code }}"
+max_frequency = "5s"
+
+# Google sign-in is off locally. To try it, create an OAuth client, export
+# SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID and SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET,
+# and set enabled = true (never commit the values).
+[auth.external.google]
+enabled = false
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+redirect_uri = ""
+url = ""
+skip_nonce_check = true
+email_optional = false
+
+[edge_runtime]
+enabled = false
+policy = "per_worker"
+inspector_port = 8083
+deno_version = 2
+
+[analytics]
+enabled = false
+port = 54327
+backend = "postgres"

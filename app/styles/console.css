@@ -1,0 +1,787 @@
+/*
+ * Owner: Foundation. The console shell and kit (components/console/*):
+ * /review, /edit and /admin. Same tokens and type as the learner app, at a
+ * higher density. Desktop has a side nav; under 800px it becomes a tab strip
+ * under the top bar; under 580px tables stack into cards.
+ */
+
+/* Shell ------------------------------------------------------------------ */
+
+.console-shell {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--ink);
+  font-size: 15px;
+}
+.console-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 60px;
+  padding: 10px 24px;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+}
+.console-brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.console-brand-name {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+.console-brand-tag {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--purple);
+  background: var(--muted);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+/* Account menu */
+.console-account {
+  position: relative;
+}
+.console-account summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 4px 12px 4px 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+  list-style: none;
+}
+.console-account summary::-webkit-details-marker {
+  display: none;
+}
+.console-account-initial {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--purple);
+  color: #fff;
+  font-weight: 700;
+}
+.console-account-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+}
+.console-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  display: flex;
+  flex-direction: column;
+  min-width: 230px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 30px #26183b1f;
+}
+.console-menu-email {
+  margin: 4px 10px 8px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+.console-menu-item {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+}
+.console-menu-item:hover {
+  background: var(--muted);
+}
+.console-menu-error {
+  margin: 4px 10px;
+  font-size: 13px;
+  color: #b63751;
+}
+
+/* Body: side nav plus main */
+.console-body {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 28px 24px 64px;
+}
+.console-body-plain {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 760px;
+}
+.console-main {
+  min-width: 0;
+}
+.console-nav {
+  position: sticky;
+  top: 88px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.console-nav-heading {
+  margin: 0 0 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.console-nav ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.console-nav-link {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+}
+.console-nav-link:hover {
+  background: var(--muted);
+}
+.console-nav-link[aria-current='page'] {
+  background: var(--purple);
+  color: #fff;
+}
+
+/* Page header, panels, actions ------------------------------------------ */
+
+.console-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.console-page-heading {
+  min-width: 0;
+  max-width: 70ch;
+}
+.console-page-header h1,
+.console-panel h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+.console-eyebrow {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--purple);
+}
+.console-page-description {
+  margin: 8px 0 0;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+.console-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+.console-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+}
+.console-panel p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Buttons */
+.console-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+.console-button-primary {
+  background: var(--purple);
+  border-color: #7241c7;
+  color: #fff;
+}
+.console-button-primary:hover {
+  background: #5528a8;
+}
+.console-button-outline {
+  background: #fff;
+  border-color: var(--border);
+  color: var(--purple);
+}
+.console-button-outline:hover {
+  border-color: var(--ring);
+}
+.console-button-danger {
+  background: #b63751;
+  border-color: #a02e46;
+  color: #fff;
+}
+.console-button-danger:hover {
+  background: #9d2c44;
+}
+.console-button-quiet {
+  background: none;
+  color: var(--purple);
+}
+.console-button-quiet:hover {
+  background: var(--muted);
+}
+.console-button:disabled {
+  background: #e7e1eb;
+  border-color: transparent;
+  color: #93849f;
+}
+
+/* Notices ---------------------------------------------------------------- */
+
+.console-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.console-notice-title {
+  margin: 0;
+  font-weight: 700;
+}
+.console-notice-body p {
+  margin: 0;
+}
+.console-notice-code {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, 'Cascadia Mono', Menlo, monospace;
+}
+.console-notice-info {
+  border-left-color: var(--ring);
+}
+.console-notice-success {
+  border-left-color: #2e8a4c;
+  background: #f1fbf3;
+}
+.console-notice-warning {
+  border-left-color: #c98a12;
+  background: #fff9e8;
+}
+.console-notice-error {
+  border-left-color: #b63751;
+  background: #fff3f5;
+}
+
+/* Status badges ---------------------------------------------------------- */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  background: var(--muted);
+  color: var(--ink);
+}
+.status-badge-draft {
+  background: #eee8f4;
+  color: #5d5070;
+}
+.status-badge-in_review {
+  background: #e6ecff;
+  color: #2c3f94;
+}
+.status-badge-changes_requested {
+  background: #fff1d6;
+  color: #7a4d00;
+}
+.status-badge-approved {
+  background: var(--mint);
+  color: #1d5a31;
+}
+.status-badge-rejected {
+  background: #ffe0e6;
+  color: #8c2238;
+}
+.status-badge-live {
+  background: var(--purple);
+  color: #fff;
+}
+.status-badge-gated {
+  background: #ece6f3;
+  color: #4a3d5c;
+}
+.status-badge-retired {
+  background: #f1eff3;
+  color: #7d7489;
+  text-decoration: line-through;
+}
+.status-badge-demo {
+  background: var(--yellow);
+  color: var(--ink);
+}
+.status-badge-sole_reviewer {
+  background: #ffe7ef;
+  color: #86264a;
+}
+
+/* Stats ------------------------------------------------------------------ */
+
+.console-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+.console-stat {
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.console-stat p {
+  margin: 0;
+}
+.console-stat-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+.console-stat-value {
+  margin-top: 4px;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.console-stat-hint {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+/* Empty state ------------------------------------------------------------ */
+
+.console-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 28px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  background: #fffdf9;
+}
+.console-empty-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.console-empty-body {
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+.console-empty-body p {
+  margin: 0;
+}
+
+/* Data table ------------------------------------------------------------- */
+
+.data-table-wrap {
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.data-table caption {
+  padding: 12px 16px 0;
+  text-align: left;
+  font-weight: 700;
+}
+.data-table th,
+.data-table td {
+  padding: 10px 14px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #efe9f4;
+}
+.data-table th {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  background: #fbf8fd;
+  white-space: nowrap;
+}
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.data-table tbody tr:hover td {
+  background: #fcfaff;
+}
+.data-table .data-table-end {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.data-table a {
+  color: var(--purple);
+  font-weight: 600;
+}
+
+/* Forms ------------------------------------------------------------------ */
+
+.console-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.console-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.console-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+.console-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+.console-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--input);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+.console-input:focus-visible {
+  outline: 3px solid #8853e955;
+  border-color: var(--ring);
+}
+.console-input[aria-invalid='true'] {
+  border-color: #b63751;
+}
+textarea.console-input {
+  resize: vertical;
+}
+.console-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.console-choices legend {
+  margin-bottom: 8px;
+}
+.console-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.console-choice:has(input:checked) {
+  border-color: var(--purple);
+  background: #f5f0ff;
+}
+.console-choice:has(:focus-visible) {
+  outline: 3px solid #8853e955;
+}
+.console-choice input {
+  accent-color: var(--purple);
+}
+
+/* Script field: native text in its own script, checked live */
+.script-field-native {
+  font-family: 'Noto Naskh Arabic', serif;
+  font-size: 22px;
+  line-height: 1.7;
+}
+.script-issues {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.script-issues:empty {
+  display: none;
+}
+.script-issue {
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.script-issue-error {
+  background: #fff3f5;
+  color: #8c2238;
+}
+.script-issue-warning {
+  background: #fff9e8;
+  color: #7a4d00;
+}
+
+/* Native text and the learner preview ------------------------------------ */
+
+.native-text {
+  font-size: 20px;
+  line-height: 1.6;
+}
+.native-text-large {
+  font-size: 30px;
+}
+.phrase .native-text {
+  line-height: inherit;
+}
+.native-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 24px 16px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  text-align: center;
+}
+.native-preview-meaning {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Confirm dialog --------------------------------------------------------- */
+
+.console-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.console-dialog-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* No access and the age band panel */
+.console-no-access,
+.console-age-panel {
+  max-width: 640px;
+}
+
+/* Under 800px: the side nav becomes a tab strip ------------------------- */
+
+@media (max-width: 800px) {
+  .console-topbar {
+    padding: 8px 16px;
+  }
+  .console-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 0 16px 48px;
+  }
+  .console-nav {
+    position: sticky;
+    top: 60px;
+    z-index: 10;
+    flex-direction: row;
+    gap: 4px;
+    margin: 0 -16px;
+    padding: 8px 16px;
+    overflow-x: auto;
+    background: var(--background);
+    border-bottom: 1px solid var(--border);
+    scrollbar-width: none;
+  }
+  .console-nav-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .console-nav-heading {
+    display: none;
+  }
+  .console-nav ul {
+    flex-direction: row;
+    gap: 4px;
+  }
+  .console-nav-link {
+    min-height: 40px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .console-account-name {
+    display: none;
+  }
+  .console-account summary {
+    padding: 4px;
+  }
+  .console-main {
+    padding-top: 8px;
+  }
+  .console-page-header h1,
+  .console-panel h1 {
+    font-size: 25px;
+  }
+}
+
+/* Under 580px: tables become cards --------------------------------------- */
+
+@media (max-width: 580px) {
+  .console-brand-tag {
+    font-size: 10px;
+  }
+  .console-panel {
+    padding: 20px;
+  }
+  .console-page-header {
+    align-items: stretch;
+  }
+  .console-actions .console-button {
+    flex: 1 1 auto;
+  }
+  .data-table-wrap {
+    overflow: visible;
+    background: none;
+    border: 0;
+  }
+  .data-table,
+  .data-table tbody,
+  .data-table tr,
+  .data-table td {
+    display: block;
+    width: 100%;
+  }
+  .data-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .data-table tr {
+    margin-bottom: 10px;
+    padding: 6px 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .data-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 14px;
+    border-bottom: 0;
+    text-align: right;
+  }
+  .data-table td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted-foreground);
+    text-align: left;
+  }
+  .data-table .data-table-optional {
+    display: none;
+  }
+  .data-table tbody tr:hover td {
+    background: none;
+  }
+  .console-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .console-stat-value {
+    font-size: 24px;
+  }
+}

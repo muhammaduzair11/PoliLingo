@@ -103,7 +103,16 @@ Repository idioms that bind everyone (from the existing code):
   reviewers, Pashto `ps-var-yusufzai`, ctr-0103/0104), `reviewer.hno@polilingo.test` (Hindko
   `hno-var-hazara`, ctr-0105), `learner@polilingo.test` and `learner2@polilingo.test` (no
   role), `teen@polilingo.test` (`13-17`, no role). Each has an `auth.identities` row, so the
-  local email-code sign-in works for it.
+  local email-code sign-in works for it. `10_people.sql` also inserts the `ps` and `hno`
+  languages and the two varieties its grants name.
+- The committed fixture content (`seeds/20_content_fixture.sql`) is two demo lessons in the
+  synthetic variety `ps-var-fixture`. Demo items are never reviewed, so the seeded reviewers'
+  queues start empty. To try the review flow locally, sign in as `editor@polilingo.test`,
+  create a lesson in the fixture course with variety `ps-var-yusufzai`, add items and submit
+  it; `reviewer.ps` and `reviewer.ps2` can then review it. `npm run db:real-content` gives
+  them the real Yusufzai lessons instead.
+- Local mail is Mailpit, configured under `[local_smtp]` in `config.toml` (CLI 2.118 has no
+  `[inbucket]` section).
 
 ---
 
@@ -118,7 +127,12 @@ Repository idioms that bind everyone (from the existing code):
   `USAGE` and `SELECT` on its tables, **filtered by RLS**, so `SECURITY INVOKER` page
   functions can read what the caller may see. No write grants to anyone but the owner.
 - `private`: helpers, trigger functions, builders, settings, seed bookkeeping. Not exposed.
-  `authenticated` gets `EXECUTE` only on the RLS helper functions policies call.
+  `authenticated` gets `EXECUTE` only on the RLS helper functions policies call (§3.6) and
+  on the pure or RLS-scoped helpers that `SECURITY INVOKER` page functions call: `raise`,
+  `js_ws`, `normalise_native`, `text_fingerprint`, `canonical_json`, `native_problems`,
+  `lesson_problems`, `effective_gate`, `lesson_json`. Everything else in `private` (builders,
+  `bootstrap_first_admin`, trigger functions) has no grant. A track that needs another
+  `private` function from an invoker function asks the foundation for the grant.
 - Default privileges: `revoke all on tables, sequences from anon, authenticated` and `revoke
 execute on functions from public, anon, authenticated` in all three schemas. Each API
   function then gets an explicit `grant execute … to authenticated` (and, for
@@ -180,6 +194,16 @@ create function private.text_fingerprint(t text) returns text language sql immut
   select left(encode(sha256(convert_to(private.normalise_native(t), 'UTF8')), 'hex'), 16) $$;
 ```
 
+"Identical" holds within a limit: object keys that are ASCII or at least in the Basic
+Multilingual Plane (SQL sorts keys by code point with `collate "C"`, JavaScript's `.sort()`
+by UTF-16 code unit, which differ only for keys with characters beyond U+FFFF), and numbers
+that are integers below 2^53 (jsonb prints `1e21` as `1000000000000000000000` and `1.5e-7`
+as `0.00000015`; JavaScript prints `1e+21` and `1.5e-7`). Everything hashed today is inside
+it: learner-copy keys are ASCII field names, envelope keys are lesson ids and dates, and
+every number is a small integer. Where the input is untrusted, the reader enforces the limit:
+`import_local_progress` (B) refuses an envelope with a non-integer number or a non-ASCII key
+(`PL422_BAD_ENVELOPE`), and `verifyLearnerCopy` (G) refuses such a copy.
+
 `tests/fixtures/{fingerprint,canonical-json}-vectors.json` hold shared vectors (Pashto,
 Urdu, whitespace, NBSP, combining marks, nested objects, unicode keys). Node tests assert
 the JS side (`lib/canonical-json.ts`, `lib/sha256.ts`, and the content repo's `fingerprint`)
@@ -190,7 +214,8 @@ update, delete and truncate. Called as `forbid_change('user_owned')` it lets a d
 only when `current_setting('polilingo.account_deletion', true)` equals the row's `user_id`
 (so `delete_my_account` can remove the caller's own ledger rows). Called as
 `forbid_change('redactable')` it lets an update through only when the setting
-`polilingo.redaction` is on and the only change is `body := '[removed]'` plus `redacted_at`.
+`polilingo.redaction` is on and the only change is `body := '[removed]'` (on
+`review_decisions`, `comment := '[removed]'`) plus `redacted_at`.
 
 ### 3.4 Tables
 
@@ -222,7 +247,7 @@ via `forbid_change`.
 | `varieties`                                             | `id pk check ~ '^[a-z]{2,3}-var-[a-z0-9-]+$'`, `language_code references languages`, `unique (id, language_code)`, id prefix equals the language, `name`, `learner_label not null`, `region`, `status`, `publish_gate`, `pronunciation_notes`, `notes`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `courses`                                               | `id pk` (`<lang>-crs-<slug>`, in `id_registry`), `language_code`, `variety_id`, `foreign key (variety_id, language_code) → varieties`, `name`, `tagline not null default ''`, `target_learner`, `outcomes text[]`, `version`, `status`, `publish_gate`, `scope jsonb`, `retired_at`, `revision_no`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `units`                                                 | `id pk` (`<lang>-unt-<hex6>`), `course_id references courses`, `unique (id, course_id)`, `position int null` (null ⇔ retired; `unique (course_id, position) d`), `title 1..60`, `goal text check length >= 10`, `theme`, `publish_gate default 'blocked'` for units created in the app (seeded units keep their YAML gate), `retired_at`, `revision_no`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `lessons`                                               | `id pk` (`-lsn-`), `course_id`, `unit_id`, `foreign key (unit_id, course_id) → units (id, course_id)`, `position` (`unique (unit_id, position) d`), `title 1..60`, `subtitle not null default '' ≤ 120`, `objective ≥ 10`, `variety_id references varieties`, `estimated_minutes 3..15 null`, `publish_gate default 'open'`, `review_status check in ('unreviewed','approved','changes_requested','rejected') default 'unreviewed'`, `current_decision_id uuid null` (FK added after `review_decisions`), `review_fingerprint char(16)`, `last_approved_seq bigint`, `submitted_at`, `text_author text`, `retired_at`, `revision_no`                                                                                                                                                                                                                                                                                             |
+| `lessons`                                               | `id pk` (`-lsn-`), `course_id`, `unit_id`, `foreign key (unit_id, course_id) → units (id, course_id) on update cascade` (moving a unit carries its lessons), `position` (`unique (unit_id, position) d`), `title 1..60`, `subtitle not null default '' ≤ 120`, `objective ≥ 10`, `variety_id references varieties`, `estimated_minutes 3..15 null`, `publish_gate default 'open'`, `review_status check in ('unreviewed','approved','changes_requested','rejected') default 'unreviewed'`, `current_decision_id uuid null` (FK added after `review_decisions`), `review_fingerprint char(16)`, `last_approved_seq bigint`, `submitted_at`, `text_author text`, `retired_at`, `revision_no`                                                                                                                                                                                                                                       |
 | `items`                                                 | `id pk` (`-itm-`), `lesson_id references lessons`, `unique (id, lesson_id)`, `position int check 1..12` (`unique (lesson_id, position) d`; null when retired), `native text 1..300` stored normalised, `romanisation 1..300`, `meaning 1..200`, `context ≤ 300 null`, `usage_note ≤ 500 null` (not blank), `variety_id references varieties` (same language as the id prefix), `tags text[]`, `skills text[]`, `source_type check in ('reviewer_attested','community_attested','published_work','original')`, `source_citation ≥ 3`, `source_licence ≥ 2`, `source_retrieved date null`, `source_caveat null`, `alternatives jsonb default '[]'`, `audio_default_asset_id null`, `legacy_ref unique null`, `text_fingerprint char(16)`, `review_fingerprint char(16)`, `review_status` (as lessons), `current_decision_id`, `last_approved_seq`, `text_author`, `revision_no`, `retired_at`; index `(variety_id, review_status)` |
 | `exercises`                                             | `id pk` (`-exr-`), `lesson_id`, `position` (`unique (lesson_id, position) d`), `kind check in ('meaning','translation','match','assemble','context')`, `answer_item_id`, `foreign key (answer_item_id, lesson_id) → items (id, lesson_id) d`, `prompt 1..300`, `options text[] not null default '{}'`, `difficulty 1..5 null`, `skills text[]`, `retired_at`, `revision_no`. Trigger: `assemble` ⇔ empty options; otherwise 1..11 distinct live items of the same lesson, never the answer                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `revisions` (AO)                                        | `seq bigint identity pk`, `object_type check in ('language','variety','course','unit','lesson','item','exercise')`, `object_id`, `revision_no`, `unique (object_type, object_id, revision_no)`, `lesson_id null`, `variety_id null`, `author_contributor_id null`, `reason check in ('import','create','edit','suggestion','move','reorder','retire','gate')`, `suggestion_id null`, `snapshot jsonb`, `text_fingerprint`, `review_fingerprint`, `at`                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -239,6 +264,17 @@ via `forbid_change`.
 | `suggestions`                                           | `id uuid pk`, `item_id`, `variety_id`, `suggester_contributor_id`, `base_review_fingerprint`, `proposed jsonb` (keys ⊆ native, romanisation, meaning, context, usage_note), `note`, `status check in ('open','accepted','declined','withdrawn','superseded')`, `resolved_by`, `resolved_at`, `resolution_note`, `created_at`. Guard: updates only from `open`, only status and resolution fields                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `review_comments` (AO, redactable)                      | `id uuid pk`, `target_type check in ('item','lesson','suggestion','decision')`, `target_id`, `variety_id`, `parent_id null`, `author_contributor_id`, `body 1..4000`, `redacted_at`, `at`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
+As built, beyond the lists above: `varieties` also has `reviewer_of_record` and
+`revision_no`; `lessons`, `items` and `exercises` have `created_at` and `updated_at`; on
+`units`, `lessons`, `items` and `exercises`, `position` is null exactly when `retired_at`
+is set; ids carry prefix checks (`<lang>-unt-<hex6>` and so on, and the language prefix
+matches the parent's and the variety's). `role_grants` also has a before-insert trigger that
+raises `PL409_ROLE_CONFLICT` (admin plus reviewer; it first takes a per-contributor
+transaction advisory lock, so two concurrent grant inserts for one person are serialised and
+the second sees the first), and its guard raises `PL422_BAD_DATE`
+(an end in the past) and `PL409_ALREADY_ENDED`. `units.publish_gate` defaults to `'blocked'`,
+so the seed passes each unit's gate explicitly.
+
 Views (all `with (security_invoker = true)`): `content.review_queue`,
 `content.awaiting_countersign`, `content.needs_recheck`, `content.pending_publish`,
 `content.item_history`.
@@ -254,12 +290,25 @@ with `private.native_problems(language, native, romanisation)` (codes
 `PL422_ROMANISATION_SCRIPT`, `PL422_ROMANISATION_NO_LATIN`; problems carry the character and
 its 1-based position); compute `text_fingerprint = private.text_fingerprint(native)` and
 `review_fingerprint = left(sha256(canonical_json({native, romanisation, meaning, context,
-usage_note, variety, citation})), 16)`. When `review_fingerprint` changes on update:
+usage_note, variety, citation})), 16)`, with a null `context` or `usage_note` left out, as
+the learner copy leaves them out. When `review_fingerprint` changes on update:
 `review_status := 'unreviewed'`, `current_decision_id := null`, `text_author :=
 private.change_author()` (the caller's contributor id, or the suggester during
 `accept_suggestion`), `revision_no := revision_no + 1`. An after trigger writes a
-`revisions` row (reason from `current_setting('polilingo.revision_reason', true)`, default
-`edit`). Demo items reject any update (`PL409_DEMO_FROZEN`) except while seeding.
+`revisions` row (reason `import` while seeding, otherwise from
+`current_setting('polilingo.revision_reason', true)`, defaulting to `create` on insert and
+`edit` on update; `polilingo.suggestion_id` fills `suggestion_id`). Demo items reject any
+update (`PL409_DEMO_FROZEN`) except while seeding. `revision_no` is owned by the database on
+every content table: it goes up by one whenever anything but bookkeeping changes, and it is
+what `p_expected_revision` compares with.
+
+Transaction-local settings the triggers read: `polilingo.seeding` (`'on'` inside each seed's
+own transaction, always with `set local` or `set_config(…, true)`),
+`polilingo.revision_reason` (`move`, `reorder`, `retire`, `gate`, `suggestion`, …),
+`polilingo.change_author` (the suggester, set by `accept_suggestion`),
+`polilingo.suggestion_id`, `polilingo.redaction` (`'on'` in `redact_comment`) and
+`polilingo.account_deletion` (the caller's uid, set by `delete_my_account` before it deletes
+`auth.users`).
 
 **Lesson fingerprint** covers `{title, subtitle, objective, variety, ordered live item ids,
 ordered live exercises (id, kind, answer, prompt, options)}`. Any change to it voids the
@@ -377,17 +426,21 @@ rewarded: [session ids], dailyGoal, selected }`.
 `public` tables carry no grants, so their policies are defence in depth plus the tested
 contract. `anon` has nothing anywhere.
 
-| Table                                                                                                                                       | `using (…)`                                                                                                        |
-| ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `profiles`, `progress_*`, `xp_awards`, `learner_prefs`                                                                                      | `user_id = (select auth.uid())`                                                                                    |
-| `contributors`                                                                                                                              | `(select private.is_staff()) or user_id = (select auth.uid())`                                                     |
-| `contributor_private`, `role_grants`                                                                                                        | `(select private.is_admin()) or contributor_id = (select private.current_contributor_id())`                        |
-| `invitations`, `audit_events`                                                                                                               | `(select private.is_admin())`                                                                                      |
-| `content.languages`, `varieties`, `courses`, `units`, `id_registry`, `releases`, `release_*`, `demo_*`, `keymap_*`, `orthography_allowlist` | `(select private.is_staff())`                                                                                      |
-| `content.lessons`, `items`, `review_decisions`, `countersignatures`, `suggestions`, `review_comments`                                       | `variety_id = any ((select private.readable_varieties()))`                                                         |
-| `content.exercises`                                                                                                                         | `exists (select 1 from content.lessons l where l.id = exercises.lesson_id)`                                        |
-| `content.revisions`                                                                                                                         | `(variety_id is null and (select private.is_staff())) or variety_id = any ((select private.readable_varieties()))` |
-| `private.*`                                                                                                                                 | no grants, no policies                                                                                             |
+| Table                                                                                                                                       | `using (…)`                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `profiles`, `progress_*`, `xp_awards`, `learner_prefs`                                                                                      | `user_id = (select auth.uid())`                                                                                            |
+| `contributors`                                                                                                                              | `(select private.is_staff()) or user_id = (select auth.uid())`                                                             |
+| `contributor_private`, `role_grants`                                                                                                        | `(select private.is_admin()) or contributor_id = (select private.current_contributor_id())`                                |
+| `invitations`, `audit_events`                                                                                                               | `(select private.is_admin())`                                                                                              |
+| `content.languages`, `varieties`, `courses`, `units`, `id_registry`, `releases`, `release_*`, `demo_*`, `keymap_*`, `orthography_allowlist` | `(select private.is_staff())`                                                                                              |
+| `content.lessons`, `items`, `review_decisions`, `countersignatures`, `suggestions`, `review_comments`                                       | `variety_id = any ((select private.readable_varieties())::text[])`                                                         |
+| `content.exercises`                                                                                                                         | `exists (select 1 from content.lessons l where l.id = exercises.lesson_id)`                                                |
+| `content.revisions`                                                                                                                         | `(variety_id is null and (select private.is_staff())) or variety_id = any ((select private.readable_varieties())::text[])` |
+
+The `::text[]` cast matters: without it Postgres parses `any ((select …))` as `ANY
+(subquery)` and fails with `operator does not exist: text = text[]`. Write the same form in
+any query of your own.
+| `private.*` | no grants, no policies |
 
 `tests/db/invariants.test.mjs` asserts, each returning zero rows: RLS off anywhere in
 `public/content/private`; an undeclared schema; any table privilege held by `anon`,
@@ -423,8 +476,10 @@ Codes below omit the `PL` prefix. Signatures are final; tracks implement them ex
 
 **B — sync** (`…001100_sync.sql`): `import_local_progress(p_envelope jsonb)`,
 `get_my_progress()`, `private.progress_state(uuid)`, `private.xp_total(uuid)`,
-`private.release_sort_key(text) → int[]` (`mvp` < `content@Y.M.N` by numbers < dev names),
-`private.resolve_lesson_key(text) → text` (§3.7).
+`private.resolve_lesson_key(text) → text` (§3.7). `private.release_sort_key(text) → int[]`
+(`mvp` = `{0}` < `content@Y.M.N` = `{1,Y,M,N}` < dev names = `{2}`) already exists in the
+foundation's `…000400_progress_tables.sql`, because the completions guard needs it: use it,
+do not define it again.
 
 **C — people** (`…001200_people.sql`):
 
@@ -588,16 +643,28 @@ matches the latest release; otherwise `{release, contentHash, payload}`.
 | `20260928000100_foundation.sql`      | Foundation  | schemas, default privileges, `private.raise`, `canonical_json`, `js_ws`, `normalise_native`, `text_fingerprint`, `forbid_change`, `app_settings`, `setting_on`, `profiles`, `audit_events`, `private.audit` |
 | `20260928000200_content_model.sql`   | Foundation  | every `content` table and view, the derive/void/revision/guard triggers, `native_problems`, `lesson_problems`, `effective_gate`, `lesson_json`                                                              |
 | `20260928000300_people.sql`          | Foundation  | people tables, `contributor_seq`, the §3.6 helpers, `my_context`, `bootstrap_first_admin`                                                                                                                   |
-| `20260928000400_progress_tables.sql` | Foundation  | progress tables and guards                                                                                                                                                                                  |
+| `20260928000400_progress_tables.sql` | Foundation  | progress tables and guards, `private.release_sort_key`                                                                                                                                                      |
 | `20260928000500_access.sql`          | Foundation  | every grant and RLS policy in §3.8, view grants                                                                                                                                                             |
 | `20260928001000`–`001600`            | Tracks A–G  | functions only, as in §3.9                                                                                                                                                                                  |
 | `20260929000000+`                    | Integration | fixes                                                                                                                                                                                                       |
 
 Seeds (`config.toml`: `[db.seed] sql_paths = ['./seed.sql', './seeds/*.sql']`):
-`seed.sql` sets `polilingo.seeding` and holds nothing else; `seeds/10_people.sql` holds the
-test accounts in §2; `seeds/20_content_fixture.sql` is generated by the content repo's
-`node scripts/seed-supabase.mjs --fixture` from its synthetic fixture corpus (no real
-phrases) and committed. Real content never goes in this public repository.
+`seed.sql` only makes sure `polilingo.seeding` is off for the session and holds nothing
+else (seeding mode is never set for a whole session: a pooled connection would carry it to
+the next client); `seeds/10_people.sql` holds the test accounts in §2, in one transaction
+with `set local polilingo.seeding = 'on'`; `seeds/20_content_fixture.sql` is generated by
+the content repo's `node scripts/seed-supabase.mjs --fixture` from its synthetic fixture
+corpus (no real phrases) and committed. Real content never goes in this public repository.
+
+These seeds are for the **local stack only**. Both refuse to run on a database that holds
+more than local test data (an `auth.users` email outside `@polilingo.test`, a release that
+is not a seed, or a staff or bootstrap action in `audit_events`; the people seed also
+refuses a course outside `ps-var-fixture`, and the fixture seed a different corpus through
+`PL409_SEED_MISMATCH`). They cannot tell a brand-new, empty hosted project from a fresh
+local one, so: **never run `supabase db push --include-seed` or `supabase db reset
+--linked`** against the hosted project. A seeded known admin would block
+`bootstrap_first_admin` for good, and releases, the ID registry, revisions and demo items
+are append-only.
 
 ### 3.11 Database tests
 
@@ -645,7 +712,13 @@ console pages render a "not configured" notice.
   `/sign-in?next=<path>` when there is no user; `export const config = { matcher:
 ['/account/:path*', '/review/:path*', '/admin/:path*', '/edit/:path*', '/invite/:path*'] }`
   written as a literal. Learner routes, `/sign-in` and `/auth/*` never run the proxy.
-- Vercel Functions region `sin1`.
+- Vercel Functions region `sin1`, next to the Supabase project, so the proxy, every console
+  page and action and `/api/release` do not pay a trans-Pacific round trip per call. It is a
+  project setting, not code: Vercel dashboard → Project → Settings → Functions → Function
+  Region → Singapore (`sin1`). Next 16 deprecates the `preferredRegion` segment config, and
+  the deploy docs keep "no `vercel.json`"; Integration records the step in
+  `docs/runbook-deploy.md` (or, if the founder prefers it in the repository, a
+  Foundation-owned `vercel.json` with `{ "regions": ["sin1"] }`).
 
 ### 4.3 Reads, writes and errors in the console
 
@@ -664,8 +737,10 @@ message: string }` (`lib/console/action-result.ts`) and calling `revalidatePath`
   wrong. Nothing was changed." Raw database text is never shown for unknown errors; the code
   is shown in small print for support.
 - `lib/console/access.ts` (server-only): `getAccess = cache(async () => my_context())`,
-  `requireRole('admin' | 'editor' | 'reviewer' | 'staff')` → the context, or renders the
-  kit's `NoAccess` panel. UI guards are cosmetic; the database decides.
+  `requireRole('admin' | 'editor' | 'reviewer' | 'staff')` →
+  `{ ok: true, context } | { ok: false, view }`, where `view` is the kit's `NoAccess` panel.
+  A page writes `const gate = await requireRole('admin'); if (!gate.ok) return gate.view;`.
+  UI guards are cosmetic; the database decides.
 - `lib/console/paths.ts`: route builders (`reviewItemPath(id)`, `editLessonPath(id)`, …).
 
 ### 4.4 Console shell and kit (foundation)
@@ -772,8 +847,15 @@ StorageLike | null) → string` (reads `polilingo.content.release`, verifies, ac
 - Google: `signInWithOAuth({ provider: 'google', options: { redirectTo:
 origin + '/auth/callback?next=' + next } })`.
 - Email: `signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo:
-origin + '/auth/confirm?next=' + next } })`, then `verifyOtp({ email, token, type: 'email'
-})`, then `ensure_profile(band)`, then `location.assign(next)`.
+origin + '/auth/confirm?next=' + encodeURIComponent(next) } })`, then `verifyOtp({ email,
+token, type: 'email' })`, then `ensure_profile(band)`, then `location.assign(next)`. The
+  email's button is built from that redirect (`supabase/templates/magic-link.html`:
+  `{{ .RedirectTo }}&token_hash=…&type=email`), so `emailRedirectTo` must always carry
+  `?next=` and be on the Auth redirect allow list (with the hosted project using the same
+  template). A redirect that is not allowed falls back to the Site URL, and the link is then
+  `<Site URL>/auth/confirm?token_hash=…&type=email` with no `next`. Email confirmations are
+  on (`[auth.email] enable_confirmations = true`, and "Confirm email" on the hosted
+  project): a new address gets the confirmation template, which carries the same code.
 - `app/auth/callback/route.ts`: `exchangeCodeForSession(code)`, `ensure_profile` from the
   cookie, redirect to `safeNext(next)`. `app/auth/confirm/route.ts`: `verifyOtp({ token_hash,
 type })`, same. `lib/safe-next.ts` `safeNext(x) → string` allows only same-origin paths
@@ -839,7 +921,9 @@ pauses sync for the tab and never touches local data.
 checkout of the tag) and `--fixture > ../web/supabase/seeds/20_content_fixture.sql`. It
 reuses `loadCorpus`/`learnerCopy`/`canonicalJson` from `scripts/build.mjs` and emits **one
 transaction**: `set local polilingo.seeding = 'on'`; a guard on `private.seed_runs` (same
-corpus hash → no-op; different hash → `PL409_SEED_MISMATCH`); languages and varieties;
+corpus hash → no-op; different hash → `PL409_SEED_MISMATCH`); languages and varieties
+(`on conflict … do update` only where a value differs, so the YAML wins over the rows
+`seeds/10_people.sql` adds for its local grants);
 `demo_period` (ps, ur live with their sunset; hno not live); the orthography allowlists;
 `id_registry` from `ids/registry.jsonl`; courses, units, lessons, items, exercises (`on
 conflict (id) do nothing`; revisions written by the triggers with reason `import`); demo

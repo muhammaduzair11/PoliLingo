@@ -1,0 +1,28 @@
+{
+  "note": "Generated from the content repository, schemas/orthography/hno.allowlist.json (extends ur.allowlist.json, as scripts/validate.mjs reads it). Flattened to code points. Regenerate rather than edit.",
+  "language": "hno",
+  "name": "Northern Hindko (Hazara)",
+  "codepoints": [
+    32, 33, 45, 1548, 1567, 1569, 1570, 1572, 1574, 1575, 1576, 1578, 1579,
+    1580, 1581, 1582, 1583, 1584, 1585, 1586, 1587, 1588, 1589, 1590, 1591,
+    1592, 1593, 1594, 1601, 1602, 1604, 1605, 1606, 1608, 1657, 1662, 1670,
+    1672, 1681, 1688, 1705, 1711, 1722, 1726, 1729, 1730, 1740, 1746, 1748
+  ],
+  "hints": [
+    {
+      "from": 1607,
+      "to": 1729,
+      "note": "ARABIC HEH -> HEH GOAL. The usual fix for text copied from Arabic-language sources."
+    },
+    {
+      "from": 1610,
+      "to": 1740,
+      "note": "ARABIC YEH -> FARSI YEH."
+    },
+    {
+      "from": 1603,
+      "to": 1705,
+      "note": "ARABIC KAF -> KEHEH."
+    }
+  ]
+}
