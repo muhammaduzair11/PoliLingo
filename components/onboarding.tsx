@@ -176,7 +176,8 @@ export function Onboarding({ courseId }: { courseId: string }) {
                 Let the adventure begin <ArrowRight size={20} />
               </button>
               <p className="saved-note">
-                Your progress stays on this device. No sign-up needed.
+                No sign-up needed. Your progress stays on this device, and you
+                can save it with an optional account later.
               </p>
             </>
           )}

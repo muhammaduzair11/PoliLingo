@@ -33,6 +33,7 @@ import { useLearning } from './learning-provider';
 import { Poli } from './art';
 import { Native } from './native';
 import { MotionButton } from './site-chrome';
+import { SaveStreakCard } from './account/save-streak-card';
 import { Loading, NotFoundView } from './status-views';
 import { getCourse, evaluate, missingLessonRedirect } from '@/lib/content';
 import { courseProgress } from '@/lib/learning-map';
@@ -294,6 +295,11 @@ export function LessonPlayer({
               </div>
             </div>
           )}
+          <SaveStreakCard
+            streak={streak(state.activity)}
+            completedCount={Object.keys(state.completed).length}
+            mapHref={`/learn/${course.id}`}
+          />
           <button
             className="button button-purple"
             onClick={() => {
