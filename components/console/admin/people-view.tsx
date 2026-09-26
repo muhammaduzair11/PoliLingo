@@ -2,6 +2,7 @@ import type { ActionResult } from '@/lib/console/action-result';
 import {
   formatDay,
   grantWindowLabel,
+  latestEndDate,
   roleLabel,
   scopeLabel,
 } from '@/lib/console/invite-link';
@@ -51,6 +52,14 @@ export function PeopleView({
     current(p).some((g) => g.role === 'language_reviewer'),
   );
   const waiting = page.invitations.filter((i) => i.state === 'open');
+  const expired = page.invitations.filter((i) => i.state === 'expired').length;
+  const invalid = page.invitations.filter((i) => i.state === 'void').length;
+  const notWaiting = [
+    expired > 0 ? `${expired} expired` : '',
+    invalid > 0 ? `${invalid} no longer valid` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <div className="people-page">
@@ -60,11 +69,7 @@ export function PeopleView({
         <Stat
           label="Invitations waiting"
           value={waiting.length}
-          hint={
-            page.invitations.length > waiting.length
-              ? `${page.invitations.length - waiting.length} expired`
-              : undefined
-          }
+          hint={notWaiting || undefined}
         />
       </StatGrid>
 
@@ -134,10 +139,7 @@ export function PeopleView({
           rowKey={(i) => i.id}
           empty={
             <EmptyState title="No invitations waiting">
-              <p>
-                Everyone you invited has joined. New invitations show here until
-                they&apos;re accepted.
-              </p>
+              <p>Invite someone and their link waits here until they accept.</p>
             </EmptyState>
           }
           columns={[
@@ -180,6 +182,15 @@ export function PeopleView({
                 i.state === 'expired' ? (
                   <span className="people-status people-status-ended">
                     Expired {formatDay(i.expires_at)}
+                  </span>
+                ) : i.state === 'void' ? (
+                  <span className="people-person">
+                    <span className="people-status people-status-ended">
+                      No longer valid
+                    </span>
+                    <span className="people-email">
+                      The sender isn&apos;t an admin now
+                    </span>
                   </span>
                 ) : (
                   formatDay(i.expires_at)
@@ -238,29 +249,35 @@ function RolesCell({
       )}
       {current.length > 0 && (
         <ul className="people-grants">
-          {current.map((g) => (
-            <li key={g.id} className={`people-grant people-grant-${g.state}`}>
-              <span className="people-grant-text">
-                <span className="people-grant-role">{roleWithScope(g)}</span>
-                <span className="people-grant-when">{grantWindowLabel(g)}</span>
-              </span>
-              <ConfirmAction
-                action={revokeRole}
-                triggerLabel={g.state === 'ending' ? 'Change end' : 'End role'}
-                triggerTone="quiet"
-                title={`End ${person.display_name}’s ${roleLabel(g.role).toLowerCase()} role?`}
-                description={endDescription(g)}
-                confirmLabel="End role"
-                cancelLabel="Keep it"
-                pendingLabel="Ending…"
-                tone="danger"
-                fields={{ grant_id: g.id }}
-                successMessage="Done. The role's end is saved."
-              >
-                <EndWhenFields minDate={minEndDate} />
-              </ConfirmAction>
-            </li>
-          ))}
+          {current.map((g) => {
+            // Ending brings a role's end forward, never later.
+            const maxDate = latestEndDate(g.ends_at);
+            return (
+              <li key={g.id} className={`people-grant people-grant-${g.state}`}>
+                <span className="people-grant-text">
+                  <span className="people-grant-role">{roleWithScope(g)}</span>
+                  <span className="people-grant-when">
+                    {grantWindowLabel(g)}
+                  </span>
+                </span>
+                <ConfirmAction
+                  action={revokeRole}
+                  triggerLabel={g.ends_at ? 'End sooner' : 'End role'}
+                  triggerTone="quiet"
+                  title={`End ${person.display_name}’s ${roleLabel(g.role).toLowerCase()} role${g.ends_at ? ' sooner' : ''}?`}
+                  description={endDescription(g)}
+                  confirmLabel="End role"
+                  cancelLabel="Keep it"
+                  pendingLabel="Ending…"
+                  tone="danger"
+                  fields={{ grant_id: g.id }}
+                  successMessage="Done. The role's end is saved."
+                >
+                  <EndWhenFields minDate={minEndDate} maxDate={maxDate} />
+                </ConfirmAction>
+              </li>
+            );
+          })}
         </ul>
       )}
       {past.length > 0 && (
@@ -294,7 +311,10 @@ function endDescription(g: Grant): string {
       : g.role === 'editor'
         ? `They won't be able to edit ${g.language_name ?? 'lessons'} any more.`
         : 'They lose admin access to the workspace.';
-  return `${what} Everything they did stays in the history, under their name.`;
+  const already = g.ends_at
+    ? ` It's set to end on ${formatDay(g.ends_at)}; you can bring that forward.`
+    : '';
+  return `${what}${already} Everything they did stays in the history, under their name.`;
 }
 
 function InvitationActions({

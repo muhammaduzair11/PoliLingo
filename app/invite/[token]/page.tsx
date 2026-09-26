@@ -69,7 +69,9 @@ export default async function InvitePage({
     return (
       <Frame>
         <section className="invite-card">
-          <h1>Invitations can&apos;t be opened here</h1>
+          <h1 className="invite-title">
+            Invitations can&apos;t be opened here
+          </h1>
           <Notice tone="warning" code="NOT_CONFIGURED">
             This copy of PoliLingo has no database settings. Open the link on
             the PoliLingo site instead.
@@ -170,10 +172,11 @@ export default async function InvitePage({
     );
   }
 
+  // The age question below holds this page's h1, so the card takes an h2.
   if (!context.profile)
     return frame(
       <div className="invite-stack">
-        <InvitationCard invitation={invitation}>
+        <InvitationCard invitation={invitation} headingLevel={2}>
           <p className="invite-next">
             One question below first, then you can accept.
           </p>

@@ -214,6 +214,28 @@ test('a language behind a closed gate is marked hidden, with no demo note when i
   );
 });
 
+test('starter phrases that were never shown are not described as no longer shown', () => {
+  // Hindko's starter period never goes live.
+  assert.equal(
+    languageCard({ ...HINDKO, demo: 5 }, TARGET).demoNote,
+    '5 starter phrases are never shown to learners; only reviewed phrases go live.',
+  );
+  // Before the first release, nothing has been shown yet.
+  assert.equal(
+    languageCard({ ...PASHTO, demo_live: 0, demo: 1 }, TARGET, false).demoNote,
+    '1 starter phrase waits for the first release.',
+  );
+  const unreleased = buildOverview({
+    ...FIXTURE,
+    latest_release: null,
+    languages: [{ ...PASHTO, live: 0, demo_live: 0, demo: 3 }],
+  });
+  assert.equal(
+    unreleased.languages[0].demoNote,
+    '3 starter phrases wait for the first release.',
+  );
+});
+
 test('reviewer coverage per variety: none, one, or enough to check each other', () => {
   const [hno, fixture, ps] = FIXTURE.varieties.map(varietyRow);
   assert.equal(fixture.coverage, 'none');

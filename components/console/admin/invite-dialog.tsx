@@ -1,6 +1,6 @@
 'use client';
 import { UserPlus } from 'lucide-react';
-import { useActionState, useId, useState } from 'react';
+import { startTransition, useActionState, useId, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -99,7 +99,7 @@ function InviteFlow({
   onDone: () => void;
   onAgain: () => void;
 }) {
-  const [result, formAction] = useActionState(action, null);
+  const [result, formAction, pending] = useActionState(action, null);
   if (result?.ok)
     return (
       <InviteLinkPanel
@@ -111,6 +111,7 @@ function InviteFlow({
   return (
     <InviteForm
       formAction={formAction}
+      pending={pending}
       languages={languages}
       minEndDate={minEndDate}
       error={result && !result.ok ? result : null}
@@ -120,17 +121,26 @@ function InviteFlow({
 
 function InviteForm({
   formAction,
+  pending,
   languages,
   minEndDate,
   error,
 }: {
   formAction: (formData: FormData) => void;
+  pending: boolean;
   languages: LanguageOption[];
   minEndDate: string;
   error: { code: string; message: string } | null;
 }) {
   const id = useId();
   const [role, setRole] = useState<InviteRole>('language_reviewer');
+  // Every field is held here. The form is submitted from onSubmit rather
+  // than through <form action>, which React resets once the action returns:
+  // a refusal must leave what the admin typed and chose exactly as it was.
+  const [email, setEmail] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [expiry, setExpiry] = useState(String(DEFAULT_EXPIRY_DAYS));
+  const [endsOn, setEndsOn] = useState('');
   const firstWithVarieties =
     languages.find((l) => l.varieties.length > 0)?.code ?? '';
   const [language, setLanguage] = useState(firstWithVarieties);
@@ -147,7 +157,16 @@ function InviteForm({
   const noVarieties = needsVariety && varieties.length === 0;
 
   return (
-    <form action={formAction} className="console-form invite-form">
+    <form
+      className="console-form invite-form"
+      aria-busy={pending || undefined}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (pending) return;
+        const data = new FormData(event.currentTarget);
+        startTransition(() => formAction(data));
+      }}
+    >
       <DialogHeader>
         <DialogTitle className="invite-dialog-title">
           Invite someone to the team
@@ -261,6 +280,8 @@ function InviteForm({
           spellCheck={false}
           required
           maxLength={254}
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
           className="console-input"
           aria-describedby={`${id}-email-hint`}
           placeholder="name@example.com"
@@ -280,6 +301,8 @@ function InviteForm({
           type="text"
           autoComplete="off"
           maxLength={60}
+          value={displayName}
+          onChange={(event) => setDisplayName(event.target.value)}
           className="console-input"
           aria-describedby={`${id}-name-hint`}
         />
@@ -297,7 +320,8 @@ function InviteForm({
             id={`${id}-expiry`}
             name="expires_in_days"
             className="console-input"
-            defaultValue={String(DEFAULT_EXPIRY_DAYS)}
+            value={expiry}
+            onChange={(event) => setExpiry(event.target.value)}
           >
             {EXPIRY_CHOICES.map((days) => (
               <option key={days} value={days}>
@@ -315,6 +339,8 @@ function InviteForm({
             name="grant_ends_on"
             type="date"
             min={minEndDate}
+            value={endsOn}
+            onChange={(event) => setEndsOn(event.target.value)}
             className="console-input"
             aria-describedby={`${id}-ends-hint`}
           />
@@ -331,8 +357,8 @@ function InviteForm({
       )}
 
       <div className="console-actions invite-form-actions">
-        <SubmitButton pendingLabel="Creating the link…" disabled={noVarieties}>
-          Create invitation link
+        <SubmitButton disabled={noVarieties || pending}>
+          {pending ? 'Creating the link…' : 'Create invitation link'}
         </SubmitButton>
       </div>
     </form>

@@ -62,10 +62,38 @@ as $$
   end
 $$;
 
--- Whether an admin other than grant p_except_grant is an admin at time p_at:
--- an admin grant already started and not ended by then, held by an active,
--- 18+ contributor with an account. Used before ending or pausing an admin.
-create function private.other_admin_at(p_except_grant uuid, p_except_contributor text, p_at timestamptz)
+-- Whether contributor p_contributor is an admin right now: an admin grant
+-- already started and not ended, held by an active, 18+ contributor with an
+-- account. An invitation is only as good as its sender: once they stop being
+-- an admin, their open invitations can't be accepted.
+create function private.contributor_is_admin(p_contributor text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.role_grants g
+    join public.contributors c on c.id = g.contributor_id
+    join public.profiles p on p.user_id = c.user_id
+    where c.id = p_contributor
+      and g.role = 'admin'
+      and c.status = 'active'
+      and p.age_band = '18+'
+      and g.starts_at <= now()
+      and now() < coalesce(g.ends_at, 'infinity'::timestamptz)
+  )
+$$;
+
+-- Whether an admin other than grant p_except_grant (and other than
+-- contributor p_except_contributor) stays one after the change: an admin
+-- grant already started and with no end date, held by an active, 18+
+-- contributor with an account. Used before ending or pausing an admin. An
+-- admin whose role is due to end doesn't count, so staggered end dates can't
+-- leave the workspace with nobody in charge.
+create function private.other_lasting_admin(p_except_grant uuid, p_except_contributor text)
 returns boolean
 language sql
 stable
@@ -83,9 +111,42 @@ as $$
       and c.status = 'active'
       and p.age_band = '18+'
       and g.starts_at <= now()
-      and coalesce(g.ends_at, 'infinity'::timestamptz) > p_at
+      and g.ends_at is null
   )
 $$;
+
+-- Ends every grant of p_contributor that hasn't ended yet, now (one not yet
+-- started ends as it starts), and records each. Used when a contributor
+-- leaves, and when someone who left or was paused accepts a new invitation,
+-- so that only the role they were just invited to is live.
+create function private.end_open_grants(p_contributor text, p_revoked_by text, p_reason text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_grant public.role_grants%rowtype;
+begin
+  for v_grant in
+    update public.role_grants g
+    set ends_at = greatest(now(), g.starts_at + interval '1 second'),
+        revoked_by = p_revoked_by,
+        revoke_reason = p_reason
+    where g.contributor_id = p_contributor
+      and now() < coalesce(g.ends_at, 'infinity'::timestamptz)
+    returning g.*
+  loop
+    perform private.audit('role.revoked', 'role_grant', v_grant.id::text, jsonb_build_object(
+      'contributor_id', v_grant.contributor_id,
+      'role', v_grant.role,
+      'language', v_grant.language_code,
+      'variety', v_grant.variety_id,
+      'ends_at', v_grant.ends_at,
+      'reason', p_reason
+    ));
+  end loop;
+end $$;
 
 -- ---------------------------------------------------------------------------
 -- create_invitation (admin)
@@ -298,6 +359,8 @@ begin
     'status', case
       when v_inv.revoked_at is not null then 'revoked'
       when v_inv.accepted_at is not null then 'used'
+      -- As accept_invitation sees it: the sender is no longer an admin.
+      when not private.contributor_is_admin(v_inv.created_by) then 'revoked'
       when now() >= v_inv.expires_at
         or (v_inv.grant_ends_at is not null and now() >= v_inv.grant_ends_at) then 'expired'
       else 'open'
@@ -364,6 +427,11 @@ begin
   if v_inv.accepted_at is not null then
     perform private.raise('PL410_INVITATION_USED', 'This invitation has already been used.');
   end if;
+  -- An invitation is only as good as its sender: one sent by someone who is
+  -- no longer an admin is void, whatever its expiry says.
+  if not private.contributor_is_admin(v_inv.created_by) then
+    perform private.raise('PL410_INVITATION_REVOKED', 'This invitation is no longer valid.');
+  end if;
 
   -- 4. The caller's address is confirmed and is the invited one.
   select pg_catalog.lower(pg_catalog.btrim(u.email)), u.email_confirmed_at
@@ -390,7 +458,9 @@ begin
     perform private.raise('PL403_UNDER_18', 'Team roles are for people 18 and over.');
   end if;
 
-  -- 6. The contributor: found, reactivated when ended, or created.
+  -- 6. The contributor: found, created, or, when they had left or were
+  --    paused, made active again. An admin invited them back to one role,
+  --    so any older role still open ends here: only the new one is live.
   select * into v_contributor from public.contributors c where c.user_id = v_uid for update;
   if not found then
     insert into public.contributors (user_id, display_name, created_by)
@@ -400,7 +470,8 @@ begin
       v_inv.created_by
     )
     returning * into v_contributor;
-  elsif v_contributor.status = 'ended' then
+  elsif v_contributor.status <> 'active' then
+    perform private.end_open_grants(v_contributor.id, v_inv.created_by, 'Replaced by a new invitation');
     update public.contributors set status = 'active' where id = v_contributor.id
     returning * into v_contributor;
   end if;
@@ -523,7 +594,16 @@ begin
   if v_grant.ends_at is not null and v_grant.ends_at <= now() then
     perform private.raise('PL409_ALREADY_ENDED', 'This role has already ended.', jsonb_build_object('grant_id', v_grant.id));
   end if;
-  if v_grant.role = 'admin' and not private.other_admin_at(v_grant.id, null, v_at) then
+  -- Ending brings a role's end forward; it never pushes it later.
+  if v_grant.ends_at is not null and v_at > v_grant.ends_at then
+    perform private.raise(
+      'PL422_BAD_DATE',
+      'This role already ends sooner than that. Choose an earlier date, or end it now.',
+      jsonb_build_object('grant_id', v_grant.id, 'ends_at', v_grant.ends_at)
+    );
+  end if;
+  -- Another admin with no end date must remain, whenever this one ends.
+  if v_grant.role = 'admin' and not private.other_lasting_admin(v_grant.id, null) then
     perform private.raise(
       'PL409_LAST_ADMIN',
       'This is the last admin role, so the workspace would have no admin. Add another admin first.',
@@ -631,8 +711,14 @@ begin
        where g.contributor_id = v_row.id and g.role = 'admin'
          and g.starts_at <= now() and now() < coalesce(g.ends_at, 'infinity'::timestamptz)
      )
-     and not private.other_admin_at(null, v_row.id, now()) then
+     and not private.other_lasting_admin(null, v_row.id) then
     perform private.raise('PL409_LAST_ADMIN', 'This is the last admin, so they can''t be paused or ended. Add another admin first.');
+  end if;
+
+  -- Leaving ends every role that is still open, so nothing comes back if
+  -- they are ever made active again.
+  if v_status = 'ended' and v_row.status <> 'ended' then
+    perform private.end_open_grants(v_row.id, private.current_contributor_id(), 'Left the team');
   end if;
 
   update public.contributors c
@@ -767,10 +853,12 @@ begin
         'expires_at', i.expires_at,
         'grant_ends_at', i.grant_ends_at,
         -- As accept_invitation sees it: a link whose role would already
-        -- have ended can't be accepted either.
+        -- have ended can't be accepted either, nor one whose sender is no
+        -- longer an admin.
         'state', case
           when now() >= i.expires_at
             or (i.grant_ends_at is not null and now() >= i.grant_ends_at) then 'expired'
+          when not private.contributor_is_admin(i.created_by) then 'void'
           else 'open'
         end
       ) order by i.created_at desc, i.id)
@@ -954,7 +1042,9 @@ revoke all on function
   private.mask_email(text),
   private.invitation_token_hash(text),
   private.clean_email(text),
-  private.other_admin_at(uuid, text, timestamptz),
+  private.contributor_is_admin(text),
+  private.other_lasting_admin(uuid, text),
+  private.end_open_grants(text, text, text),
   public.create_invitation(text, text, text, text, text, int, timestamptz, text),
   public.revoke_invitation(uuid),
   public.peek_invitation(text),

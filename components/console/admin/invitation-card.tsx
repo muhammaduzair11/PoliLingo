@@ -27,17 +27,23 @@ export type InvitationPeek = Scope & {
 /** The invitation itself: who it is for, what it offers, until when. */
 export function InvitationCard({
   invitation,
+  headingLevel = 1,
   children,
 }: {
   invitation: InvitationPeek;
+  /** 2 when something else on the page holds its one h1. */
+  headingLevel?: 1 | 2;
   /** The action area: Accept, or what to do instead. */
   children: ReactNode;
 }) {
   const first = invitation.display_name?.trim().split(/\s+/)[0];
+  const Heading = headingLevel === 2 ? 'h2' : 'h1';
   return (
     <article className="invite-card" aria-labelledby="invite-title">
       <p className="console-eyebrow">PoliLingo team invitation</p>
-      <h1 id="invite-title">{inviteHeadline(invitation)}</h1>
+      <Heading id="invite-title" className="invite-title">
+        {inviteHeadline(invitation)}
+      </Heading>
       <p className="invite-lead">
         {first ? `Salaam ${first}! ` : 'Salaam! '}
         PoliLingo teaches languages in small, playful lessons, and native
@@ -100,7 +106,9 @@ export function InvitationProblem({
       aria-labelledby="invite-title"
     >
       <p className="console-eyebrow">PoliLingo team invitation</p>
-      <h1 id="invite-title">{refusal.title}</h1>
+      <h1 id="invite-title" className="invite-title">
+        {refusal.title}
+      </h1>
       <p className="invite-lead">{refusal.message}</p>
       <p className="invite-next">{refusal.next}</p>
       {code && <small className="console-notice-code">Code: {code}</small>}

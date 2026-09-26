@@ -12,7 +12,11 @@ import {
   type ActionResult,
 } from '@/lib/console/action-result';
 import type { CreatedInvitation } from '@/components/console/admin/types';
-import { endOfRoleTimestamp, isInviteRole } from '@/lib/console/invite-link';
+import {
+  endOfRoleTimestamp,
+  endRoleRefusal,
+  isInviteRole,
+} from '@/lib/console/invite-link';
 import { adminOverviewPath, adminPeoplePath } from '@/lib/console/paths';
 import { sentenceFor } from '@/lib/db-errors';
 import { callRpc } from '@/lib/rpc';
@@ -111,8 +115,12 @@ export async function revokeRole(
       p_reason: reason || null,
     },
   );
-  if (result.ok) refresh();
-  return fromRpc(result);
+  if (result.ok) {
+    refresh();
+    return fromRpc(result);
+  }
+  const own = endRoleRefusal(result.error);
+  return own ? actionRefusal(result.error.code, own) : fromRpc(result);
 }
 
 /** Cancel an invitation that has not been accepted: its link stops working. */

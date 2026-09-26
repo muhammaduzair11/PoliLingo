@@ -6,6 +6,7 @@ import {
   EXPIRY_CHOICES,
   consoleHomeFor,
   endOfRoleTimestamp,
+  endRoleRefusal,
   formatDay,
   grantWindowLabel,
   inviteHeadline,
@@ -14,6 +15,7 @@ import {
   inviteUrl,
   isInviteRole,
   isInviteToken,
+  latestEndDate,
   roleDuties,
   roleLabel,
   scopeLabel,
@@ -261,4 +263,41 @@ test('expiry choices stay inside what create_invitation accepts', () => {
   assert.ok(
     EXPIRY_CHOICES.every((d) => Number.isInteger(d) && d >= 1 && d <= 30),
   );
+});
+
+test('ending a role offers no day later than its current end', () => {
+  assert.equal(latestEndDate(null), null);
+  assert.equal(latestEndDate('2026-10-05T00:00:00Z'), '2026-10-05');
+  // A mid-day end: that day's start is still not later than it.
+  assert.equal(latestEndDate('2026-10-05T17:30:00Z'), '2026-10-05');
+  assert.equal(latestEndDate('not a date'), null);
+  const at = endOfRoleTimestamp(
+    latestEndDate('2026-10-05T17:30:00Z'),
+    new Date('2026-09-28T09:00:00Z'),
+  );
+  assert.ok(at && at <= '2026-10-05T17:30:00.000Z');
+});
+
+test("the End role dialog's own sentences for a last admin and a later date", () => {
+  assert.match(
+    endRoleRefusal({ code: 'PL409_LAST_ADMIN' }) ?? '',
+    /workspace would be left without an admin/,
+  );
+  assert.doesNotMatch(
+    endRoleRefusal({ code: 'PL409_LAST_ADMIN' }) ?? '',
+    /You're the last admin/,
+  );
+  assert.equal(
+    endRoleRefusal({
+      code: 'PL422_BAD_DATE',
+      detail: { grant_id: 'g', ends_at: '2026-10-05T00:00:00+00:00' },
+    }),
+    'This role already ends on 5 Oct 2026. Choose that day or an earlier one, or end it now.',
+  );
+  // A past date has no end date in its detail: the catalogue sentence stands.
+  assert.equal(
+    endRoleRefusal({ code: 'PL422_BAD_DATE', detail: { grant_id: 'g' } }),
+    null,
+  );
+  assert.equal(endRoleRefusal({ code: 'PL409_ALREADY_ENDED' }), null);
 });

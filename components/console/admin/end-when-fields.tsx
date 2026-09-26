@@ -3,37 +3,56 @@ import { useId, useState } from 'react';
 
 /**
  * Inside the "End role" dialog: end it now, or at the start of a chosen
- * day (UTC), plus an optional reason kept in the role's history.
+ * day (UTC), plus an optional reason kept in the role's history. For a role
+ * already due to end, `maxDate` is its end day: ending only brings it
+ * forward, so no later day is offered, and none at all when it ends before
+ * the earliest day that can be picked.
  */
-export function EndWhenFields({ minDate }: { minDate: string }) {
+export function EndWhenFields({
+  minDate,
+  maxDate = null,
+}: {
+  minDate: string;
+  maxDate?: string | null;
+}) {
   const id = useId();
   const [when, setWhen] = useState<'now' | 'date'>('now');
+  const canPickDate = maxDate === null || maxDate >= minDate;
   return (
     <>
-      <fieldset className="console-choices end-when">
-        <legend className="console-label">When should it end?</legend>
-        <label className="console-choice">
-          <input
-            type="radio"
-            name="when"
-            value="now"
-            checked={when === 'now'}
-            onChange={() => setWhen('now')}
-          />
-          <span>Now</span>
-        </label>
-        <label className="console-choice">
-          <input
-            type="radio"
-            name="when"
-            value="date"
-            checked={when === 'date'}
-            onChange={() => setWhen('date')}
-          />
-          <span>On a date</span>
-        </label>
-      </fieldset>
-      {when === 'date' && (
+      {canPickDate ? (
+        <fieldset className="console-choices end-when">
+          <legend className="console-label">When should it end?</legend>
+          <label className="console-choice">
+            <input
+              type="radio"
+              name="when"
+              value="now"
+              checked={when === 'now'}
+              onChange={() => setWhen('now')}
+            />
+            <span>Now</span>
+          </label>
+          <label className="console-choice">
+            <input
+              type="radio"
+              name="when"
+              value="date"
+              checked={when === 'date'}
+              onChange={() => setWhen('date')}
+            />
+            <span>On a date</span>
+          </label>
+        </fieldset>
+      ) : (
+        <>
+          <input type="hidden" name="when" value="now" />
+          <p className="console-hint">
+            It already ends before tomorrow, so it can only end now.
+          </p>
+        </>
+      )}
+      {canPickDate && when === 'date' && (
         <div className="console-field">
           <label htmlFor={`${id}-date`} className="console-label">
             End date
@@ -43,6 +62,7 @@ export function EndWhenFields({ minDate }: { minDate: string }) {
             name="end_date"
             type="date"
             min={minDate}
+            max={maxDate ?? undefined}
             defaultValue={minDate}
             required
             className="console-input"

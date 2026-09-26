@@ -483,10 +483,15 @@ describe('accept_invitation', () => {
       assert.equal(endsAt.getTime(), ends.getTime());
     }));
 
-  test('an ended contributor is brought back', () =>
+  test('an ended contributor is brought back with only the new role; an old one still open ends', () =>
     tx(async (client) => {
       const person = await user(client, { email: 'back@example.org' });
-      const { contributorId } = await grant(client, person, 'editor');
+      const { contributorId, grantId: oldGrant } = await grant(
+        client,
+        person,
+        'editor',
+      );
+      // Ended behind the functions' back: the old editor grant is still open.
       await asPostgres(client);
       await client.query(
         `update public.contributors set status = 'ended' where id = $1`,
@@ -496,6 +501,17 @@ describe('accept_invitation', () => {
       await as(client, person);
       const r = await rpc(client, 'accept_invitation', { p_token: inv.token });
       assert.equal(r.contributor_id, contributorId);
+      assert.equal(
+        await value(client, `select private.can_edit_language('ur')`),
+        false,
+      );
+      assert.equal(
+        await value(
+          client,
+          `select private.has_review_authority('ps-var-yusufzai')`,
+        ),
+        true,
+      );
       await asPostgres(client);
       assert.equal(
         await value(
@@ -505,6 +521,174 @@ describe('accept_invitation', () => {
         ),
         'active',
       );
+      const old = await one(
+        client,
+        'select ends_at <= now() as ended, revoked_by, revoke_reason from public.role_grants where id = $1',
+        [oldGrant],
+      );
+      assert.deepEqual(old, {
+        ended: true,
+        revoked_by: 'ctr-0101',
+        revoke_reason: 'Replaced by a new invitation',
+      });
+      assert.equal(
+        await value(
+          client,
+          `select count(*)::int from public.audit_events where action = 'role.revoked' and target_id = $1`,
+          [oldGrant],
+        ),
+        1,
+      );
+    }));
+
+  test('a reviewer who left does not get their old variety back by accepting another role', () =>
+    tx(async (client) => {
+      // The seeded reviewer of ps-var-yusufzai is invited as an editor, then
+      // made to leave before accepting.
+      const inv = await invite(client, {
+        p_role: 'editor',
+        p_variety: null,
+        p_language: 'ps',
+        p_email: SEED.reviewerPs.email,
+      });
+      await rpc(client, 'update_contributor', {
+        p_contributor_id: 'ctr-0103',
+        p_patch: { status: 'ended' },
+      });
+      await as(client, SEED.reviewerPs);
+      assert.equal(
+        await value(
+          client,
+          `select private.has_review_authority('ps-var-yusufzai')`,
+        ),
+        false,
+      );
+      await rpc(client, 'accept_invitation', { p_token: inv.token });
+      assert.equal(
+        await value(
+          client,
+          `select private.has_review_authority('ps-var-yusufzai')`,
+        ),
+        false,
+      );
+      assert.equal(
+        await value(client, `select private.can_edit_language('ps')`),
+        true,
+      );
+      // Leaving ended the reviewer role there and then, on the record.
+      await asPostgres(client);
+      const old = await one(
+        client,
+        'select ends_at <= now() as ended, revoked_by, revoke_reason from public.role_grants where id = $1',
+        [SEED.reviewerPs.grant],
+      );
+      assert.deepEqual(old, {
+        ended: true,
+        revoked_by: 'ctr-0101',
+        revoke_reason: 'Left the team',
+      });
+      const audit = await one(
+        client,
+        `select actor_contributor_id from public.audit_events where action = 'role.revoked' and target_id = $1`,
+        [SEED.reviewerPs.grant],
+      );
+      assert.equal(audit.actor_contributor_id, 'ctr-0101');
+    }));
+
+  test('a paused contributor is made active with the new role, and their paused roles end', () =>
+    tx(async (client) => {
+      const inv = await invite(client, {
+        p_role: 'editor',
+        p_variety: null,
+        p_language: 'ps',
+        p_email: SEED.reviewerPs.email,
+      });
+      await rpc(client, 'update_contributor', {
+        p_contributor_id: 'ctr-0103',
+        p_patch: { status: 'paused' },
+      });
+      await as(client, SEED.reviewerPs);
+      await rpc(client, 'accept_invitation', { p_token: inv.token });
+      assert.equal(
+        await value(client, `select private.can_edit_language('ps')`),
+        true,
+      );
+      assert.equal(
+        await value(
+          client,
+          `select private.has_review_authority('ps-var-yusufzai')`,
+        ),
+        false,
+      );
+      await asPostgres(client);
+      assert.equal(
+        await value(
+          client,
+          `select status from public.contributors where id = 'ctr-0103'`,
+        ),
+        'active',
+      );
+      assert.equal(
+        await value(
+          client,
+          'select ends_at <= now() from public.role_grants where id = $1',
+          [SEED.reviewerPs.grant],
+        ),
+        true,
+      );
+    }));
+
+  test('an invitation stops working once its sender is no longer an admin', () =>
+    tx(async (client) => {
+      const rogue = await user(client, { email: 'rogue@example.org' });
+      const { contributorId, grantId } = await grant(client, rogue, 'admin');
+      await as(client, rogue);
+      const inv = await rpc(client, 'create_invitation', {
+        p_role: 'admin',
+        p_email: 'rogue.alt@example.org',
+      });
+      const alt = await user(client, { email: 'rogue.alt@example.org' });
+
+      // Paused: void while paused, good again once active.
+      await as(client, SEED.admin);
+      await rpc(client, 'update_contributor', {
+        p_contributor_id: contributorId,
+        p_patch: { status: 'paused' },
+      });
+      const state = async () =>
+        (await rpc(client, 'page_admin_people')).invitations.find(
+          (i) => i.id === inv.invitation_id,
+        )?.state;
+      assert.equal(await state(), 'void');
+      await as(client, alt);
+      assert.equal(
+        (await rpc(client, 'peek_invitation', { p_token: inv.token })).status,
+        'revoked',
+      );
+      await expectCode(
+        rpc(client, 'accept_invitation', { p_token: inv.token }),
+        'PL410_INVITATION_REVOKED',
+      );
+      await as(client, SEED.admin);
+      await rpc(client, 'update_contributor', {
+        p_contributor_id: contributorId,
+        p_patch: { status: 'active' },
+      });
+      assert.equal(await state(), 'open');
+
+      // Their admin role ended: void for good.
+      await rpc(client, 'revoke_role', { p_grant_id: grantId });
+      assert.equal(await state(), 'void');
+      await as(client, alt);
+      assert.equal(
+        (await rpc(client, 'peek_invitation', { p_token: inv.token })).status,
+        'revoked',
+      );
+      await expectCode(
+        rpc(client, 'accept_invitation', { p_token: inv.token }),
+        'PL410_INVITATION_REVOKED',
+      );
+      assert.equal(await value(client, 'select private.is_admin()'), false);
     }));
 
   test('refusals in the contract order: 401, 404, 410 revoked, expired, used', () =>
@@ -826,7 +1010,7 @@ describe('revoke_role', () => {
       );
     }));
 
-  test('refusals: the last admin, now or by a date after every other admin has gone', () =>
+  test('refusals: the last admin, now or on any date, unless another admin has no end date', () =>
     tx(async (client) => {
       await as(client, SEED.admin);
       await expectCode(
@@ -836,24 +1020,101 @@ describe('revoke_role', () => {
 
       const second = await user(client, { email: 'admin2@example.org' });
       const { grantId } = await grant(client, second, 'admin');
-      // The second admin leaves in 3 days: the first may not leave in 5.
+      // The second admin leaves in 3 days. From then on the first is the
+      // only admin, so the first may not leave on any date: not after the
+      // second (5 days), and not before (2 days) either, which would leave
+      // nobody once the second has gone.
       await as(client, SEED.admin);
       await rpc(client, 'revoke_role', {
         p_grant_id: grantId,
         p_effective_at: new Date(Date.now() + 3 * 86_400_000),
       });
+      for (const days of [5, 2])
+        await expectCode(
+          rpc(client, 'revoke_role', {
+            p_grant_id: SEED.admin.grant,
+            p_effective_at: new Date(Date.now() + days * 86_400_000),
+          }),
+          'PL409_LAST_ADMIN',
+        );
       await expectCode(
-        rpc(client, 'revoke_role', {
-          p_grant_id: SEED.admin.grant,
-          p_effective_at: new Date(Date.now() + 5 * 86_400_000),
+        rpc(client, 'update_contributor', {
+          p_contributor_id: 'ctr-0101',
+          p_patch: { status: 'paused' },
         }),
         'PL409_LAST_ADMIN',
       );
-      // But may leave in 2, while the second is still there.
+    }));
+
+  test('refusals: scheduling your own end, then ending the other admin', () =>
+    tx(async (client) => {
+      const second = await user(client, { email: 'admin2@example.org' });
+      const { contributorId, grantId } = await grant(client, second, 'admin');
+      // The seeded admin schedules their own end: fine, the second admin
+      // has no end date.
+      await as(client, SEED.admin);
       await rpc(client, 'revoke_role', {
         p_grant_id: SEED.admin.grant,
-        p_effective_at: new Date(Date.now() + 2 * 86_400_000),
+        p_effective_at: new Date(Date.now() + 5 * 86_400_000),
       });
+      // Now the second admin is the only one who stays: they can't be ended,
+      // paused or made to leave, now or on a date.
+      await expectCode(
+        rpc(client, 'revoke_role', { p_grant_id: grantId }),
+        'PL409_LAST_ADMIN',
+      );
+      await expectCode(
+        rpc(client, 'revoke_role', {
+          p_grant_id: grantId,
+          p_effective_at: new Date(Date.now() + 86_400_000),
+        }),
+        'PL409_LAST_ADMIN',
+      );
+      for (const status of ['paused', 'ended'])
+        await expectCode(
+          rpc(client, 'update_contributor', {
+            p_contributor_id: contributorId,
+            p_patch: { status },
+          }),
+          'PL409_LAST_ADMIN',
+        );
+    }));
+
+  test('an end date is only ever brought forward, never pushed later', () =>
+    tx(async (client) => {
+      const editor = await user(client, { email: 'short@example.org' });
+      const { grantId } = await grant(client, editor, 'editor', {
+        language: 'ps',
+      });
+      const day = 86_400_000;
+      await as(client, SEED.admin);
+      const first = await rpc(client, 'revoke_role', {
+        p_grant_id: grantId,
+        p_effective_at: new Date(Date.now() + 10 * day),
+      });
+      const err = await expectCode(
+        rpc(client, 'revoke_role', {
+          p_grant_id: grantId,
+          p_effective_at: new Date(Date.now() + 365 * day),
+        }),
+        'PL422_BAD_DATE',
+      );
+      assert.equal(
+        new Date(JSON.parse(err.detail).ends_at).getTime(),
+        new Date(first.ends_at).getTime(),
+      );
+      // The same moment again, or earlier, is fine.
+      await rpc(client, 'revoke_role', {
+        p_grant_id: grantId,
+        p_effective_at: first.ends_at,
+      });
+      const sooner = await rpc(client, 'revoke_role', {
+        p_grant_id: grantId,
+        p_effective_at: new Date(Date.now() + 2 * day),
+      });
+      assert.ok(
+        new Date(sooner.ends_at).getTime() < new Date(first.ends_at).getTime(),
+      );
     }));
 });
 

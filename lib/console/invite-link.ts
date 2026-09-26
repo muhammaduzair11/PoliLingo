@@ -211,8 +211,9 @@ const REFUSALS: Readonly<Record<string, InviteRefusal>> = {
   },
   PL410_INVITATION_REVOKED: {
     title: 'This invitation was cancelled',
-    message: 'The person who sent it has withdrawn it.',
-    next: 'If you think that was a mistake, ask them for a new link.',
+    message:
+      'It was withdrawn, or the person who sent it can no longer invite people.',
+    next: 'If you think that was a mistake, ask the PoliLingo team for a new link.',
   },
   PL410_INVITATION_EXPIRED: {
     title: 'This invitation has expired',
@@ -299,6 +300,40 @@ export function tomorrowUtc(now: Date): string {
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1),
   );
   return next.toISOString().slice(0, 10);
+}
+
+/**
+ * What the "End role" dialog says for a refusal of revoke_role, when the
+ * catalogue sentence would mislead: the catalogue's last-admin sentence is
+ * written for the admin themself ("You're the last admin"), and a date
+ * later than the role's current end is not a past date. Null otherwise.
+ */
+export function endRoleRefusal(error: {
+  code: string;
+  detail?: unknown;
+}): string | null {
+  if (error.code === 'PL409_LAST_ADMIN')
+    return 'This is the last admin role with no end date, so the workspace would be left without an admin. Invite another admin first.';
+  if (error.code === 'PL422_BAD_DATE') {
+    const detail = error.detail as { ends_at?: unknown } | null | undefined;
+    const endsOn =
+      typeof detail?.ends_at === 'string' ? formatDay(detail.ends_at) : '';
+    if (endsOn)
+      return `This role already ends on ${endsOn}. Choose that day or an earlier one, or end it now.`;
+  }
+  return null;
+}
+
+/**
+ * The latest end date (YYYY-MM-DD) to offer for a role already due to end
+ * at `endsAt`: that UTC day, whose start is not later than `endsAt`, so
+ * ending a role only ever brings it forward. Null when it has no end date.
+ */
+export function latestEndDate(
+  endsAt: string | Date | null | undefined,
+): string | null {
+  const date = toDate(endsAt);
+  return date ? date.toISOString().slice(0, 10) : null;
 }
 
 /**

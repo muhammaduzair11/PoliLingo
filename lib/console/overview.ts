@@ -212,10 +212,18 @@ export function pipelineSteps(l: OverviewLanguage): PipelineStep[] {
   ];
 }
 
-function demoNote(l: OverviewLanguage): string | null {
+function demoNote(l: OverviewLanguage, released: boolean): string | null {
   if (l.demo_live === 0 && l.demo === 0) return null;
-  if (l.demo_live === 0)
+  if (l.demo_live === 0) {
+    // Starter phrases that never go live (the language's starter period is
+    // off), that wait for the first release, or that were once shown and
+    // have since been replaced.
+    if (l.demo_period?.live === false)
+      return `${plural(l.demo, 'starter phrase is', 'starter phrases are')} never shown to learners; only reviewed phrases go live.`;
+    if (!released)
+      return `${plural(l.demo, 'starter phrase', 'starter phrases')} ${l.demo === 1 ? 'waits' : 'wait'} for the first release.`;
     return `${plural(l.demo, 'starter phrase is', 'starter phrases are')} kept but no longer shown.`;
+  }
   const sunset = l.demo_period?.sunset ? formatDay(l.demo_period.sunset) : '';
   return `${plural(l.demo_live, 'starter phrase', 'starter phrases')} ${l.demo_live === 1 ? 'fills' : 'fill'} in until reviewed lessons replace ${l.demo_live === 1 ? 'it' : 'them'}${sunset ? ` (by ${sunset} at the latest)` : ''}.`;
 }
@@ -223,6 +231,8 @@ function demoNote(l: OverviewLanguage): string | null {
 export function languageCard(
   l: OverviewLanguage,
   target: { min: number; max: number },
+  /** Whether any release has been published yet. */
+  released = true,
 ): LanguageCard {
   return {
     code: l.code,
@@ -239,7 +249,7 @@ export function languageCard(
     lessons: l.lessons,
     live: { total: l.live, reviewed: l.reviewed_live, demo: l.demo_live },
     gated: l.gated,
-    demoNote: demoNote(l),
+    demoNote: demoNote(l, released),
   };
 }
 
@@ -294,7 +304,9 @@ export function buildOverview(data: OverviewData): OverviewView {
     min: data.target?.reviewed_target_min ?? 250,
     max: data.target?.reviewed_target_max ?? 400,
   };
-  const languages = (data.languages ?? []).map((l) => languageCard(l, target));
+  const languages = (data.languages ?? []).map((l) =>
+    languageCard(l, target, Boolean(data.latest_release)),
+  );
   const sum = (pick: (l: OverviewLanguage) => number) =>
     (data.languages ?? []).reduce((total, l) => total + pick(l), 0);
   const r = data.latest_release;

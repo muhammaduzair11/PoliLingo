@@ -59,7 +59,8 @@ export type OpenInvitation = {
   created_by_name: string | null;
   expires_at: string;
   grant_ends_at: string | null;
-  state: 'open' | 'expired';
+  /** void: the sender is no longer an admin, so the link can't be accepted. */
+  state: 'open' | 'expired' | 'void';
 };
 
 export type LanguageOption = {

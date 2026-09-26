@@ -25,9 +25,17 @@ export function OverviewView({ view }: { view: View }) {
         </h2>
         <StatGrid>
           <Stat
-            label="Reviewed items"
+            label={
+              view.languages.length > 1
+                ? 'Reviewed items, all languages'
+                : 'Reviewed items'
+            }
             value={formatCount(view.totals.reviewed)}
-            hint={`Target ${formatCount(view.target.min)}–${formatCount(view.target.max)} per language`}
+            hint={
+              view.languages.length > 1
+                ? `Across ${view.languages.length} languages · target ${formatCount(view.target.min)}–${formatCount(view.target.max)} each`
+                : `Target ${formatCount(view.target.min)}–${formatCount(view.target.max)}`
+            }
           />
           <Stat label="In review" value={formatCount(view.totals.inReview)} />
           <Stat

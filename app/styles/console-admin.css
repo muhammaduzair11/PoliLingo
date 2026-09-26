@@ -695,7 +695,7 @@ select.console-input {
   border-radius: 1.5rem;
   box-shadow: 0 18px 40px #26183b12;
 }
-.invite-card h1 {
+.invite-card .invite-title {
   margin: 0;
   font-size: 30px;
   font-weight: 800;
@@ -883,7 +883,7 @@ select.console-input {
     padding: 22px 18px;
     gap: 14px;
   }
-  .invite-card h1 {
+  .invite-card .invite-title {
     font-size: 25px;
   }
   .invite-facts {
