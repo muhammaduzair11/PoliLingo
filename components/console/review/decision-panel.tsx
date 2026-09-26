@@ -39,6 +39,7 @@ export function DecisionPanel({
   stance,
   requiredScope,
   approveBlocked,
+  approveBlockedTitle = 'Not ready to approve yet',
   varietyName,
   seen,
   lang,
@@ -51,8 +52,9 @@ export function DecisionPanel({
   stance: ApprovalStance;
   /** Items: the parts to tick. Lessons: none. */
   requiredScope?: ScopePart[];
-  /** Why a lesson cannot be approved yet (too few exercises, problems). */
+  /** Why it cannot be approved now (not submitted, too few exercises, already approved). */
   approveBlocked?: ReactNode;
+  approveBlockedTitle?: string;
   varietyName: string;
   seen?: ItemFields;
   lang: string;
@@ -98,7 +100,7 @@ export function DecisionPanel({
       {staleNotice}
       {done && <Notice tone="success">{done}</Notice>}
       {canApprove && approveBlocked && (
-        <Notice tone="info" title="Not ready to approve yet">
+        <Notice tone="info" title={approveBlockedTitle}>
           {approveBlocked}
         </Notice>
       )}

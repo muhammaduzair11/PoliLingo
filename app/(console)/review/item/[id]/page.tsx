@@ -11,6 +11,7 @@ import { LoadError } from '@/components/console/review/load-error';
 import { PhraseSummary } from '@/components/console/review/phrase';
 import { CountersignButton } from '@/components/console/review/small-actions';
 import { StanceNotice } from '@/components/console/review/stance-notice';
+import { OutcomeProvider } from '@/components/console/review/outcome';
 import { SuggestFix } from '@/components/console/review/suggest-fix';
 import { requireRole } from '@/lib/console/access';
 import {
@@ -67,6 +68,10 @@ export default async function ReviewItemPage({
   const lang = language.code;
   const dir = language.direction;
   const pendingCountersign = awaitingCountersign(page.decisions);
+  // A sole approval by the viewer, still waiting: approving again adds nothing.
+  const myPendingApproval =
+    pendingCountersign !== null &&
+    pendingCountersign.reviewer_id === viewer.contributor_id;
   const stance = approvalStance({
     viewer,
     is_demo: item.is_demo,
@@ -114,174 +119,190 @@ export default async function ReviewItemPage({
         actions={<StatusBadge status={badge} />}
       />
 
-      <StanceNotice stance={stance} what="phrase" varietyName={variety.name} />
+      <OutcomeProvider>
+        <StanceNotice
+          stance={stance}
+          what="phrase"
+          varietyName={variety.name}
+        />
 
-      {pendingCountersign && (
-        <Notice tone="warning" title="Waiting for an admin's countersign">
-          <p>
-            {pendingCountersign.reviewer_name ?? 'The reviewer'} approved text
-            they wrote, as the only {variety.name} reviewer. It won&apos;t reach
-            learners until an admin countersigns, or another reviewer approves
-            it.
-          </p>
-          {viewer.is_admin &&
-            pendingCountersign.reviewer_id !== viewer.contributor_id && (
-              <CountersignButton
-                decisionId={pendingCountersign.id}
-                reviewerName={
-                  pendingCountersign.reviewer_name ?? 'The reviewer'
-                }
-                action={countersignDecision}
-              />
-            )}
-        </Notice>
-      )}
-
-      {item.review_status !== 'unreviewed' &&
-        current?.comment &&
-        !current.redacted && (
-          <Notice
-            tone={item.review_status === 'approved' ? 'success' : 'warning'}
-            title={
-              item.review_status === 'approved'
-                ? `Approved by ${current.reviewer_name ?? 'a reviewer'}`
-                : item.review_status === 'rejected'
-                  ? `Rejected by ${current.reviewer_name ?? 'a reviewer'}`
-                  : `${current.reviewer_name ?? 'A reviewer'} asked for changes`
-            }
-          >
-            {current.comment}
+        {pendingCountersign && (
+          <Notice tone="warning" title="Waiting for an admin's countersign">
+            <p>
+              {pendingCountersign.reviewer_name ?? 'The reviewer'} approved text
+              they wrote, as the only {variety.name} reviewer. It won&apos;t
+              reach learners until an admin countersigns, or another reviewer
+              approves it.
+            </p>
+            {viewer.is_admin &&
+              pendingCountersign.reviewer_id !== viewer.contributor_id && (
+                <CountersignButton
+                  decisionId={pendingCountersign.id}
+                  reviewerName={
+                    pendingCountersign.reviewer_name ?? 'The reviewer'
+                  }
+                  action={countersignDecision}
+                />
+              )}
           </Notice>
         )}
 
-      <div className="review-layout">
-        <div className="review-main">
-          <LearnerPreview
-            native={item.native}
-            romanisation={item.romanisation}
-            meaning={item.meaning}
-            context={item.context}
-            usageNote={item.usage_note}
-            lang={lang}
-            dir={dir}
-            learnerLabel={variety.learner_label}
-          />
-          <ItemFields item={item} lang={lang} dir={dir} />
-        </div>
+        {item.review_status !== 'unreviewed' &&
+          current?.comment &&
+          !current.redacted && (
+            <Notice
+              tone={item.review_status === 'approved' ? 'success' : 'warning'}
+              title={
+                item.review_status === 'approved'
+                  ? `Approved by ${current.reviewer_name ?? 'a reviewer'}`
+                  : item.review_status === 'rejected'
+                    ? `Rejected by ${current.reviewer_name ?? 'a reviewer'}`
+                    : `${current.reviewer_name ?? 'A reviewer'} asked for changes`
+              }
+            >
+              {current.comment}
+            </Notice>
+          )}
 
-        <aside className="review-side" aria-labelledby="review-actions-title">
-          <section className="review-card review-actions-card">
-            <h2 id="review-actions-title" className="review-section-title">
-              Your review
-            </h2>
-            {stance.kind === 'can-approve' || stance.kind === 'sole-author' ? (
-              <p className="console-hint">
-                Read it aloud as a {variety.name} speaker would. Approve only
-                what you would teach your own family.
-              </p>
-            ) : null}
-            <DecisionPanel
-              key={item.review_fingerprint}
-              targetType="item"
-              targetId={item.id}
-              fingerprint={item.review_fingerprint}
-              stance={stance}
-              requiredScope={page.required_scope}
-              varietyName={variety.name}
-              seen={seen}
+        <div className="review-layout">
+          <div className="review-main">
+            <LearnerPreview
+              native={item.native}
+              romanisation={item.romanisation}
+              meaning={item.meaning}
+              context={item.context}
+              usageNote={item.usage_note}
               lang={lang}
               dir={dir}
-              action={recordDecision}
+              learnerLabel={variety.learner_label}
             />
-            {viewer.can_suggest && (
-              <SuggestFix
-                key={`suggest-${item.review_fingerprint}`}
-                itemId={item.id}
+            <ItemFields item={item} lang={lang} dir={dir} />
+          </div>
+
+          <aside className="review-side" aria-labelledby="review-actions-title">
+            <section className="review-card review-actions-card">
+              <h2 id="review-actions-title" className="review-section-title">
+                Your review
+              </h2>
+              {stance.kind === 'can-approve' ||
+              stance.kind === 'sole-author' ? (
+                <p className="console-hint">
+                  Read it aloud as a {variety.name} speaker would. Approve only
+                  what you would teach your own family.
+                </p>
+              ) : null}
+              <DecisionPanel
+                key={item.review_fingerprint}
+                targetType="item"
+                targetId={item.id}
                 fingerprint={item.review_fingerprint}
-                current={seen}
+                stance={stance}
+                requiredScope={page.required_scope}
+                approveBlocked={
+                  myPendingApproval
+                    ? 'You approved this phrase. It is waiting for an admin to countersign, so there is nothing more to approve.'
+                    : undefined
+                }
+                approveBlockedTitle="Already approved"
+                varietyName={variety.name}
+                seen={seen}
                 lang={lang}
                 dir={dir}
-                action={suggestFix}
+                action={recordDecision}
               />
-            )}
-            {openSuggestions.length > 0 && (
-              <p className="console-hint">
-                {openSuggestions.length} suggested fix
-                {openSuggestions.length === 1 ? ' is' : 'es are'} waiting for an
-                editor. See the history below.
-              </p>
-            )}
-          </section>
-
-          {others.length > 0 && (
-            <section
-              className="review-card"
-              aria-labelledby="review-siblings-title"
-            >
-              <h2 id="review-siblings-title" className="review-section-title">
-                Also in this lesson
-              </h2>
-              <ol className="review-siblings">
-                {page.siblings.map((s) => (
-                  <li
-                    key={s.id}
-                    className={
-                      s.id === item.id ? 'review-sibling-current' : undefined
-                    }
-                  >
-                    {s.id === item.id ? (
-                      <span aria-current="true" className="review-sibling-link">
-                        <PhraseSummary
-                          native={s.native}
-                          romanisation={s.romanisation}
-                          meaning={s.meaning}
-                          lang={lang}
-                          dir={dir}
-                        />
-                      </span>
-                    ) : (
-                      <Link
-                        href={reviewItemPath(s.id)}
-                        className="review-sibling-link"
-                      >
-                        <PhraseSummary
-                          native={s.native}
-                          romanisation={s.romanisation}
-                          meaning={s.meaning}
-                          lang={lang}
-                          dir={dir}
-                        />
-                      </Link>
-                    )}
-                    <StatusBadge
-                      status={badgeFor({
-                        review_status: s.review_status,
-                        submitted: lesson.submitted_at !== null,
-                      })}
-                    />
-                  </li>
-                ))}
-              </ol>
+              {viewer.can_suggest && (
+                <SuggestFix
+                  key={`suggest-${item.review_fingerprint}`}
+                  itemId={item.id}
+                  fingerprint={item.review_fingerprint}
+                  current={seen}
+                  lang={lang}
+                  dir={dir}
+                  action={suggestFix}
+                />
+              )}
+              {openSuggestions.length > 0 && (
+                <p className="console-hint">
+                  {openSuggestions.length} suggested fix
+                  {openSuggestions.length === 1 ? ' is' : 'es are'} waiting for
+                  an editor. See the history below.
+                </p>
+              )}
             </section>
-          )}
-        </aside>
-      </div>
 
-      <ReviewHistory
-        targetType="item"
-        targetId={item.id}
-        revisions={page.revisions}
-        decisions={page.decisions}
-        comments={page.comments}
-        suggestions={page.suggestions}
-        now={page.generated_at}
-        lang={lang}
-        dir={dir}
-        isAdmin={viewer.is_admin}
-        addComment={addComment}
-        redactComment={redactComment}
-        withdrawSuggestion={withdrawSuggestion}
-      />
+            {others.length > 0 && (
+              <section
+                className="review-card"
+                aria-labelledby="review-siblings-title"
+              >
+                <h2 id="review-siblings-title" className="review-section-title">
+                  Also in this lesson
+                </h2>
+                <ol className="review-siblings">
+                  {page.siblings.map((s) => (
+                    <li
+                      key={s.id}
+                      className={
+                        s.id === item.id ? 'review-sibling-current' : undefined
+                      }
+                    >
+                      {s.id === item.id ? (
+                        <span
+                          aria-current="true"
+                          className="review-sibling-link"
+                        >
+                          <PhraseSummary
+                            native={s.native}
+                            romanisation={s.romanisation}
+                            meaning={s.meaning}
+                            lang={lang}
+                            dir={dir}
+                          />
+                        </span>
+                      ) : (
+                        <Link
+                          href={reviewItemPath(s.id)}
+                          className="review-sibling-link"
+                        >
+                          <PhraseSummary
+                            native={s.native}
+                            romanisation={s.romanisation}
+                            meaning={s.meaning}
+                            lang={lang}
+                            dir={dir}
+                          />
+                        </Link>
+                      )}
+                      <StatusBadge
+                        status={badgeFor({
+                          review_status: s.review_status,
+                          submitted: lesson.submitted_at !== null,
+                        })}
+                      />
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+          </aside>
+        </div>
+
+        <ReviewHistory
+          targetType="item"
+          targetId={item.id}
+          revisions={page.revisions}
+          decisions={page.decisions}
+          comments={page.comments}
+          suggestions={page.suggestions}
+          now={page.generated_at}
+          lang={lang}
+          dir={dir}
+          isAdmin={viewer.is_admin}
+          addComment={addComment}
+          redactComment={redactComment}
+          withdrawSuggestion={withdrawSuggestion}
+        />
+      </OutcomeProvider>
     </div>
   );
 }

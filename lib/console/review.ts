@@ -264,6 +264,10 @@ export type AdminSuggestion = {
   current: ItemFields;
   review_fingerprint: string;
   review_status: ReviewStatus;
+  /** The phrase's lesson is submitted, so an unreviewed phrase is "In review". */
+  lesson_submitted: boolean;
+  /** The phrase was retired: the suggestion can only be declined. */
+  item_retired: boolean;
   stale: boolean;
   can_resolve: boolean;
   created_at: string;

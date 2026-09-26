@@ -4,15 +4,15 @@ import { reviewQueuePath } from '@/lib/console/paths';
 
 export default function ReviewErrorBoundary({
   error,
-  reset,
+  retry,
 }: {
   error: unknown;
-  reset: () => void;
+  retry: () => void;
 }) {
   return (
     <ReviewError
       error={error}
-      retry={reset}
+      retry={retry}
       backHref={reviewQueuePath()}
       backLabel="Back to the queue"
     />

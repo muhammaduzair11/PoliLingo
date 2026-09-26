@@ -2,17 +2,17 @@
 import { ReviewError } from '@/components/console/review/review-error';
 import { adminOverviewPath } from '@/lib/console/paths';
 
-export default function ReviewErrorBoundary({
+export default function SuggestionsErrorBoundary({
   error,
-  reset,
+  retry,
 }: {
   error: unknown;
-  reset: () => void;
+  retry: () => void;
 }) {
   return (
     <ReviewError
       error={error}
-      retry={reset}
+      retry={retry}
       backHref={adminOverviewPath()}
       backLabel="Back to the overview"
     />

@@ -263,7 +263,24 @@ begin
   end if;
 
   if p_decision = 'approve' then
-    v_author := private.review_is_author(p_target_type, p_target_id, v_me);
+    -- A sole approval does not move last_approved_seq until it is
+    -- countersigned, so its author is still an author here. Belt and braces:
+    -- the reviewer of an uncountersigned sole approval that is still current
+    -- is treated as its author too, so approving again can never turn it
+    -- into an ordinary approval that skips the countersign.
+    v_author := private.review_is_author(p_target_type, p_target_id, v_me)
+      or exists (
+        select 1
+        from content.review_decisions d
+        where d.id = case p_target_type
+            when 'item' then (select i.current_decision_id from content.items i where i.id = p_target_id)
+            else (select l.current_decision_id from content.lessons l where l.id = p_target_id)
+          end
+          and d.decision = 'approve'
+          and d.sole_reviewer
+          and d.reviewer_contributor_id = v_me
+          and not exists (select 1 from content.countersignatures c where c.decision_id = d.id)
+      );
     if v_author then
       if private.active_reviewer_count(v_variety) = 1 then
         v_sole := true;
@@ -325,17 +342,20 @@ begin
   v_status := case p_decision when 'approve' then 'approved' when 'request_changes' then 'changes_requested' else 'rejected' end;
   select coalesce(max(r.seq), 0) into v_seq from content.revisions r;
 
+  -- Only an independent approval clears authorship (§3.5). A sole approval
+  -- keeps the old baseline until an admin countersigns it (see
+  -- countersign_decision), so its author stays an author until then.
   if p_target_type = 'item' then
     update content.items i
     set review_status = v_status,
         current_decision_id = v_decision,
-        last_approved_seq = case when p_decision = 'approve' then v_seq else i.last_approved_seq end
+        last_approved_seq = case when p_decision = 'approve' and not v_sole then v_seq else i.last_approved_seq end
     where i.id = p_target_id;
   else
     update content.lessons l
     set review_status = v_status,
         current_decision_id = v_decision,
-        last_approved_seq = case when p_decision = 'approve' then v_seq else l.last_approved_seq end
+        last_approved_seq = case when p_decision = 'approve' and not v_sole then v_seq else l.last_approved_seq end
     where l.id = p_target_id;
   end if;
 
@@ -369,6 +389,7 @@ declare
   v_current_id uuid;
   v_current_fp text;
   v_id uuid;
+  v_seq bigint;
 begin
   perform private.require_signed_in();
   v_me := private.current_contributor_id();
@@ -411,6 +432,16 @@ begin
   insert into content.countersignatures (decision_id, variety_id, admin_contributor_id, grant_id, comment)
   values (p_decision_id, v_decision.variety_id, v_me, v_grant, v_comment)
   returning id into v_id;
+
+  -- The countersigned approval now clears authorship, as an independent
+  -- approval does. The target row is locked above and still carries the
+  -- fingerprint the reviewer saw, so nothing learner-visible changed since.
+  select coalesce(max(r.seq), 0) into v_seq from content.revisions r;
+  if v_decision.target_type = 'item' then
+    update content.items i set last_approved_seq = v_seq where i.id = v_decision.item_id;
+  else
+    update content.lessons l set last_approved_seq = v_seq where l.id = v_decision.lesson_id;
+  end if;
 
   perform private.audit('countersign', v_decision.target_type, coalesce(v_decision.item_id, v_decision.lesson_id),
     jsonb_build_object('decision_id', p_decision_id, 'countersignature_id', v_id));
@@ -1254,6 +1285,8 @@ begin
         ),
         'review_fingerprint', i.review_fingerprint,
         'review_status', i.review_status,
+        'lesson_submitted', l.submitted_at is not null,
+        'item_retired', i.retired_at is not null,
         'stale', s.base_review_fingerprint <> i.review_fingerprint,
         'can_resolve', private.can_edit_language(lang.code),
         'created_at', s.created_at

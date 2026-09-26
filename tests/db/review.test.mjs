@@ -469,6 +469,157 @@ describe('record_review_decision', () => {
       );
     }));
 
+  test('a sole approval keeps its author an author until it is countersigned', () =>
+    tx(async (client) => {
+      const lesson = await seedLesson(client, { variety: 'ps-var-solo' });
+      const solo = await person(client, 'language_reviewer', {
+        variety: 'ps-var-solo',
+      });
+      const admin = await person(client, 'admin');
+      const id = lesson.itemIds[0];
+      await authorItem(client, solo.contributorId, id, 'Hello, friend');
+      const first = await approve(client, solo, id);
+      assert.equal(first.sole_reviewer, true);
+
+      // Approving again is still a sole approval that needs a countersign.
+      const again = await approve(client, solo, id);
+      assert.deepEqual(
+        { sole: again.sole_reviewer, cs: again.countersign_required },
+        { sole: true, cs: true },
+      );
+      await asPostgres(client);
+      assert.equal(
+        await value(
+          client,
+          'select count(*)::int from content.awaiting_countersign d join content.items i on i.current_decision_id = d.decision_id where i.id = $1',
+          [id],
+        ),
+        1,
+      );
+      await as(client, solo);
+      const before = await value(client, 'select public.page_review_item($1)', [
+        id,
+      ]);
+      assert.equal(before.viewer.is_author, true);
+
+      // Once countersigned, the approval clears authorship.
+      await as(client, admin);
+      await value(client, 'select public.countersign_decision($1)', [
+        again.decision_id,
+      ]);
+      await as(client, solo);
+      const after = await value(client, 'select public.page_review_item($1)', [
+        id,
+      ]);
+      assert.equal(after.viewer.is_author, false);
+    }));
+
+  test('after a sole approval, a new second reviewer means the author is refused', () =>
+    tx(async (client) => {
+      const lesson = await seedLesson(client, { variety: 'ps-var-solo' });
+      const solo = await person(client, 'language_reviewer', {
+        variety: 'ps-var-solo',
+      });
+      const id = lesson.itemIds[0];
+      await authorItem(client, solo.contributorId, id, 'Hello, friend');
+      const first = await approve(client, solo, id);
+      assert.equal(first.countersign_required, true);
+      const second = await person(client, 'language_reviewer', {
+        variety: 'ps-var-solo',
+      });
+      const fp = await fingerprint(client, 'items', id);
+      await as(client, solo);
+      await expectCode(decide(client, { id, fp }), 'PL403_OWN_TEXT');
+      const r = await approve(client, second, id);
+      assert.equal(r.sole_reviewer, false);
+    }));
+
+  test('the reviewer of an uncountersigned sole approval is its author, whatever the baseline says', () =>
+    tx(async (client) => {
+      const lesson = await seedLesson(client, { variety: 'ps-var-solo' });
+      const solo = await person(client, 'language_reviewer', {
+        variety: 'ps-var-solo',
+      });
+      const id = lesson.itemIds[0];
+      await authorItem(client, solo.contributorId, id, 'Hello, friend');
+      await approve(client, solo, id);
+      // A baseline moved past the author's revision (as the old code did).
+      await asPostgres(client);
+      await client.query(
+        'update content.items set last_approved_seq = (select max(seq) from content.revisions) where id = $1',
+        [id],
+      );
+      const again = await approve(client, solo, id);
+      assert.equal(again.countersign_required, true);
+      await person(client, 'language_reviewer', { variety: 'ps-var-solo' });
+      const fp = await fingerprint(client, 'items', id);
+      await as(client, solo);
+      await expectCode(decide(client, { id, fp }), 'PL403_OWN_TEXT');
+    }));
+
+  test('the same for a lesson: sole approval twice, then a second reviewer', () =>
+    tx(async (client) => {
+      const lesson = await seedLesson(client, { variety: 'ps-var-solo' });
+      const solo = await person(client, 'language_reviewer', {
+        variety: 'ps-var-solo',
+      });
+      const admin = await person(client, 'admin');
+      await asPostgres(client);
+      await client.query(
+        "select set_config('polilingo.change_author', $1, true)",
+        [solo.contributorId],
+      );
+      await client.query(
+        `update content.exercises set prompt = 'Pick the meaning.' where id = $1`,
+        [lesson.exerciseIds[0]],
+      );
+      await client.query(
+        "select set_config('polilingo.change_author', '', true)",
+      );
+      const lessonApprove = async (who) => {
+        const fp = await fingerprint(client, 'lessons', lesson.lessonId);
+        await as(client, who);
+        return decide(client, {
+          type: 'lesson',
+          id: lesson.lessonId,
+          fp,
+          scope: null,
+        });
+      };
+
+      const first = (await lessonApprove(solo)).rows[0].r;
+      assert.equal(first.countersign_required, true);
+      const again = (await lessonApprove(solo)).rows[0].r;
+      assert.deepEqual(
+        { sole: again.sole_reviewer, cs: again.countersign_required },
+        { sole: true, cs: true },
+      );
+      await as(client, solo);
+      const page = await value(client, 'select public.page_review_lesson($1)', [
+        lesson.lessonId,
+      ]);
+      assert.equal(page.viewer.is_author, true);
+
+      const second = await person(client, 'language_reviewer', {
+        variety: 'ps-var-solo',
+      });
+      await expectCode(lessonApprove(solo), 'PL403_OWN_TEXT');
+
+      // A countersign still lets the sole approval through, and clears
+      // authorship for the next round.
+      await as(client, admin);
+      await value(client, 'select public.countersign_decision($1)', [
+        again.decision_id,
+      ]);
+      await asPostgres(client);
+      await client.query(
+        'update public.role_grants set ends_at = now() where id = $1',
+        [second.grantId],
+      );
+      const clean = (await lessonApprove(solo)).rows[0].r;
+      assert.equal(clean.sole_reviewer, false);
+    }));
+
   test('a lesson needs 6 exercises and no blocking problems; its author is refused', () =>
     tx(async (client) => {
       const short = await seedLesson(client, { exercises: 5 });
@@ -1331,5 +1482,27 @@ describe('page reads', () => {
       assert.equal(open.stale, false);
       assert.equal(open.can_resolve, true);
       assert.equal(open.direction, 'rtl');
+      assert.equal(open.lesson_submitted, false);
+      assert.equal(open.item_retired, false);
+
+      // Submitted lesson, retired phrase: both are said, so the page can
+      // badge it "In review" or "Retired" and offer only Decline.
+      await asPostgres(client);
+      await client.query(
+        'update content.lessons set submitted_at = now() where id = $1',
+        [lesson.lessonId],
+      );
+      await client.query(
+        'update content.items set retired_at = now(), position = null where id = $1',
+        [lesson.itemIds[0]],
+      );
+      await as(client, editor);
+      const later = await value(
+        client,
+        'select public.page_admin_suggestions()',
+      );
+      const retired = later.open.find((s) => s.item_id === lesson.itemIds[0]);
+      assert.equal(retired.lesson_submitted, true);
+      assert.equal(retired.item_retired, true);
     }));
 });

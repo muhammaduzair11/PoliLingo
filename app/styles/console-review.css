@@ -15,6 +15,13 @@
 .review-page > .console-page-header {
   margin-bottom: 0;
 }
+/* The confirmation of the last action (OutcomeProvider). */
+.review-outcome:empty {
+  display: none;
+}
+.review-outcome:focus {
+  outline: none;
+}
 .review-page .console-page-description a {
   color: var(--purple);
   font-weight: 600;

@@ -1,6 +1,7 @@
 'use client';
 import { ConfirmAction } from '@/components/console/confirm-action';
 import type { ActionResult } from '@/lib/console/action-result';
+import { useOutcome } from './outcome';
 
 type FormAction = (
   previous: ActionResult<unknown> | null,
@@ -68,7 +69,9 @@ export function WithdrawButton({
 
 /**
  * An admin countersigns a sole reviewer's approval of text they wrote, so
- * it can publish. The database refuses the reviewer themself.
+ * it can publish. The database refuses the reviewer themself. The button
+ * leaves the page once the review is countersigned, so the confirmation goes
+ * to the page's OutcomeProvider.
  */
 export function CountersignButton({
   decisionId,
@@ -79,6 +82,7 @@ export function CountersignButton({
   reviewerName: string;
   action: FormAction;
 }) {
+  const announce = useOutcome();
   return (
     <ConfirmAction
       action={action}
@@ -89,7 +93,11 @@ export function CountersignButton({
       confirmLabel="Countersign"
       pendingLabel="Countersigning…"
       fields={{ decision_id: decisionId }}
-      successMessage="Countersigned. It can go into the next release."
+      onSuccess={() =>
+        announce(
+          `Countersigned. ${reviewerName}'s approval can go into the next release.`,
+        )
+      }
     >
       <div className="console-field review-dialog-field">
         <label className="console-label" htmlFor={`countersign-${decisionId}`}>
