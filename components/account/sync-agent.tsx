@@ -59,13 +59,18 @@ export function SyncAgent() {
 
   const [asking, setAsking] = useState(false);
   const [adding, setAdding] = useState(false);
+  // Add landed: the dialog shows its done state until the learner closes it.
+  const [saved, setSaved] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
 
   // The latest progress, for callbacks that outlive a render.
   const stateRef = useRef(state);
-  // How many rewarded sessions the last sync left this device with; -1
-  // until the first sync, so a lesson finished before it waits for it.
+  // How many rewarded sessions the account already has from this device: the
+  // count in the last envelope sent, then (once it lands) that envelope
+  // merged with the account's answer. -1 until the first envelope goes out,
+  // so a lesson finished before it waits for it. Any growth past it syncs,
+  // whether or not the last attempt succeeded.
   const knownRewarded = useRef(-1);
   // The account the learner said Add to in this tab: no more asking for it.
   const addedTo = useRef<string | null>(null);
@@ -79,6 +84,7 @@ export function SyncAgent() {
   useEffect(() => {
     setAsking(false);
     setAdding(false);
+    setSaved(false);
     setAddError(null);
     if (!ready || !userId) return;
     const uid = userId;
@@ -139,6 +145,9 @@ export function SyncAgent() {
       clearRetry();
       inFlight = true;
       lastStarted = Date.now();
+      // Counted from what is sent, not from what the device holds when the
+      // answer lands: a lesson finished meanwhile is still unsent.
+      knownRewarded.current = local.rewarded.length;
       setAccount({ sync: 'syncing' });
       const result = await callRpc<unknown>(supabase, 'import_local_progress', {
         p_envelope: envelope,
@@ -172,8 +181,11 @@ export function SyncAgent() {
       failures = 0;
       lastKey = key;
       const now = new Date();
+      // What was sent plus what the account added: merging that back is not
+      // new progress. A session rewarded while the request was out is on
+      // top of this, so it still syncs.
       knownRewarded.current = applySnapshot(
-        stateRef.current,
+        local,
         snapshot,
         uid,
         now,
@@ -182,7 +194,8 @@ export function SyncAgent() {
       setAccount({ sync: 'synced', lastSyncedAt: now.toISOString() });
       if (reason === 'add') {
         setAdding(false);
-        setAsking(false);
+        setAddError(null);
+        setSaved(true);
         setAnnouncement(
           "Done. This device's progress is saved to your account.",
         );
@@ -236,6 +249,11 @@ export function SyncAgent() {
     run.current('add');
   }
 
+  function done() {
+    setAsking(false);
+    setSaved(false);
+  }
+
   function notNow() {
     if (!userId) return;
     try {
@@ -260,9 +278,11 @@ export function SyncAgent() {
         xp={state.xp}
         streakDays={streak(state.activity)}
         pending={adding}
+        done={saved}
         error={addError}
         onAdd={add}
         onNotNow={notNow}
+        onDone={done}
       />
       <output className="sr-only" aria-live="polite">
         {announcement}

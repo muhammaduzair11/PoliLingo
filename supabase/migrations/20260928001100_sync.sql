@@ -19,12 +19,44 @@
 -- functions below may call them)
 -- ---------------------------------------------------------------------------
 
--- The key a completion is stored under: a permanent lesson id as it is; an
--- MVP "course/lesson" key moved to the lesson's permanent id when the keymap
--- maps it; any other key kept as it is (a Hindko MVP lesson with no keymap
--- row stays "hindko/greetings", stored, just not shown, like the device
--- does).
+-- The key a completion is stored under, the same key the device keeps
+-- (lib/progress.ts fromLegacyKey): a permanent lesson id as it is; an MVP
+-- "course/lesson" key moved to the lesson's permanent id when the keymap
+-- maps it to a lesson in the latest release, which is the keymap the
+-- learner copy carries; any other key kept as it is. So while Hindko is
+-- held back, "hindko/greetings" stays "hindko/greetings" here as on the
+-- device, although the full keymap already has a row for it.
 create function private.resolve_lesson_key(p_key text)
+returns text
+language sql
+stable
+strict
+set search_path = ''
+as $$
+  select case
+    when p_key ~ '^[a-z]{2,3}-lsn-[0-9a-f]{6}$' then p_key
+    else coalesce(
+      (select k.lesson_id
+       from content.keymap_lessons k
+       where k.legacy_key = p_key
+         and exists (
+           select 1 from content.release_lessons rl
+           where rl.lesson_id = k.lesson_id
+             and rl.release_seq = (select max(r.seq) from content.releases r)
+         )),
+      p_key
+    )
+  end
+$$;
+
+comment on function private.resolve_lesson_key(text) is
+  'The stored key for a completion: a permanent lesson id, an MVP key''s lesson id when the latest release has that lesson, or the key itself.';
+
+-- The lesson a completion pays its 15 XP for: an MVP key's lesson id by the
+-- whole keymap, released or not. So "hindko/greetings" (stored as it is
+-- while Hindko is held back) and, after a later release, its permanent id
+-- share one award: the account never pays for one lesson twice.
+create function private.award_lesson_key(p_key text)
 returns text
 language sql
 stable
@@ -40,8 +72,8 @@ as $$
   end
 $$;
 
-comment on function private.resolve_lesson_key(text) is
-  'The stored key for a completion: a permanent lesson id, a mapped MVP key''s lesson id, or the key itself.';
+comment on function private.award_lesson_key(text) is
+  'The lesson a completion''s 15 XP award is keyed by: a permanent lesson id, any mapped MVP key''s lesson id, or the key itself.';
 
 -- XP (§3.7): the award ledger's sum, or the most any one device has reported,
 -- whichever is greater. Both only grow, so XP never decreases.
@@ -68,9 +100,20 @@ set search_path = ''
 as $$
   select jsonb_build_object(
     'xp', private.xp_total(p_user),
+    -- Keys as the device holds them now: a legacy key stored while its
+    -- lesson was held back comes back as the lesson's id once the latest
+    -- release has it, merged with that id's own row (the earlier release wins).
     'completed', coalesce(
-      (select jsonb_object_agg(c.lesson_id, c.first_release order by c.lesson_id collate "C")
-       from public.progress_completions c where c.user_id = p_user),
+      (select jsonb_object_agg(k.lesson, k.first_release order by k.lesson collate "C")
+       from (
+         select distinct on (r.lesson) r.lesson, r.first_release
+         from (
+           select private.resolve_lesson_key(c.lesson_id) as lesson, c.first_release
+           from public.progress_completions c
+           where c.user_id = p_user
+         ) r
+         order by r.lesson, private.release_sort_key(r.first_release), r.first_release collate "C"
+       ) k),
       '{}'::jsonb
     ),
     'activity', coalesce(
@@ -223,6 +266,14 @@ declare
   v_activity int;
   v_awards int;
   v_before int;
+  -- What one account may hold in total (§3.7). The envelope limits cap one
+  -- import; these stop an account growing without end across imports, so
+  -- no account can fill the shared database. Far above a real learner: the
+  -- releases hold dozens of lessons, and at twenty sessions a day 20,000
+  -- takes years.
+  c_max_completions constant int := 5000;
+  c_max_sessions constant int := 20000;
+  c_max_devices constant int := 20;
 begin
   if v_uid is null then
     perform private.raise('PL401_NOT_SIGNED_IN', 'Please sign in to save your progress.');
@@ -249,7 +300,47 @@ begin
     perform private.raise('PL429_RATE_LIMITED', 'Too many progress saves in the last hour.');
   end if;
 
+  -- The account-wide limits: what the account holds plus what this envelope
+  -- would add. An account at a limit still syncs everything it already has.
+  if (select count(*) from public.progress_completions c where c.user_id = v_uid)
+     + (select count(distinct private.resolve_lesson_key(k))
+        from jsonb_object_keys(p_envelope -> 'completed') k
+        where not exists (
+          select 1 from public.progress_completions c
+          where c.user_id = v_uid and c.lesson_id = private.resolve_lesson_key(k)
+        )) > c_max_completions then
+    perform private.raise(
+      'PL422_BAD_ENVELOPE',
+      'This account already holds the most lessons it can.',
+      jsonb_build_object('limit', c_max_completions)
+    );
+  end if;
+  if (select count(*) from public.xp_awards a where a.user_id = v_uid and a.source = 'session')
+     + (select count(distinct r #>> '{}')
+        from jsonb_array_elements(p_envelope -> 'rewarded') r
+        where not exists (
+          select 1 from public.xp_awards a
+          where a.user_id = v_uid and a.award_key = 'session:' || (r #>> '{}')
+        )) > c_max_sessions then
+    perform private.raise(
+      'PL422_BAD_ENVELOPE',
+      'This account already holds the most practice sessions it can.',
+      jsonb_build_object('limit', c_max_sessions)
+    );
+  end if;
+
   v_device := p_envelope ->> 'deviceId';
+  -- A new device past the device limit is folded into the account's
+  -- leading device (the highest reported XP), which keeps the account's XP
+  -- exactly the same: it is the most any device reported either way.
+  if not exists (select 1 from public.progress_devices d where d.user_id = v_uid and d.device_id = v_device)
+     and (select count(*) from public.progress_devices d where d.user_id = v_uid) >= c_max_devices then
+    select d.device_id into v_device
+    from public.progress_devices d
+    where d.user_id = v_uid
+    order by d.reported_xp desc, d.device_id collate "C"
+    limit 1;
+  end if;
   v_before := private.xp_total(v_uid);
 
   -- Completions: a union. Two keys for one lesson (an MVP key and its
@@ -281,12 +372,18 @@ begin
   get diagnostics v_activity = row_count;
 
   -- The award ledger: 15 per completed lesson, 5 per rewarded session,
-  -- inserted if absent. Amounts come from here, never from the device.
+  -- inserted if absent. Amounts come from here, never from the device. A
+  -- lesson's award is keyed by its id through the whole keymap
+  -- (private.award_lesson_key), so one lesson pays once under any key.
+  -- Only this envelope's lessons: every stored completion came in through
+  -- an envelope and got its award then.
   with added as (
     insert into public.xp_awards (user_id, award_key, amount, lesson_id, source)
-    select v_uid, 'lesson:' || c.lesson_id, 15, c.lesson_id, 'lesson'
-    from public.progress_completions c
-    where c.user_id = v_uid
+    select distinct v_uid, 'lesson:' || l.lesson, 15, l.lesson, 'lesson'
+    from (
+      select private.award_lesson_key(private.resolve_lesson_key(k)) as lesson
+      from jsonb_object_keys(p_envelope -> 'completed') k
+    ) l
     union all
     select distinct v_uid, 'session:' || (r #>> '{}'), 5, null, 'session'
     from jsonb_array_elements(p_envelope -> 'rewarded') r
@@ -315,7 +412,7 @@ begin
   values (
     v_uid,
     v_hash,
-    v_device,
+    p_envelope ->> 'deviceId',
     jsonb_build_object(
       'local_date', p_envelope ->> 'localDate',
       'completed', (select count(*) from jsonb_object_keys(p_envelope -> 'completed')),
@@ -360,6 +457,7 @@ comment on function public.get_my_progress() is
 
 revoke execute on function
   private.resolve_lesson_key(text),
+  private.award_lesson_key(text),
   private.xp_total(uuid),
   private.progress_state(uuid),
   private.check_sync_envelope(jsonb),

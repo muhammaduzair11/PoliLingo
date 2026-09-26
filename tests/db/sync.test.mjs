@@ -13,6 +13,7 @@ import {
   asPostgres,
   expectCode,
   one,
+  seedLesson,
   tx,
   user,
   value,
@@ -609,6 +610,241 @@ describe('import_local_progress', () => {
     }));
 });
 
+/** `n` made-up lesson keys, distinct per `tag`. */
+const fakeLessons = (tag, n) =>
+  Object.fromEntries(
+    Array.from({ length: n }, (_, i) => [`zz/${tag}-${i}`, 'mvp']),
+  );
+
+describe('account-wide limits', () => {
+  test('an account holds at most 5,000 lessons across imports', () =>
+    tx(async (client) => {
+      const u = await signedIn(client);
+      const first = await importAs(
+        client,
+        envelope({ completed: fakeLessons('a', 3000) }),
+      );
+      assert.equal(first.applied, true);
+      // 3,000 stored + 2,001 new is one too many; nothing of it is kept.
+      const err = await expectCode(
+        importAs(
+          client,
+          envelope({
+            deviceId: 'device-2',
+            completed: fakeLessons('b', 2001),
+          }),
+        ),
+        'PL422_BAD_ENVELOPE',
+      );
+      assert.match(err.message, /most lessons/);
+      await asPostgres(client);
+      assert.equal(
+        Number(
+          await value(
+            client,
+            'select count(*) from public.progress_completions where user_id = $1',
+            [u.id],
+          ),
+        ),
+        3000,
+      );
+      await as(client, u);
+      // Exactly at the limit is accepted, and an account at the limit still
+      // syncs what it already holds.
+      const full = await importAs(
+        client,
+        envelope({
+          deviceId: 'device-2',
+          completed: fakeLessons('b', 2000),
+        }),
+      );
+      assert.equal(full.applied, true);
+      assert.equal(Object.keys(full.completed).length, 5000);
+      assert.equal(
+        (
+          await importAs(
+            client,
+            envelope({
+              deviceId: 'device-3',
+              xp: 5,
+              completed: fakeLessons('b', 10),
+            }),
+          )
+        ).applied,
+        true,
+      );
+      await expectCode(
+        importAs(
+          client,
+          envelope({ deviceId: 'device-3', completed: fakeLessons('c', 1) }),
+        ),
+        'PL422_BAD_ENVELOPE',
+      );
+    }));
+
+  test('an account holds at most 20,000 rewarded sessions across imports', () =>
+    tx(async (client) => {
+      await signedIn(client);
+      const ids = (tag, n) => Array.from({ length: n }, (_, i) => `${tag}${i}`);
+      assert.equal(
+        (await importAs(client, envelope({ rewarded: ids('a', 10000) })))
+          .applied,
+        true,
+      );
+      assert.equal(
+        (await importAs(client, envelope({ rewarded: ids('b', 9999) })))
+          .applied,
+        true,
+      );
+      // 19,999 stored: one more new id fits, two do not. Stored ids resent
+      // alongside are not counted again.
+      const err = await expectCode(
+        importAs(client, envelope({ rewarded: [...ids('b', 10), 'c1', 'c2'] })),
+        'PL422_BAD_ENVELOPE',
+      );
+      assert.match(err.message, /most practice sessions/);
+      const r = await importAs(
+        client,
+        envelope({ rewarded: [...ids('b', 10), 'c1'] }),
+      );
+      assert.equal(r.applied, true);
+      assert.equal(r.rewarded.length, 20000);
+    }));
+
+  test('past 20 devices a new device folds into the leading one', () =>
+    tx(async (client) => {
+      const u = await signedIn(client);
+      for (let i = 1; i <= 20; i++)
+        await importAs(client, envelope({ deviceId: `dev-${i}`, xp: i * 10 }));
+      const r = await importAs(
+        client,
+        envelope({ deviceId: 'dev-21', xp: 999 }),
+      );
+      assert.equal(r.applied, true);
+      assert.equal(r.xp, 999);
+      await asPostgres(client);
+      const rows = await client.query(
+        'select device_id, reported_xp from public.progress_devices where user_id = $1 order by reported_xp desc',
+        [u.id],
+      );
+      assert.equal(rows.rows.length, 20);
+      assert.deepEqual(rows.rows[0], { device_id: 'dev-20', reported_xp: 999 });
+      // A device already on the account keeps its own row.
+      await as(client, u);
+      await importAs(client, envelope({ deviceId: 'dev-1', xp: 11 }));
+      await asPostgres(client);
+      assert.equal(
+        await value(
+          client,
+          `select reported_xp from public.progress_devices where user_id = $1 and device_id = 'dev-1'`,
+          [u.id],
+        ),
+        11,
+      );
+    }));
+
+  test('a lesson award covers only the lessons in the envelope', () =>
+    tx(async (client) => {
+      const u = await signedIn(client);
+      await importAs(client, played('device-phone', ['ps-lsn-0a41c2']));
+      await importAs(
+        client,
+        played('device-tablet', ['ps-lsn-0b52d3', 'ps-lsn-0a41c2']),
+      );
+      await asPostgres(client);
+      assert.equal(
+        Number(
+          await value(
+            client,
+            `select count(*) from public.xp_awards where user_id = $1 and source = 'lesson'`,
+            [u.id],
+          ),
+        ),
+        2,
+      );
+    }));
+});
+
+describe('keys the release holds back', () => {
+  test('a legacy key whose lesson is not released stays as sent, and pays once', () =>
+    tx(async (client) => {
+      // The full keymap maps hindko/greetings, but its lesson is not in the
+      // latest release, so the learner copy's keymap (and so the device)
+      // keeps the legacy key.
+      const hindko = await seedLesson(client, {
+        language: 'hno',
+        items: 2,
+        exercises: 0,
+      });
+      await client.query(
+        `insert into content.keymap_lessons (legacy_key, lesson_id, course_id, position)
+         values ('hindko/greetings', $1, $2, 1000)`,
+        [hindko.lessonId, hindko.courseId],
+      );
+      assert.equal(
+        await value(
+          client,
+          `select private.resolve_lesson_key('hindko/greetings')`,
+        ),
+        'hindko/greetings',
+      );
+      assert.equal(
+        await value(
+          client,
+          `select private.award_lesson_key('hindko/greetings')`,
+        ),
+        hindko.lessonId,
+      );
+      const u = await signedIn(client);
+      const first = await importAs(
+        client,
+        envelope({
+          xp: 20,
+          completed: { 'hindko/greetings': 'mvp' },
+          rewarded: ['h1'],
+        }),
+      );
+      assert.deepEqual(first.completed, { 'hindko/greetings': 'mvp' });
+      assert.equal(first.xp, 20);
+
+      // A later release has the lesson: the device now sends its id. The
+      // account shows one completion under the id, pays for it once, and
+      // keeps the earlier release.
+      await asPostgres(client);
+      await client.query(`select set_config('polilingo.seeding', 'on', true)`);
+      const seq = await value(
+        client,
+        `insert into content.releases (name, kind, content_hash, payload)
+         values ('content@2026.10.1', 'publish', 'sha256-' || repeat('0', 64), '{}'::jsonb)
+         returning seq`,
+      );
+      await client.query(
+        `insert into content.release_lessons (release_seq, lesson_id, lesson_class, source)
+         values ($1, $2, 'demo', 'current')`,
+        [seq, hindko.lessonId],
+      );
+      await client.query(`select set_config('polilingo.seeding', '', true)`);
+      assert.equal(
+        await value(
+          client,
+          `select private.resolve_lesson_key('hindko/greetings')`,
+        ),
+        hindko.lessonId,
+      );
+      await as(client, u);
+      const later = await importAs(
+        client,
+        envelope({
+          xp: 20,
+          completed: { [hindko.lessonId]: 'content@2026.10.1' },
+          rewarded: ['h1'],
+        }),
+      );
+      assert.deepEqual(later.completed, { [hindko.lessonId]: 'mvp' });
+      assert.equal(later.xp, 20);
+    }));
+});
+
 describe('sync helpers', () => {
   test('only the two API functions are callable by signed-in users', () =>
     tx(async (client) => {
@@ -620,6 +856,7 @@ describe('sync helpers', () => {
            has_function_privilege('authenticated', 'private.progress_state(uuid)', 'execute') as state,
            has_function_privilege('authenticated', 'private.xp_total(uuid)', 'execute') as xp,
            has_function_privilege('authenticated', 'private.resolve_lesson_key(text)', 'execute') as resolve,
+           has_function_privilege('authenticated', 'private.award_lesson_key(text)', 'execute') as award,
            has_function_privilege('authenticated', 'private.check_sync_envelope(jsonb)', 'execute') as check_env,
            has_function_privilege('anon', 'public.import_local_progress(jsonb)', 'execute') as anon_import,
            has_function_privilege('anon', 'public.get_my_progress()', 'execute') as anon_read`,
@@ -630,6 +867,7 @@ describe('sync helpers', () => {
         state: false,
         xp: false,
         resolve: false,
+        award: false,
         check_env: false,
         anon_import: false,
         anon_read: false,
