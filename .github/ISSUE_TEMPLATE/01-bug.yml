@@ -69,11 +69,13 @@ body:
         (F12), paste the line below, press Enter, and paste the result here.
 
         ```
-        localStorage.getItem('polilingo.progress.v1')
+        (({ deviceId, userId, lastSyncedAt, importedIntoAccounts, ...rest }) => JSON.stringify(rest))(JSON.parse(localStorage.getItem('polilingo.progress.v2') || localStorage.getItem('polilingo.progress.v1') || '{}'))
         ```
 
-        It contains only your own learning progress — XP, streaks, which lessons you
-        have finished and your settings. No name, email or account details.
+        It shows only your learning progress — XP, streaks, which lessons you have
+        finished and your settings — and leaves out the ID your browser keeps for this
+        device, because issues here are public. No name, email or account details. If it
+        shows `{}`, nothing is saved in this browser; that helps us too.
       render: json
 
   - type: checkboxes

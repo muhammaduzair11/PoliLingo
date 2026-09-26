@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "selected": "pashto",
+  "dailyGoal": 2,
+  "xp": 85,
+  "completed": {
+    "pashto/greetings": true,
+    "pashto/introductions": true,
+    "hindko/greetings": true,
+    "pashto/essentials": true
+  },
+  "activity": { "2026-09-20": 2, "2026-09-21": 2, "2026-09-25": 1 },
+  "rewarded": [
+    "e486d03c-23d9-48c5-8f58-7bfe2bc8431d",
+    "6df515cc-98c7-49b5-9134-c369519e7c14",
+    "d9c33383-f4d8-4f55-a632-4a07a5e6ca4d",
+    "1ea10195-cd04-4623-b47b-76a8e900e371",
+    "97db5063-3c72-4199-8ab8-27ec18792ee6"
+  ],
+  "sessions": {
+    "pashto/greetings": {
+      "id": "1ea10195-cd04-4623-b47b-76a8e900e371",
+      "course": "pashto",
+      "lesson": "greetings",
+      "queue": [0, 1, 2, 3, 4, 5, 6, 7],
+      "cursor": 8,
+      "firstCorrect": 8,
+      "attempts": 8,
+      "studied": true,
+      "feedback": null,
+      "done": true,
+      "reward": 5
+    },
+    "pashto/introductions": {
+      "id": "6df515cc-98c7-49b5-9134-c369519e7c14",
+      "course": "pashto",
+      "lesson": "introductions",
+      "queue": [0, 1, 2, 3, 4, 5, 6, 7],
+      "cursor": 8,
+      "firstCorrect": 8,
+      "attempts": 8,
+      "studied": true,
+      "feedback": null,
+      "done": true,
+      "reward": 20
+    },
+    "hindko/greetings": {
+      "id": "d9c33383-f4d8-4f55-a632-4a07a5e6ca4d",
+      "course": "hindko",
+      "lesson": "greetings",
+      "queue": [0, 1, 2, 3, 4, 5, 6, 7],
+      "cursor": 8,
+      "firstCorrect": 8,
+      "attempts": 8,
+      "studied": true,
+      "feedback": null,
+      "done": true,
+      "reward": 20
+    },
+    "pashto/essentials": {
+      "id": "9803e6a3-d5c5-4d0c-af0a-94313aa7b131",
+      "course": "pashto",
+      "lesson": "essentials",
+      "queue": [0, 1, 2, 3, 4, 5, 6, 7],
+      "cursor": 2,
+      "firstCorrect": 2,
+      "attempts": 2,
+      "studied": true,
+      "feedback": null,
+      "done": false,
+      "reward": 0
+    }
+  },
+  "prefs": { "sound": true, "reducedMotion": false, "transliteration": false }
+}

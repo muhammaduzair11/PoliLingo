@@ -33,7 +33,15 @@ Full setup instructions for a bare Windows machine: [`docs/local-setup-windows.m
 The homepage leads into two-step onboarding and a three-lesson course for each language.
 Lessons contain study cards and eight exercises, with repeat practice for mistakes.
 
-Progress and in-flight feedback are stored under `polilingo.progress.v1` in `localStorage`.
+Progress and in-flight feedback are stored under `polilingo.progress.v2` in `localStorage`.
+The first load after v0.2 copies any older `polilingo.progress.v1` blob verbatim to
+`polilingo.progress.v1.bak-<date>` before migrating it, and never writes the old key again.
+If that copy cannot be made, the learner keeps going in memory and nothing is saved that
+session. Anything an older build later writes to the old key, during a rollback or in a tab
+left open from before, is merged in on the next load.
+Settings can export progress to a JSON file and import one back. An import combines
+completed lessons and streak days with what is already there; XP shows the higher of the
+two totals.
 A completed run earns 20 XP first time and 5 XP on replay. Session IDs prevent
 double-awarding on refresh. Calendar dates use the learner's browser-local timezone.
 

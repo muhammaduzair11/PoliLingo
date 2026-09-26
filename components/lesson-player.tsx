@@ -44,6 +44,7 @@ import {
   streak,
   unlocked,
 } from '@/lib/progress';
+import { randomId } from '@/lib/random-id';
 
 export function LessonPlayer({
   courseId,
@@ -80,7 +81,7 @@ export function LessonPlayer({
         selected: course.id,
         sessions: {
           ...s.sessions,
-          [key]: newSession(course.id, lesson.id, crypto.randomUUID()),
+          [key]: newSession(course.id, lesson.id, randomId()),
         },
       }));
     else if (!session.done && (session.studied || session.cursor > 0))
@@ -130,7 +131,7 @@ export function LessonPlayer({
       ...s,
       sessions: {
         ...s.sessions,
-        [key]: newSession(course!.id, lesson!.id, crypto.randomUUID()),
+        [key]: newSession(course!.id, lesson!.id, randomId()),
       },
     }));
     setResume(false);
@@ -279,11 +280,7 @@ export function LessonPlayer({
                     [nextKey]:
                       s.sessions[nextKey] && !s.sessions[nextKey].done
                         ? s.sessions[nextKey]
-                        : newSession(
-                            course!.id,
-                            nextLesson.id,
-                            crypto.randomUUID(),
-                          ),
+                        : newSession(course!.id, nextLesson.id, randomId()),
                   },
                 }));
                 router.push(`/lesson/${course!.id}/${nextLesson.id}`);
