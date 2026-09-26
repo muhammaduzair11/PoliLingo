@@ -328,6 +328,8 @@ $$;
 --             release's JSON, order updated) or null (left out)
 --   lesson    the learner JSON that goes in, null when left out
 --   in_previous  whether the previous release held it
+--   reasons   why it is left out; for a carried lesson, what its edited
+--             version still needs; [] for a current one
 -- Carry-forward (§3.5): not publishable now, in the previous release, not
 -- retired, its gate still open, its class still allowed, and every phrase
 -- it showed still live in it. Demo exit: a language with a unit whose
@@ -460,6 +462,9 @@ as $$
     (d.source0 is not null and not d.exited) as included,
     (d.prev_lesson is not null) as in_previous,
     case
+      -- Carried: what its edited version still needs before it can replace
+      -- the published one.
+      when d.source0 = 'carried' and not d.exited then coalesce(d.cand_reasons, '[]'::jsonb)
       when d.source0 is not null and not d.exited then '[]'::jsonb
       when d.exited then jsonb_build_array(jsonb_build_object(
         'code', 'demo_exit',
@@ -768,6 +773,30 @@ begin
     v_out := v_out || format('Publish-gated languages or varieties reached the copy: %s.', v_bad);
   end if;
 
+  -- Every lesson is live, in a live unit and course, with every publish gate
+  -- above it open. A build never holds anything else (release_plan leaves it
+  -- out); a rollback must not bring back a lesson pulled since.
+  select string_agg(l.lesson_id, ', ' order by l.lesson_id) into v_bad
+  from jsonb_to_recordset(v_lessons) l(lesson_id text)
+  left join content.lessons cl on cl.id = l.lesson_id
+  left join content.units u on u.id = cl.unit_id
+  left join content.courses c on c.id = cl.course_id
+  where cl.id is null or cl.retired_at is not null or u.retired_at is not null
+     or c.retired_at is not null
+     or private.effective_gate(l.lesson_id) is distinct from 'open';
+  if v_bad is not null then
+    v_out := v_out || format('Lessons that are retired or behind a closed publish gate reached the copy: %s.', v_bad);
+  end if;
+
+  -- Every phrase is live and still in the lesson that shows it.
+  select string_agg(i.item_id, ', ' order by i.item_id) into v_bad
+  from jsonb_to_recordset(v_items) i(lesson_id text, item_id text)
+  left join content.items ci on ci.id = i.item_id
+  where ci.id is null or ci.retired_at is not null or ci.lesson_id is distinct from i.lesson_id;
+  if v_bad is not null then
+    v_out := v_out || format('Phrases that are retired or moved reached the copy: %s.', v_bad);
+  end if;
+
   -- Demo phrases only while their language's demo is live and not past its sunset.
   select string_agg(i.item_id, ', ') into v_bad
   from jsonb_to_recordset(v_items) i(item_id text)
@@ -807,6 +836,25 @@ begin
 
   return to_jsonb(v_out);
 end $$;
+
+-- The languages whose demo a build of p_release on p_today drops (§3.5 demo
+-- exit): those with a unit whose every live lesson is in the build as
+-- reviewed. The same rule as exit_units in release_plan, read from its rows.
+create function private.demo_exit_languages(p_release text, p_today date)
+returns text[]
+language sql
+stable
+set search_path = ''
+as $$
+  select coalesce(array_agg(distinct e.language_code), '{}')
+  from (
+    select split_part(p.unit_id, '-', 1) as language_code
+    from private.release_plan(p_release, p_today) p
+    join content.lessons l on l.id = p.lesson_id and l.retired_at is null
+    group by p.unit_id
+    having bool_and(p.included and p.lesson_class = 'reviewed')
+  ) e
+$$;
 
 -- content@<UTC YYYY>.<MM>.<n+1>, or .1 in a new month.
 create function private.next_release_name(p_at timestamptz)
@@ -1002,11 +1050,26 @@ begin
   );
 end $$;
 
+-- The rows of a preview list (lesson summaries, each with a 'language')
+-- in a language the caller may edit (§3.8 scoping).
+create function private.preview_rows_in_scope(p_rows jsonb)
+returns jsonb
+language sql
+stable
+set search_path = ''
+as $$
+  select coalesce(jsonb_agg(x.value order by x.ord), '[]'::jsonb)
+  from jsonb_array_elements(coalesce(p_rows, '[]'::jsonb)) with ordinality x(value, ord)
+  where private.can_edit_language(x.value ->> 'language')
+$$;
+
 -- What the next publish would give learners (§3.9 F): {release, payload,
 -- contentHash, base, unchanged, empty, clock_ok, diff {added, changed,
 -- carried, removed, unchanged}, excluded, awaiting_countersign, stats}.
--- Editors and admins; definer, so an editor scoped to one language still
--- sees the whole release the button would publish.
+-- Editors and admins. The payload and contentHash are whole (they are what
+-- the button would publish); for an editor scoped to a language, the lesson
+-- lists (diff, excluded) keep only that language's lessons and the
+-- countersign queue only its varieties, as RLS scopes the tables (§3.8).
 create function public.preview_release()
 returns jsonb
 language plpgsql
@@ -1014,6 +1077,9 @@ stable
 security definer
 set search_path = ''
 as $$
+declare
+  v_body jsonb;
+  v_varieties text[];
 begin
   if auth.uid() is null then
     perform private.raise('PL401_NOT_SIGNED_IN', 'Please sign in first.');
@@ -1021,7 +1087,24 @@ begin
   if not exists (select 1 from private.my_active_grants() g where g.role in ('admin', 'editor')) then
     perform private.raise('PL403_NOT_EDITOR', 'Only editors and admins can preview a release.');
   end if;
-  return private.preview_body();
+  v_body := private.preview_body();
+  if private.is_admin() then
+    return v_body;
+  end if;
+
+  v_varieties := private.readable_varieties();
+  return v_body || jsonb_build_object(
+    'excluded', private.preview_rows_in_scope(v_body -> 'excluded'),
+    'diff', (v_body -> 'diff') || jsonb_build_object(
+      'added', private.preview_rows_in_scope(v_body #> '{diff,added}'),
+      'changed', private.preview_rows_in_scope(v_body #> '{diff,changed}'),
+      'carried', private.preview_rows_in_scope(v_body #> '{diff,carried}'),
+      'removed', private.preview_rows_in_scope(v_body #> '{diff,removed}')),
+    'awaiting_countersign', (
+      select coalesce(jsonb_agg(a.value order by a.ord), '[]'::jsonb)
+      from jsonb_array_elements(v_body -> 'awaiting_countersign') with ordinality a(value, ord)
+      where a.value ->> 'variety_id' = any (v_varieties))
+  );
 end $$;
 
 -- ---------------------------------------------------------------------------
@@ -1182,11 +1265,14 @@ end $$;
 -- append-only, so nothing is deleted and the history shows both. The copy is
 -- the earlier payload with only its release name changed, so its
 -- contentHash is the earlier one. It must still pass verify_learner_copy
--- today: a demo whose period has ended or a language whose gate has closed
--- since cannot come back (PL409_NOT_PUBLISHABLE).
+-- today, and it is refused (PL409_NOT_PUBLISHABLE, with the lesson ids in
+-- the detail) when anything in it has been pulled since: a lesson, unit,
+-- course or phrase retired, a publish gate closed anywhere above a lesson,
+-- a demo past its sunset, or demo lessons of a language whose reviewed
+-- lessons have replaced its demo (§3.5 demo exit).
 --
--- The next preview is built from the tables as always, so lessons that are
--- ready now appear in it again; a lesson that must stay out needs its
+-- The next preview is built from the tables as always, so newer lessons
+-- that are ready now appear in it again; one that must stay out needs its
 -- publish gate closed.
 create function public.rollback_release(p_release_name text, p_reason text)
 returns jsonb
@@ -1203,6 +1289,8 @@ declare
   v_name text;
   v_copy jsonb;
   v_problems jsonb;
+  v_blocked jsonb;
+  v_exited jsonb;
   v_seq bigint;
   v_lessons int;
   v_items int;
@@ -1245,14 +1333,60 @@ begin
       jsonb_build_object('release', v_latest.name));
   end if;
 
+  -- As publish_release: no content change while this one is checked and written.
+  lock table content.languages, content.varieties, content.courses, content.units,
+             content.lessons, content.items, content.exercises, content.demo_items,
+             content.demo_period, content.review_decisions, content.countersignatures,
+             content.keymap_lessons, content.keymap_items, content.keymap_courses
+    in share mode;
+
   v_name := private.next_release_name(v_now);
   v_copy := v_target.payload || jsonb_build_object('release', v_name, 'commit', null);
 
   v_problems := private.verify_learner_copy(v_copy, v_today);
+
+  -- The lessons that can't come back, by id, for the detail.
+  select coalesce(jsonb_agg(l.lesson_id order by l.lesson_id), '[]'::jsonb) into v_blocked
+  from (
+    select pl.value ->> 'id' as lesson_id, pl.value as lesson
+    from jsonb_array_elements(coalesce(v_copy -> 'courses', '[]'::jsonb)) c,
+         jsonb_array_elements(coalesce(c.value -> 'units', '[]'::jsonb)) u,
+         jsonb_array_elements(coalesce(u.value -> 'lessons', '[]'::jsonb)) pl
+  ) l
+  left join content.lessons cl on cl.id = l.lesson_id
+  left join content.units un on un.id = cl.unit_id
+  left join content.courses co on co.id = cl.course_id
+  where cl.id is null or cl.retired_at is not null or un.retired_at is not null
+     or co.retired_at is not null
+     or private.effective_gate(l.lesson_id) is distinct from 'open'
+     or exists (
+       select 1 from jsonb_array_elements(coalesce(l.lesson -> 'items', '[]'::jsonb)) it
+       left join content.items ci on ci.id = it.value ->> 'id'
+       where ci.id is null or ci.retired_at is not null or ci.lesson_id is distinct from l.lesson_id
+          or (exists (select 1 from content.demo_items x where x.item_id = ci.id)
+              and not coalesce((select dp.live and v_today <= dp.sunset from content.demo_period dp
+                                where dp.language_code = split_part(ci.id, '-', 1)), false)));
+
+  -- Demo exit: starter lessons of a language whose reviewed lessons now replace them.
+  select coalesce(jsonb_agg(rl.lesson_id order by rl.lesson_id), '[]'::jsonb) into v_exited
+  from content.release_lessons rl
+  where rl.release_seq = v_target.seq
+    and rl.lesson_class = 'demo'
+    and split_part(rl.lesson_id, '-', 1) = any (private.demo_exit_languages(v_name, v_today));
+  if jsonb_array_length(v_exited) > 0 then
+    v_problems := v_problems || jsonb_build_array(format(
+      'Reviewed lessons have replaced these starter lessons: %s.',
+      (select string_agg(e.value, ', ') from jsonb_array_elements_text(v_exited) e(value))));
+  end if;
+
   if jsonb_array_length(v_problems) > 0 then
     perform private.raise('PL409_NOT_PUBLISHABLE',
       format('%s can''t come back as it was: some of its lessons can''t be shown to learners any more.', v_target.name),
-      jsonb_build_object('release', v_target.name, 'problems', v_problems));
+      jsonb_build_object(
+        'release', v_target.name,
+        'lessons', (select coalesce(jsonb_agg(distinct x.value order by x.value), '[]'::jsonb)
+                    from jsonb_array_elements(v_blocked || v_exited) x),
+        'problems', v_problems));
   end if;
 
   select count(*) into v_lessons from content.release_lessons rl where rl.release_seq = v_target.seq;
@@ -1365,7 +1499,9 @@ revoke all on function
   private.verify_learner_copy(jsonb, date),
   private.next_release_name(timestamptz),
   private.release_clock_ok(timestamptz),
-  private.preview_body()
+  private.demo_exit_languages(text, date),
+  private.preview_body(),
+  private.preview_rows_in_scope(jsonb)
 from public, anon, authenticated;
 
 revoke all on function

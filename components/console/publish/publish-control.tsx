@@ -6,11 +6,40 @@ import type { ActionResult } from '@/lib/console/action-result';
 import { ReleaseOutcome } from './release-outcome';
 import type { PublishOutcome, PublishState } from './types';
 
+/** Refusals after which the page shows a new preview (the action refreshes it). */
+const STALE = new Set(['PL409_RELEASE_CHANGED', 'PL409_NOTHING_TO_PUBLISH']);
+
+type StaleRefusal = { code: string; message: string };
+
+function StaleNotice({ refusal }: { refusal: StaleRefusal }) {
+  if (refusal.code === 'PL409_NOTHING_TO_PUBLISH')
+    return (
+      <Notice tone="warning" title="Nothing was published" code={refusal.code}>
+        {refusal.message}
+      </Notice>
+    );
+  return (
+    <Notice
+      tone="warning"
+      title="Nothing was published: the preview changed"
+      code={refusal.code}
+    >
+      Something changed while you were looking. The preview on this page is up
+      to date now, so check it again before you publish.
+    </Notice>
+  );
+}
+
 /**
  * The Publish button, what stands in for it when there is nothing to
  * publish, and what came of the last publish. It stays mounted across the
  * refresh a publish causes, so the result stays on screen (and is announced)
  * after the preview turns to "up to date".
+ *
+ * The confirm dialog is keyed by the previewed contentHash: when a stale
+ * preview is refused, the page refreshes, the dialog closes, and the refusal
+ * shows here beside the new preview, so the admin never confirms a preview
+ * they haven't seen.
  */
 export function PublishControl({
   state,
@@ -33,11 +62,27 @@ export function PublishControl({
 }) {
   const noteId = useId();
   const [outcome, setOutcome] = useState<PublishOutcome | null>(null);
+  const [stale, setStale] = useState<StaleRefusal | null>(null);
+
+  const run = async (
+    previous: ActionResult<PublishOutcome> | null,
+    formData: FormData,
+  ): Promise<ActionResult<PublishOutcome>> => {
+    const result = await action(previous, formData);
+    setStale(
+      !result.ok && STALE.has(result.code)
+        ? { code: result.code, message: result.message }
+        : null,
+    );
+    return result;
+  };
+
   return (
     <div className="publish-control">
       {state === 'ready' && (
         <ConfirmAction
-          action={action}
+          key={contentHash}
+          action={run}
           triggerLabel={`Publish ${release}`}
           triggerTone="primary"
           title={`Publish ${release}?`}
@@ -89,6 +134,7 @@ export function PublishControl({
         </Notice>
       )}
       <div aria-live="polite" className="publish-outcome">
+        {stale && <StaleNotice refusal={stale} />}
         {outcome && <ReleaseOutcome key={outcome.name} outcome={outcome} />}
       </div>
     </div>

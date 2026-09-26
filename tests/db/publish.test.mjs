@@ -13,9 +13,11 @@ import {
   asAnon,
   asPostgres,
   expectCode,
+  grant,
   one,
   seedLesson,
   tx,
+  user,
   value,
 } from './helpers.mjs';
 
@@ -316,6 +318,40 @@ describe('access', () => {
       }
     }));
 
+  test('preview_release: an editor scoped to one language sees only its lessons and countersigns', () =>
+    tx(async (client) => {
+      await keepDemoLive(client);
+      const { lessonId } = await addLesson(client, {
+        title: 'Secret draft title',
+      });
+      const decisionId = await approveLesson(client, lessonId, { sole: true });
+      const scoped = await user(client);
+      await grant(client, scoped, 'editor', { language: 'hno' });
+
+      // The admin sees the Pashto lesson held back and waiting.
+      const full = await preview(client);
+      assert.ok(full.excluded.some((l) => l.id === lessonId));
+      assert.ok(
+        full.awaiting_countersign.some((a) => a.decision_id === decisionId),
+      );
+
+      const data = await preview(client, scoped);
+      assert.deepEqual(data.excluded, []);
+      assert.deepEqual(data.awaiting_countersign, []);
+      for (const list of ['added', 'changed', 'carried', 'removed'])
+        assert.ok(data.diff[list].every((l) => l.language === 'hno'));
+      assert.ok(!JSON.stringify(data.excluded).includes('Secret draft title'));
+      // What the button would publish is still whole.
+      assert.equal(data.contentHash, full.contentHash);
+
+      // An unscoped editor sees everything.
+      const all = await preview(client, EDITOR);
+      assert.ok(all.excluded.some((l) => l.id === lessonId));
+      assert.ok(
+        all.awaiting_countersign.some((a) => a.decision_id === decisionId),
+      );
+    }));
+
   test('publish_release: admins only, and the hash must look like one', () =>
     tx(async (client) => {
       await signIn(client, NOBODY);
@@ -565,6 +601,10 @@ describe('publishable', () => {
         data.diff.carried.map((l) => l.id),
         [lessonId],
       );
+      // The page can say what the edit still needs.
+      assert.deepEqual(reasonCodes(data.diff.carried[0]), [
+        'items_not_approved',
+      ]);
       const lesson = lessonsOf(data.payload).find((l) => l.id === lessonId);
       assert.equal(
         lesson.items[0].meaning,
@@ -931,6 +971,169 @@ describe('publishing', () => {
       const detail = JSON.parse(err.detail);
       assert.equal(detail.release, SEED_RELEASE);
       assert.ok(detail.problems.some((p) => p.startsWith('Starter phrases')));
+    }));
+
+  /**
+   * Publishes a reviewed lesson next to the demo, then as `pull` closes or
+   * retires something, publishes again (the lesson leaves) and tries to go
+   * back to the release that held it.
+   */
+  async function rollbackAfter(client, pull) {
+    await keepDemoLive(client);
+    const added = await addLesson(client);
+    await approveLesson(client, added.lessonId);
+    const first = await preview(client);
+    const { name } = await publish(client, first.contentHash);
+    await asPostgres(client);
+    await pull(added);
+    const second = await preview(client);
+    assert.ok(
+      second.diff.removed.some((l) => l.id === added.lessonId),
+      'the pulled lesson leaves in the next release',
+    );
+    await publish(client, second.contentHash);
+    await signIn(client, ADMIN);
+    try {
+      const err = await expectCode(
+        client.query('select public.rollback_release($1, $2)', [name, 'Why']),
+        'PL409_NOT_PUBLISHABLE',
+      );
+      return { detail: JSON.parse(err.detail), added, name };
+    } finally {
+      await asPostgres(client);
+    }
+  }
+
+  test('rollback_release refuses a lesson whose publish gate has closed since', () =>
+    tx(async (client) => {
+      const { detail, added, name } = await rollbackAfter(
+        client,
+        ({ lessonId }) =>
+          client.query(
+            "update content.lessons set publish_gate = 'blocked' where id = $1",
+            [lessonId],
+          ),
+      );
+      assert.equal(detail.release, name);
+      assert.deepEqual(detail.lessons, [added.lessonId]);
+      assert.ok(
+        detail.problems.some((p) => p.startsWith('Lessons that are retired')),
+      );
+    }));
+
+  test('rollback_release refuses a lesson behind a closed unit gate', () =>
+    tx(async (client) => {
+      await keepDemoLive(client);
+      const { lessonId } = await addLesson(client);
+      await approveLesson(client, lessonId);
+      const first = await preview(client);
+      await publish(client, first.contentHash);
+      await asPostgres(client);
+      await client.query(
+        "update content.units set publish_gate = 'blocked' where id = $1",
+        [FIXTURE_UNIT],
+      );
+      await signIn(client, ADMIN);
+      const err = await expectCode(
+        client.query('select public.rollback_release($1, $2)', [
+          SEED_RELEASE,
+          'Why',
+        ]),
+        'PL409_NOT_PUBLISHABLE',
+      );
+      assert.deepEqual(JSON.parse(err.detail).lessons, DEMO_LESSONS);
+    }));
+
+  test('rollback_release refuses a lesson retired since', () =>
+    tx(async (client) => {
+      const { detail, added } = await rollbackAfter(client, ({ lessonId }) =>
+        client.query(
+          'update content.lessons set retired_at = now(), position = null where id = $1',
+          [lessonId],
+        ),
+      );
+      assert.deepEqual(detail.lessons, [added.lessonId]);
+    }));
+
+  test('rollback_release refuses a phrase retired since', () =>
+    tx(async (client) => {
+      const { detail, added } = await rollbackAfter(client, ({ itemIds }) =>
+        client.query(
+          'update content.items set retired_at = now(), position = null where id = $1',
+          [itemIds[5]],
+        ),
+      );
+      assert.deepEqual(detail.lessons, [added.lessonId]);
+      assert.ok(
+        detail.problems.some(
+          (p) =>
+            p.startsWith('Phrases that are retired') &&
+            p.includes(added.itemIds[5]),
+        ),
+      );
+    }));
+
+  test('rollback_release refuses starter lessons after reviewed ones replace them', () =>
+    tx(async (client) => {
+      await keepDemoLive(client);
+      const seeded = await seedLesson(client, { language: 'ps' });
+      await approveLesson(client, seeded.lessonId);
+      const data = await preview(client);
+      assert.deepEqual(lessonIdsOf(data.payload), [seeded.lessonId]);
+      await publish(client, data.contentHash);
+      await signIn(client, ADMIN);
+      const err = await expectCode(
+        client.query('select public.rollback_release($1, $2)', [
+          SEED_RELEASE,
+          'Why',
+        ]),
+        'PL409_NOT_PUBLISHABLE',
+      );
+      const detail = JSON.parse(err.detail);
+      assert.deepEqual(detail.lessons, DEMO_LESSONS);
+      assert.ok(
+        detail.problems.some((p) =>
+          p.startsWith('Reviewed lessons have replaced'),
+        ),
+      );
+    }));
+
+  test('verify_learner_copy refuses gated and retired lessons and phrases', () =>
+    tx(async (client) => {
+      await keepDemoLive(client);
+      const { lessonId, itemIds } = await addLesson(client);
+      await approveLesson(client, lessonId);
+      const when = await today(client);
+      const built = await build(client, 'content@2099.01.1', when);
+      assert.ok(lessonIdsOf(built).includes(lessonId));
+      const check = () =>
+        value(client, 'select private.verify_learner_copy($1, $2::date)', [
+          built,
+          when,
+        ]);
+      assert.deepEqual(await check(), []);
+
+      await client.query(
+        "update content.lessons set publish_gate = 'blocked' where id = 'ps-lsn-f00001'",
+      );
+      await client.query(
+        'update content.items set retired_at = now(), position = null where id = $1',
+        [itemIds[5]],
+      );
+      const problems = await check();
+      assert.ok(
+        problems.some(
+          (p) =>
+            p.startsWith('Lessons that are retired') &&
+            p.includes('ps-lsn-f00001'),
+        ),
+      );
+      assert.ok(
+        problems.some(
+          (p) =>
+            p.startsWith('Phrases that are retired') && p.includes(itemIds[5]),
+        ),
+      );
     }));
 
   test('rollback_release stops when the release clock is wrong', () =>

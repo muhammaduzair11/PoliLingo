@@ -53,8 +53,9 @@ function Chips({ items }: { items: string[] }) {
   );
 }
 
-function Reasons({ row }: { row: LessonSummary }) {
-  if (row.reasons.length === 0) return null;
+function Reasons({ row, fallback }: { row: LessonSummary; fallback?: string }) {
+  if (row.reasons.length === 0)
+    return fallback ? <span className="publish-muted">{fallback}</span> : null;
   return (
     <ul className="publish-reasons">
       {row.reasons.map((reason, i) => (
@@ -66,7 +67,8 @@ function Reasons({ row }: { row: LessonSummary }) {
 
 /**
  * Lessons in one group of the preview. `detail` adds a column: what changed
- * (from lib/console/release-diff.ts), why a lesson is left out, or nothing.
+ * (from lib/console/release-diff.ts), why a lesson is left out, the size, or
+ * for a lesson carried at its published version, what its edit still needs.
  */
 export function LessonTable({
   rows,
@@ -75,7 +77,7 @@ export function LessonTable({
   caption,
 }: {
   rows: LessonSummary[];
-  detail: 'changes' | 'reasons' | 'size';
+  detail: 'changes' | 'reasons' | 'size' | 'pending';
   /** Plain-English changes per lesson id, for detail="changes". */
   changes?: Map<string, string[]>;
   caption?: string;
@@ -114,6 +116,12 @@ export function LessonTable({
       key: 'reasons',
       header: 'Why',
       cell: (row) => <Reasons row={row} />,
+    });
+  if (detail === 'pending')
+    columns.push({
+      key: 'pending',
+      header: 'Still needs',
+      cell: (row) => <Reasons row={row} fallback="A review of the changes." />,
     });
   if (detail === 'size')
     columns.push({

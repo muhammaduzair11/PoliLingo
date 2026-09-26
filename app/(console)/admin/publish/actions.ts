@@ -185,7 +185,7 @@ export async function rollbackRelease(
     if (result.code === 'PL409_NOT_PUBLISHABLE')
       return actionRefusal(
         result.code,
-        `${name} can't come back as it was: a demo period has ended or a publish gate has closed since. Publish a fix instead.`,
+        `${name} can't come back as it was: since then, some of its lessons were retired, held back by a publish gate, or replaced as starter content. Publish a fix instead.`,
       );
     if (STALE_PAGE.has(result.code)) revalidatePath(adminPublishPath());
     return result;

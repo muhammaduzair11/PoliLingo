@@ -178,9 +178,9 @@ function RollbackButton({
         <>
           Learners get the {count(row.lessons, 'lesson', 'lessons')} of{' '}
           {row.name} again, exactly as they were, in a new release, {nextName}.{' '}
-          {liveName} stays in the history. Lessons that are ready now come back
-          in the next preview, so close a lesson&apos;s publish gate first if it
-          must stay out.
+          {liveName} stays in the history. If any of those lessons has been
+          retired or held back by a publish gate since, going back is refused.
+          Newer lessons that are ready come back in the next preview.
         </>
       }
       confirmLabel={`Go back to ${row.name}`}

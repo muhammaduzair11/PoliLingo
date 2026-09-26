@@ -269,7 +269,7 @@ export function PublishScreen({
               Learners keep the version they already have until the changes are
               approved.
             </p>
-            <LessonTable rows={carried} detail="size" />
+            <LessonTable rows={carried} detail="pending" />
           </div>
         )}
       </Section>
