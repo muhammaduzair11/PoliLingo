@@ -93,7 +93,7 @@ Supabase dashboard → **Authentication**:
 
 - **URL Configuration.** Site URL `https://poli-lingo.vercel.app`. Redirect URLs:
   `https://poli-lingo.vercel.app/**`, the `platform` branch's preview domain
-  (`https://poli-lingo-git-platform-<team>.vercel.app/**`) and `http://localhost:3000/**`.
+  (`https://poli-lingo-git-platform-muhammad-uzairs-projects-a3d4bb4e.vercel.app/**`) and `http://localhost:3000/**`.
   A redirect that is not listed falls back to the Site URL, and the email link then loses
   where the person was going.
 - **Sign In / Providers.** Anonymous sign-ins **off**. Email on, "Confirm email" on, email

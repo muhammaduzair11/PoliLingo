@@ -1,5 +1,5 @@
 'use client';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   SCOPE_LABELS,
   missingScopes,
@@ -14,11 +14,23 @@ import {
  */
 export function ScopeChecklist({ required }: { required: ScopePart[] }) {
   const id = useId();
+  const fieldset = useRef<HTMLFieldSetElement>(null);
   const [ticked, setTicked] = useState<ScopePart[]>([]);
+  // React resets the form after its server action returns, which unticks the
+  // boxes on screen; clear the state with it, so the count never says "All
+  // checked" over empty boxes (after a stale-text refusal, the reviewer
+  // checks the new text again anyway).
+  useEffect(() => {
+    const form = fieldset.current?.form;
+    if (!form) return;
+    const clear = () => setTicked([]);
+    form.addEventListener('reset', clear);
+    return () => form.removeEventListener('reset', clear);
+  }, []);
   const missing = missingScopes(required, ticked);
   const done = required.length - missing.length;
   return (
-    <fieldset className="review-scope">
+    <fieldset ref={fieldset} className="review-scope">
       <legend className="console-label">What did you check?</legend>
       <p className="console-hint">
         Tick each part once you&apos;re sure of it. All {required.length} are
