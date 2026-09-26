@@ -1,14 +1,16 @@
 import type { Metadata } from 'next';
 /* oxlint-disable next/no-page-custom-font -- These fonts load globally in the App Router root layout, not an individual Pages Router page. */
 import { LearningProvider } from '@/components/learning-provider';
+import { courses } from '@/lib/content';
+import { listJoin } from '@/lib/words';
 import './globals.css';
 export const metadata: Metadata = {
   title: {
     default: 'PoliLingo — A little daily. A lot more connection.',
     template: '%s · PoliLingo',
   },
-  description:
-    'Find your words. Find your people. Learn Pashto and Urdu in small, playful lessons with Poli, your little adventure buddy.',
+  // Names only the languages the content release holds.
+  description: `Find your words. Find your people. Learn ${listJoin(courses.map((c) => c.name))} in small, playful lessons with Poli, your little adventure buddy.`,
 };
 export default function RootLayout({
   children,

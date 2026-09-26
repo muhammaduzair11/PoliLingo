@@ -34,7 +34,8 @@ import { Poli } from './art';
 import { Native } from './native';
 import { MotionButton } from './site-chrome';
 import { Loading, NotFoundView } from './status-views';
-import { getCourse, evaluate } from '@/lib/courses';
+import { getCourse, evaluate, missingLessonRedirect } from '@/lib/content';
+import { courseProgress } from '@/lib/learning-map';
 import {
   advanceSession,
   lessonKey,
@@ -69,6 +70,12 @@ export function LessonPlayer({
   const [matchMistake, setMatchMistake] = useState(false);
   const [matchHint, setMatchHint] = useState('');
   const heading = useRef<HTMLHeadingElement>(null);
+  // A lesson this release does not hold, in a course it does (retired, or an
+  // old bookmark of one): the course's map instead of "not found".
+  const away = missingLessonRedirect(courseId, lessonId);
+  useEffect(() => {
+    if (away) router.replace(away);
+  }, [away, router]);
   useEffect(() => {
     if (initialized || !ready || !course || !lesson) return;
     if (!unlocked(state, course.id, lesson.id)) {
@@ -81,7 +88,12 @@ export function LessonPlayer({
         selected: course.id,
         sessions: {
           ...s.sessions,
-          [key]: newSession(course.id, lesson.id, randomId()),
+          [key]: newSession(
+            course.id,
+            lesson.id,
+            randomId(),
+            lesson.exercises.length,
+          ),
         },
       }));
     else if (!session.done && (session.studied || session.cursor > 0))
@@ -96,7 +108,8 @@ export function LessonPlayer({
     setMatchMistake(false);
     setMatchHint('');
   }, [session?.cursor, session?.id]);
-  if (!course || !lesson) return <NotFoundView />;
+  if (!course) return <NotFoundView />;
+  if (!lesson) return <Loading />;
   if (!ready || !initialized) return <Loading />;
   if (!unlocked(state, course.id, lesson.id))
     return (
@@ -110,12 +123,18 @@ export function LessonPlayer({
       </main>
     );
   if (!session) return <Loading />;
+  // The lesson's own exercise count, recorded when the session began. The
+  // first pass is exercises 0..size-1; anything after that is a retry.
+  const size = session.size;
+  // A finished run is kept even when the release has since changed the
+  // lesson's exercises, so its queue may point past them. It only shows its
+  // results, which do not use the exercise.
   const exercise =
     lesson.exercises[
       session.queue[Math.min(session.cursor, session.queue.length - 1)]
-    ];
+    ] ?? lesson.exercises[0];
   const feedback = session.feedback;
-  const bank = [...exercise.phrase.meaning.split(' '), 'tomorrow', 'friend'];
+  const bank = [...exercise.phrase.meaning.split(' '), ...exercise.tiles];
   const bankOrder = bank.map((_, i) => (i + 2) % bank.length);
   const answered =
     exercise.kind === 'assemble'
@@ -131,7 +150,12 @@ export function LessonPlayer({
       ...s,
       sessions: {
         ...s.sessions,
-        [key]: newSession(course!.id, lesson!.id, randomId()),
+        [key]: newSession(
+          course!.id,
+          lesson!.id,
+          randomId(),
+          lesson!.exercises.length,
+        ),
       },
     }));
     setResume(false);
@@ -198,7 +222,9 @@ export function LessonPlayer({
         className="lesson-progress"
       />
       <span className="lesson-count">
-        {session.done ? '8 / 8' : `${Math.min(session.cursor, 8)} / 8`}
+        {session.done
+          ? `${size} / ${size}`
+          : `${Math.min(session.cursor, size)} / ${size}`}
       </span>
       <div className="lesson-tools">
         <button
@@ -222,9 +248,7 @@ export function LessonPlayer({
   if (session.done) {
     const lessonIndex = course.lessons.findIndex((l) => l.id === lesson.id);
     const nextLesson = course.lessons[lessonIndex + 1];
-    const earned = course.lessons.every(
-      (l) => state.completed[lessonKey(course.id, l.id)],
-    );
+    const earned = courseProgress(state.completed, course).finished;
     return (
       <main id="main-content" className="lesson-page">
         {header}
@@ -250,7 +274,9 @@ export function LessonPlayer({
             </div>
             <div className="result-stat">
               <Check />
-              <strong>{Math.round((session.firstCorrect / 8) * 100)}%</strong>
+              <strong>
+                {Math.round((session.firstCorrect / size) * 100)}%
+              </strong>
               <small>FIRST-TRY ACCURACY</small>
             </div>
             <div className="result-stat">
@@ -280,7 +306,12 @@ export function LessonPlayer({
                     [nextKey]:
                       s.sessions[nextKey] && !s.sessions[nextKey].done
                         ? s.sessions[nextKey]
-                        : newSession(course!.id, nextLesson.id, randomId()),
+                        : newSession(
+                            course!.id,
+                            nextLesson.id,
+                            randomId(),
+                            nextLesson.exercises.length,
+                          ),
                   },
                 }));
                 router.push(`/lesson/${course!.id}/${nextLesson.id}`);
@@ -310,8 +341,9 @@ export function LessonPlayer({
           <p>
             Your {course.name} lesson is ready when you are.
             <br />
-            {lesson.title} · {Math.min(session.cursor, 8)} of 8 exercises
-            finished{session.cursor >= 8 ? ' · review in progress' : ''}.
+            {lesson.title} · {Math.min(session.cursor, size)} of {size}{' '}
+            exercises finished
+            {session.cursor >= size ? ' · a few second tries to go' : ''}.
           </p>
           <button
             className="button button-purple"
@@ -389,7 +421,7 @@ export function LessonPlayer({
             {course.name.toUpperCase()} · {lesson.title.toUpperCase()}
           </span>
           <span>
-            {session.cursor >= 8
+            {session.cursor >= size
               ? 'A LITTLE SECOND TRY'
               : exercise.kind === 'match'
                 ? 'CONNECT THE PAIRS'
@@ -562,9 +594,17 @@ export function LessonPlayer({
                     .join(' · ')
                 : `${exercise.phrase.roman} means “${exercise.phrase.meaning}”. ${exercise.phrase.note}`}
               <br />
-              <a href={exercise.phrase.source} target="_blank" rel="noreferrer">
-                Phrase reference ↗
-              </a>
+              {/^https?:\/\//.test(exercise.phrase.source) ? (
+                <a
+                  href={exercise.phrase.source}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Phrase reference ↗
+                </a>
+              ) : (
+                <span>Source: {exercise.phrase.source}</span>
+              )}
             </p>
           </details>
         )}

@@ -1,0 +1,766 @@
+{
+  "format": "polilingo.learner@1",
+  "schemaVersion": 1,
+  "release": "content@2026.09.1",
+  "commit": "4ffac978c74d89384990807c08b40fe0573d717b",
+  "contentHash": "sha256-72e4f8ef514ca10c7d72bcebed4c0ec3c6fdd59de6227bcae7f6b503ef29824f",
+  "languages": [
+    {
+      "code": "ps",
+      "name": "Pashto",
+      "native_name": "پښتو",
+      "direction": "rtl"
+    },
+    {
+      "code": "ur",
+      "name": "Urdu",
+      "native_name": "اردو",
+      "direction": "rtl"
+    }
+  ],
+  "varieties": [
+    {
+      "id": "ps-var-yusufzai",
+      "language": "ps",
+      "learner_label": "Northern Pashto, as spoken around Peshawar"
+    },
+    {
+      "id": "ur-var-standard",
+      "language": "ur",
+      "learner_label": "Everyday Pakistani Urdu"
+    }
+  ],
+  "courses": [
+    {
+      "id": "ps-crs-foundation",
+      "language": "ps",
+      "variety": "ps-var-yusufzai",
+      "name": "Pashto Foundation Course",
+      "tagline": "Small words. New connections.",
+      "units": [
+        {
+          "id": "ps-unt-93bd10",
+          "order": 1,
+          "title": "First words",
+          "lessons": [
+            {
+              "id": "ps-lsn-0a41c2",
+              "order": 1,
+              "title": "A little hello",
+              "subtitle": "Small words. New connections.",
+              "objective": "Greet someone you have just met, thank them, ask how they are, and take leave politely.",
+              "variety": "ps-var-yusufzai",
+              "items": [
+                {
+                  "id": "ps-itm-7f3a91",
+                  "native": "سلام",
+                  "romanisation": "Salaam",
+                  "meaning": "Hello",
+                  "context": "Greet someone you have just met.",
+                  "usage_note": "The short everyday greeting. The fuller form السلام علیکم is used in more formal situations and is shared across several Pakistani languages.",
+                  "variety": "ps-var-yusufzai",
+                  "citation": "Transparent Language Pashto phrase resource"
+                },
+                {
+                  "id": "ps-itm-1d64e0",
+                  "native": "مننه",
+                  "romanisation": "Manana",
+                  "meaning": "Thank you",
+                  "context": "Someone helps you. Thank them.",
+                  "variety": "ps-var-yusufzai",
+                  "citation": "Transparent Language Pashto phrase resource"
+                },
+                {
+                  "id": "ps-itm-b85207",
+                  "native": "د خدای په امان",
+                  "romanisation": "Da Khuday pa aman",
+                  "meaning": "Goodbye",
+                  "context": "It is time to leave. Say goodbye.",
+                  "usage_note": "Literally \"in God's protection\". Warm and ordinary rather than formal.",
+                  "variety": "ps-var-yusufzai",
+                  "citation": "Transparent Language Pashto phrase resource"
+                },
+                {
+                  "id": "ps-itm-3ac9f4",
+                  "native": "څنګه یې؟",
+                  "romanisation": "Tsanga ye?",
+                  "meaning": "How are you?",
+                  "context": "Ask a friend how they are.",
+                  "usage_note": "The informal singular. A respectful or plural form differs.",
+                  "variety": "ps-var-yusufzai",
+                  "citation": "Transparent Language Pashto phrase resource"
+                }
+              ],
+              "exercises": [
+                {
+                  "id": "ps-exr-a10394",
+                  "kind": "meaning",
+                  "item": "ps-itm-7f3a91",
+                  "prompt": "What does this mean?",
+                  "options": [
+                    "ps-itm-1d64e0",
+                    "ps-itm-b85207",
+                    "ps-itm-3ac9f4"
+                  ]
+                },
+                {
+                  "id": "ps-exr-5c7b2e",
+                  "kind": "translation",
+                  "item": "ps-itm-1d64e0",
+                  "prompt": "How do you say \"thank you\"?",
+                  "options": [
+                    "ps-itm-7f3a91",
+                    "ps-itm-b85207",
+                    "ps-itm-3ac9f4"
+                  ]
+                },
+                {
+                  "id": "ps-exr-e9f640",
+                  "kind": "match",
+                  "item": "ps-itm-b85207",
+                  "prompt": "Match each expression to its meaning.",
+                  "options": [
+                    "ps-itm-7f3a91",
+                    "ps-itm-1d64e0",
+                    "ps-itm-3ac9f4"
+                  ]
+                },
+                {
+                  "id": "ps-exr-27d8b1",
+                  "kind": "context",
+                  "item": "ps-itm-3ac9f4",
+                  "prompt": "You meet a friend. What do you ask?",
+                  "options": [
+                    "ps-itm-7f3a91",
+                    "ps-itm-1d64e0",
+                    "ps-itm-b85207"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "ps-lsn-4e17b8",
+              "order": 2,
+              "title": "You, in a new language",
+              "subtitle": "Names, introductions, and first friends.",
+              "objective": "Say your own name, ask someone else's, say that you are well, and say where you are from.",
+              "variety": "ps-var-yusufzai",
+              "items": [
+                {
+                  "id": "ps-itm-5e20d7",
+                  "native": "زما نوم سارا دی",
+                  "romanisation": "Zma num Sara day",
+                  "meaning": "My name is Sara",
+                  "context": "Introduce yourself as Sara.",
+                  "usage_note": "Replace Sara with your own name. The final دی agrees with the speaker; a form for a female speaker may differ.",
+                  "variety": "ps-var-yusufzai",
+                  "citation": "Transparent Language Pashto phrase resource; the name Sara inserted into a sourced template"
+                },
+                {
+                  "id": "ps-itm-92c14b",
+                  "native": "ستاسې نوم څه دی؟",
+                  "romanisation": "Stase num tsa day?",
+                  "meaning": "What is your name?",
+                  "context": "Ask someone their name politely.",
+                  "usage_note": "ستاسې is the respectful or plural \"your\".",
+                  "variety": "ps-var-yusufzai",
+                  "citation": "Transparent Language Pashto phrase resource"
+                },
+                {
+                  "id": "ps-itm-0f6a83",
+                  "native": "زه ښه یم",
+                  "romanisation": "Za kha yam",
+                  "meaning": "I am fine",
+                  "context": "Someone asks how you are. Say you are fine.",
+                  "usage_note": "ښه is read here with the Northern \"kh\" value, which is the variety this course teaches. A Kandahari speaker would say it differently.",
+                  "variety": "ps-var-yusufzai",
+                  "citation": "Transparent Language Pashto phrase resource"
+                },
+                {
+                  "id": "ps-itm-d471ce",
+                  "native": "زه د پاکستان یم",
+                  "romanisation": "Za da Pakistan yam",
+                  "meaning": "I am from Pakistan",
+                  "context": "Tell someone where you are from.",
+                  "usage_note": "Substitute another place name as needed.",
+                  "variety": "ps-var-yusufzai",
+                  "citation": "Transparent Language Pashto phrase resource; the country name inserted into a sourced template"
+                }
+              ],
+              "exercises": [
+                {
+                  "id": "ps-exr-b3e075",
+                  "kind": "assemble",
+                  "item": "ps-itm-5e20d7",
+                  "prompt": "Build the sentence \"My name is Sara\".",
+                  "options": []
+                },
+                {
+                  "id": "ps-exr-f4218c",
+                  "kind": "translation",
+                  "item": "ps-itm-92c14b",
+                  "prompt": "How do you ask \"What is your name?\"",
+                  "options": [
+                    "ps-itm-5e20d7",
+                    "ps-itm-0f6a83",
+                    "ps-itm-d471ce"
+                  ]
+                },
+                {
+                  "id": "ps-exr-6da9e3",
+                  "kind": "context",
+                  "item": "ps-itm-0f6a83",
+                  "prompt": "Someone asks how you are. What do you say?",
+                  "options": [
+                    "ps-itm-5e20d7",
+                    "ps-itm-92c14b",
+                    "ps-itm-d471ce"
+                  ]
+                },
+                {
+                  "id": "ps-exr-0c86f7",
+                  "kind": "meaning",
+                  "item": "ps-itm-d471ce",
+                  "prompt": "What does this mean?",
+                  "options": [
+                    "ps-itm-5e20d7",
+                    "ps-itm-92c14b",
+                    "ps-itm-0f6a83"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "ps-lsn-c2903f",
+              "order": 3,
+              "title": "Out into the world",
+              "subtitle": "Everyday words for everyday adventures.",
+              "objective": "Ask politely, apologise, ask what something means, and ask someone to repeat themselves - the four phrases that keep a conversation going when you do not understand.",
+              "variety": "ps-var-yusufzai",
+              "items": [
+                {
+                  "id": "ps-itm-68b3a5",
+                  "native": "مهرباني وکړئ",
+                  "romanisation": "Mehrbani wakray",
+                  "meaning": "Please",
+                  "context": "Ask for something politely.",
+                  "usage_note": "Literally \"do a kindness\". Used before or after a request.",
+                  "variety": "ps-var-yusufzai",
+                  "citation": "Transparent Language Pashto phrase resource"
+                },
+                {
+                  "id": "ps-itm-af0192",
+                  "native": "بخښنه غواړم",
+                  "romanisation": "Bakhkhana ghwaram",
+                  "meaning": "Excuse me",
+                  "context": "Get someone's attention, or apologise for a small thing.",
+                  "variety": "ps-var-yusufzai",
+                  "citation": "Transparent Language Pashto phrase resource"
+                },
+                {
+                  "id": "ps-itm-24d7e6",
+                  "native": "دا څه معنی لري؟",
+                  "romanisation": "Da tsa mana lari?",
+                  "meaning": "What does this mean?",
+                  "context": "You do not understand a word. Ask what it means.",
+                  "usage_note": "One of the most useful things a beginner can say, and worth learning before almost anything else.",
+                  "variety": "ps-var-yusufzai",
+                  "citation": "Transparent Language Pashto phrase resource"
+                },
+                {
+                  "id": "ps-itm-9b5c30",
+                  "native": "مهرباني وکړئ تکرار کړئ",
+                  "romanisation": "Mehrbani wakray takrar kray",
+                  "meaning": "Please repeat",
+                  "context": "You did not catch what someone said. Ask them to say it again.",
+                  "variety": "ps-var-yusufzai",
+                  "citation": "Transparent Language Pashto phrase resource"
+                }
+              ],
+              "exercises": [
+                {
+                  "id": "ps-exr-91ab52",
+                  "kind": "meaning",
+                  "item": "ps-itm-68b3a5",
+                  "prompt": "What does this mean?",
+                  "options": [
+                    "ps-itm-af0192",
+                    "ps-itm-24d7e6",
+                    "ps-itm-9b5c30"
+                  ]
+                },
+                {
+                  "id": "ps-exr-4f0e7d",
+                  "kind": "context",
+                  "item": "ps-itm-af0192",
+                  "prompt": "You need to get past someone in a crowd. What do you say?",
+                  "options": [
+                    "ps-itm-68b3a5",
+                    "ps-itm-24d7e6",
+                    "ps-itm-9b5c30"
+                  ]
+                },
+                {
+                  "id": "ps-exr-c85d0c",
+                  "kind": "translation",
+                  "item": "ps-itm-24d7e6",
+                  "prompt": "How do you ask \"What does this mean?\"",
+                  "options": [
+                    "ps-itm-68b3a5",
+                    "ps-itm-af0192",
+                    "ps-itm-9b5c30"
+                  ]
+                },
+                {
+                  "id": "ps-exr-7a2b48",
+                  "kind": "assemble",
+                  "item": "ps-itm-9b5c30",
+                  "prompt": "Build the sentence \"Please repeat\".",
+                  "options": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ur-crs-foundation",
+      "language": "ur",
+      "variety": "ur-var-standard",
+      "name": "Urdu Foundation Course",
+      "tagline": "Every conversation, a connection.",
+      "units": [
+        {
+          "id": "ur-unt-51ae07",
+          "order": 1,
+          "title": "First words",
+          "lessons": [
+            {
+              "id": "ur-lsn-2c98d1",
+              "order": 1,
+              "title": "A little hello",
+              "subtitle": "Small words. New connections.",
+              "objective": "Greet someone you have just met, thank them, ask how they are, and take leave politely.",
+              "variety": "ur-var-standard",
+              "items": [
+                {
+                  "id": "ur-itm-4b19c7",
+                  "native": "السلام علیکم",
+                  "romanisation": "Assalam alaikum",
+                  "meaning": "Hello",
+                  "context": "Greet someone you have just met.",
+                  "usage_note": "A greeting shared across several Pakistani languages. Works in almost any situation, formal or not.",
+                  "variety": "ur-var-standard",
+                  "citation": "Omniglot contributed Urdu phrase collection"
+                },
+                {
+                  "id": "ur-itm-e83d52",
+                  "native": "شکریہ",
+                  "romanisation": "Shukriya",
+                  "meaning": "Thank you",
+                  "context": "Someone helps you. Thank them.",
+                  "variety": "ur-var-standard",
+                  "citation": "Omniglot contributed Urdu phrase collection"
+                },
+                {
+                  "id": "ur-itm-06fa81",
+                  "native": "خدا حافظ",
+                  "romanisation": "Khuda hafiz",
+                  "meaning": "Goodbye",
+                  "context": "It is time to leave. Say goodbye.",
+                  "usage_note": "Literally \"God protect you\". The everyday way to part.",
+                  "variety": "ur-var-standard",
+                  "citation": "Omniglot contributed Urdu phrase collection"
+                },
+                {
+                  "id": "ur-itm-cd2740",
+                  "native": "کیا حال ہے؟",
+                  "romanisation": "Kya haal hai?",
+                  "meaning": "How are you?",
+                  "context": "Ask a friend how they are.",
+                  "usage_note": "Chosen deliberately because it avoids the gendered forms that other \"how are you\" constructions require - a reasonable simplification for a beginner.",
+                  "variety": "ur-var-standard",
+                  "citation": "Omniglot contributed Urdu phrase collection"
+                }
+              ],
+              "exercises": [
+                {
+                  "id": "ur-exr-3f80a2",
+                  "kind": "meaning",
+                  "item": "ur-itm-4b19c7",
+                  "prompt": "What does this mean?",
+                  "options": [
+                    "ur-itm-e83d52",
+                    "ur-itm-06fa81",
+                    "ur-itm-cd2740"
+                  ]
+                },
+                {
+                  "id": "ur-exr-91c4de",
+                  "kind": "translation",
+                  "item": "ur-itm-e83d52",
+                  "prompt": "How do you say \"thank you\"?",
+                  "options": [
+                    "ur-itm-4b19c7",
+                    "ur-itm-06fa81",
+                    "ur-itm-cd2740"
+                  ]
+                },
+                {
+                  "id": "ur-exr-05b739",
+                  "kind": "match",
+                  "item": "ur-itm-06fa81",
+                  "prompt": "Match each expression to its meaning.",
+                  "options": [
+                    "ur-itm-4b19c7",
+                    "ur-itm-e83d52",
+                    "ur-itm-cd2740"
+                  ]
+                },
+                {
+                  "id": "ur-exr-c62a10",
+                  "kind": "context",
+                  "item": "ur-itm-cd2740",
+                  "prompt": "You meet a friend. What do you ask?",
+                  "options": [
+                    "ur-itm-4b19c7",
+                    "ur-itm-e83d52",
+                    "ur-itm-06fa81"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "ur-lsn-7b13f5",
+              "order": 2,
+              "title": "You, in a new language",
+              "subtitle": "Names, introductions, and first friends.",
+              "objective": "Say your own name, ask someone else's politely, say that you are well, and say where you are from.",
+              "variety": "ur-var-standard",
+              "items": [
+                {
+                  "id": "ur-itm-8e5b39",
+                  "native": "میرا نام سارا ہے",
+                  "romanisation": "Mera naam Sara hai",
+                  "meaning": "My name is Sara",
+                  "context": "Introduce yourself as Sara.",
+                  "usage_note": "Replace Sara with your own name. میرا does not change with the speaker's gender.",
+                  "variety": "ur-var-standard",
+                  "citation": "Omniglot contributed Urdu phrase collection; the name Sara inserted into a sourced template"
+                },
+                {
+                  "id": "ur-itm-31c6ad",
+                  "native": "آپ کا نام کیا ہے؟",
+                  "romanisation": "Aap ka naam kya hai?",
+                  "meaning": "What is your name?",
+                  "context": "Ask someone their name politely.",
+                  "usage_note": "آپ is the respectful form of \"you\", and the right default when meeting someone. تم and تو exist and are more familiar; using them with a stranger would be rude.",
+                  "variety": "ur-var-standard",
+                  "citation": "Omniglot contributed Urdu phrase collection"
+                },
+                {
+                  "id": "ur-itm-a7402e",
+                  "native": "میں ٹھیک ہوں",
+                  "romanisation": "Main theek hoon",
+                  "meaning": "I am fine",
+                  "context": "Someone asks how you are. Say you are fine.",
+                  "variety": "ur-var-standard",
+                  "citation": "Omniglot contributed Urdu phrase collection"
+                },
+                {
+                  "id": "ur-itm-5fd8b4",
+                  "native": "میرا تعلق پاکستان سے ہے",
+                  "romanisation": "Mera talluq Pakistan se hai",
+                  "meaning": "I am from Pakistan",
+                  "context": "Tell someone where you are from.",
+                  "usage_note": "Literally \"my connection is with Pakistan\". Slightly more formal than the simplest way of saying it, and widely used.",
+                  "variety": "ur-var-standard",
+                  "citation": "Omniglot contributed Urdu phrase collection; the place name inserted into a sourced pattern"
+                }
+              ],
+              "exercises": [
+                {
+                  "id": "ur-exr-7d1e48",
+                  "kind": "assemble",
+                  "item": "ur-itm-8e5b39",
+                  "prompt": "Build the sentence \"My name is Sara\".",
+                  "options": []
+                },
+                {
+                  "id": "ur-exr-a2960b",
+                  "kind": "translation",
+                  "item": "ur-itm-31c6ad",
+                  "prompt": "How do you ask \"What is your name?\" politely?",
+                  "options": [
+                    "ur-itm-8e5b39",
+                    "ur-itm-a7402e",
+                    "ur-itm-5fd8b4"
+                  ]
+                },
+                {
+                  "id": "ur-exr-4e83fc",
+                  "kind": "context",
+                  "item": "ur-itm-a7402e",
+                  "prompt": "Someone asks how you are. What do you say?",
+                  "options": [
+                    "ur-itm-8e5b39",
+                    "ur-itm-31c6ad",
+                    "ur-itm-5fd8b4"
+                  ]
+                },
+                {
+                  "id": "ur-exr-b05127",
+                  "kind": "meaning",
+                  "item": "ur-itm-5fd8b4",
+                  "prompt": "What does this mean?",
+                  "options": [
+                    "ur-itm-8e5b39",
+                    "ur-itm-31c6ad",
+                    "ur-itm-a7402e"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "ur-lsn-e604aa",
+              "order": 3,
+              "title": "Out into the world",
+              "subtitle": "Everyday words for everyday adventures.",
+              "objective": "Get someone's attention politely, ask the price of something, ask for help, and reassure someone after a small mistake.",
+              "variety": "ur-var-standard",
+              "items": [
+                {
+                  "id": "ur-itm-72e015",
+                  "native": "معاف کیجیے",
+                  "romanisation": "Maaf kijiye",
+                  "meaning": "Excuse me",
+                  "context": "Get someone's attention politely.",
+                  "usage_note": "Also used to apologise. Respectful in both senses.",
+                  "variety": "ur-var-standard",
+                  "citation": "Omniglot contributed Urdu phrase collection"
+                },
+                {
+                  "id": "ur-itm-be9c68",
+                  "native": "یہ کتنے کا ہے؟",
+                  "romanisation": "Yeh kitne ka hai?",
+                  "meaning": "How much is this?",
+                  "context": "You see something in a shop. Ask its price.",
+                  "variety": "ur-var-standard",
+                  "citation": "Omniglot contributed Urdu phrase collection"
+                },
+                {
+                  "id": "ur-itm-1a374f",
+                  "native": "مدد",
+                  "romanisation": "Madad",
+                  "meaning": "Help",
+                  "context": "Recognise the word for assistance, or call for it.",
+                  "variety": "ur-var-standard",
+                  "citation": "Omniglot contributed Urdu phrase collection"
+                },
+                {
+                  "id": "ur-itm-d05e93",
+                  "native": "کوئی بات نہیں",
+                  "romanisation": "Koi baat nahin",
+                  "meaning": "No problem",
+                  "context": "Reassure someone after a small mistake.",
+                  "usage_note": "Literally \"it is no matter\". Also the ordinary reply to thanks - closer to \"you're welcome\" than to \"no problem\" in that use.",
+                  "variety": "ur-var-standard",
+                  "citation": "Omniglot contributed Urdu phrase collection"
+                }
+              ],
+              "exercises": [
+                {
+                  "id": "ur-exr-6a14d9",
+                  "kind": "meaning",
+                  "item": "ur-itm-72e015",
+                  "prompt": "What does this mean?",
+                  "options": [
+                    "ur-itm-be9c68",
+                    "ur-itm-1a374f",
+                    "ur-itm-d05e93"
+                  ]
+                },
+                {
+                  "id": "ur-exr-f38c07",
+                  "kind": "context",
+                  "item": "ur-itm-be9c68",
+                  "prompt": "You want to buy something. What do you ask?",
+                  "options": [
+                    "ur-itm-72e015",
+                    "ur-itm-1a374f",
+                    "ur-itm-d05e93"
+                  ]
+                },
+                {
+                  "id": "ur-exr-2b95e6",
+                  "kind": "translation",
+                  "item": "ur-itm-1a374f",
+                  "prompt": "How do you say \"help\"?",
+                  "options": [
+                    "ur-itm-72e015",
+                    "ur-itm-be9c68",
+                    "ur-itm-d05e93"
+                  ]
+                },
+                {
+                  "id": "ur-exr-8ed403",
+                  "kind": "context",
+                  "item": "ur-itm-d05e93",
+                  "prompt": "Someone apologises for a small mistake. What do you say?",
+                  "options": [
+                    "ur-itm-72e015",
+                    "ur-itm-be9c68",
+                    "ur-itm-1a374f"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "keymap": {
+    "lessons": [
+      {
+        "legacy_key": "pashto/greetings",
+        "lesson_id": "ps-lsn-0a41c2",
+        "course_id": "ps-crs-foundation"
+      },
+      {
+        "legacy_key": "pashto/introductions",
+        "lesson_id": "ps-lsn-4e17b8",
+        "course_id": "ps-crs-foundation"
+      },
+      {
+        "legacy_key": "pashto/essentials",
+        "lesson_id": "ps-lsn-c2903f",
+        "course_id": "ps-crs-foundation"
+      },
+      {
+        "legacy_key": "urdu/greetings",
+        "lesson_id": "ur-lsn-2c98d1",
+        "course_id": "ur-crs-foundation"
+      },
+      {
+        "legacy_key": "urdu/introductions",
+        "lesson_id": "ur-lsn-7b13f5",
+        "course_id": "ur-crs-foundation"
+      },
+      {
+        "legacy_key": "urdu/essentials",
+        "lesson_id": "ur-lsn-e604aa",
+        "course_id": "ur-crs-foundation"
+      }
+    ],
+    "courses": [
+      {
+        "legacy_id": "pashto",
+        "course_id": "ps-crs-foundation"
+      },
+      {
+        "legacy_id": "urdu",
+        "course_id": "ur-crs-foundation"
+      }
+    ],
+    "items": [
+      {
+        "legacy_ref": "pashto-greetings-0",
+        "item_id": "ps-itm-7f3a91"
+      },
+      {
+        "legacy_ref": "pashto-greetings-1",
+        "item_id": "ps-itm-1d64e0"
+      },
+      {
+        "legacy_ref": "pashto-greetings-2",
+        "item_id": "ps-itm-b85207"
+      },
+      {
+        "legacy_ref": "pashto-greetings-3",
+        "item_id": "ps-itm-3ac9f4"
+      },
+      {
+        "legacy_ref": "pashto-introductions-0",
+        "item_id": "ps-itm-5e20d7"
+      },
+      {
+        "legacy_ref": "pashto-introductions-1",
+        "item_id": "ps-itm-92c14b"
+      },
+      {
+        "legacy_ref": "pashto-introductions-2",
+        "item_id": "ps-itm-0f6a83"
+      },
+      {
+        "legacy_ref": "pashto-introductions-3",
+        "item_id": "ps-itm-d471ce"
+      },
+      {
+        "legacy_ref": "pashto-essentials-0",
+        "item_id": "ps-itm-68b3a5"
+      },
+      {
+        "legacy_ref": "pashto-essentials-1",
+        "item_id": "ps-itm-af0192"
+      },
+      {
+        "legacy_ref": "pashto-essentials-2",
+        "item_id": "ps-itm-24d7e6"
+      },
+      {
+        "legacy_ref": "pashto-essentials-3",
+        "item_id": "ps-itm-9b5c30"
+      },
+      {
+        "legacy_ref": "urdu-greetings-0",
+        "item_id": "ur-itm-4b19c7"
+      },
+      {
+        "legacy_ref": "urdu-greetings-1",
+        "item_id": "ur-itm-e83d52"
+      },
+      {
+        "legacy_ref": "urdu-greetings-2",
+        "item_id": "ur-itm-06fa81"
+      },
+      {
+        "legacy_ref": "urdu-greetings-3",
+        "item_id": "ur-itm-cd2740"
+      },
+      {
+        "legacy_ref": "urdu-introductions-0",
+        "item_id": "ur-itm-8e5b39"
+      },
+      {
+        "legacy_ref": "urdu-introductions-1",
+        "item_id": "ur-itm-31c6ad"
+      },
+      {
+        "legacy_ref": "urdu-introductions-2",
+        "item_id": "ur-itm-a7402e"
+      },
+      {
+        "legacy_ref": "urdu-introductions-3",
+        "item_id": "ur-itm-5fd8b4"
+      },
+      {
+        "legacy_ref": "urdu-essentials-0",
+        "item_id": "ur-itm-72e015"
+      },
+      {
+        "legacy_ref": "urdu-essentials-1",
+        "item_id": "ur-itm-be9c68"
+      },
+      {
+        "legacy_ref": "urdu-essentials-2",
+        "item_id": "ur-itm-1a374f"
+      },
+      {
+        "legacy_ref": "urdu-essentials-3",
+        "item_id": "ur-itm-d05e93"
+      }
+    ]
+  }
+}

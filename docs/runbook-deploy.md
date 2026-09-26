@@ -40,6 +40,16 @@ is why deployment has never been a source of problems here.
 
 The tag is a record, not a trigger. The site updated when the pull request merged.
 
+### A pull request that changes `content/release.json`
+
+Merge it only once the file is built from a content release tag (`content@YYYY.MM.N`). A
+production build refuses a development build of content (`content@YYYY.MM.dev+<sha>`) by
+design, so merging one stops the next production deploy at the build. Keep the pull request
+in draft until the release is tagged on the content repository's `main`, then regenerate
+the file from a clean checkout of the tag (README, "Content and assets"), commit it, and
+let CI run again. A file built from a branch also names a commit that a squash-merge there
+orphans, which is a second reason to wait for the tag.
+
 ---
 
 ## Rollback
@@ -74,11 +84,15 @@ Open a pull request either way. The branch ruleset applies during an incident to
 documented solo-merge bypass if the other developer is unreachable, and say in the pull
 request that you did and why.
 
-**Learner progress earned during a rollback is merged back on roll-forward.** Builds before
-v0.2 read and write only `polilingo.progress.v1`, so during a rollback past v0.2 learners
-see their progress as it was before v0.2, and what they add goes into that key. Their
-first load after rolling forward merges it into `polilingo.progress.v2`: lessons and streak
-days are combined, and XP shows the higher of the two totals.
+**Learner progress earned during a rollback is merged back on roll-forward.** Each storage
+version has its own key, and no build writes an older build's key: builds before v0.2 read
+and write only `polilingo.progress.v1`, v0.2 only `polilingo.progress.v2` (merging v1 into
+it), and the current build only `polilingo.progress.v3`. So a rolled-back build finds its
+own key as it left it: learners see their progress as it was when that build was last live,
+and what they add goes into that key. Progress made on the newer build is not shown during
+the rollback, but it stays in its own key. The first load after rolling forward merges the
+older key into `polilingo.progress.v3`: lessons and streak days are combined, and XP shows
+the higher of the two totals.
 
 ---
 
@@ -93,6 +107,11 @@ Almost always one of:
   do. This is the single most common cause.
 - **An environment variable exists in Preview but not Production**, or vice versa. Check
   the tick boxes in Vercel → Settings → Environment Variables.
+- **A development build of content.** The error begins `This is a production build` and
+  names the release, `content@YYYY.MM.dev+<sha>`. Production takes only a tagged content
+  release; previews take a development one. Regenerate the file from a clean checkout of
+  the tag, with `--release`, and merge that. Do not rename the `release` in the file by
+  hand: the content hash does not cover it, so only review would notice.
 - **Out of memory on the asset pipeline.** `sharp` processing large PNG masters can exceed
   the build memory limit. Assets are pre-baked and committed, so `optimize-assets` should
   not run during a Vercel build — if it is, that is the bug.
@@ -106,18 +125,22 @@ file needs a deploy to appear. If a _replaced_ asset shows the old version, it w
 overwritten at the same path instead of published at a new one — which is exactly why audio
 uses immutable revision prefixes.
 
-**Content looks wrong.** Check `NEXT_PUBLIC_CONTENT_VERSION` on the deployment. Content is
-baked in at build time, so a content fix needs a content release _and_ a redeploy of the
-app.
+**Content looks wrong.** Settings shows which content release the deployment was built
+from: the `release` in `content/release.json`. Content is baked in at build time, so a
+content fix is a change in the content repository, a new content release, and a pull request
+here that replaces `content/release.json` with the regenerated learner copy. Never edit that
+file by hand. To take content back to the previous release, revert that pull request.
 
 **One learner's progress is wrong, nobody else's.** Their `localStorage` state. Ask for
-the output of the console one-liner in the bug form. It gives `polilingo.progress.v2`
+the output of the console one-liner in the bug form. It gives `polilingo.progress.v3`
 without the device ID and account fields — what is left is only their own learning
-progress, no personal details. Where v0.2 has not saved yet, for example because the first
-load could not make the backup, it gives `polilingo.progress.v1` instead, and `{}` when
-nothing is saved. For a migration or merge bug, also ask for
-`localStorage.getItem('polilingo.progress.v1')`: v0.2 never writes that key, and it holds
-no device ID, so it can be pasted as it is. A learner from before v0.2 also holds a
+progress, no personal details. Where the current build has not saved yet, for example
+because the first load could not make the backup, it gives v0.2's `polilingo.progress.v2`
+or the MVP's `polilingo.progress.v1` instead, and `{}` when nothing is saved. For a
+migration or merge bug, also ask for `localStorage.getItem('polilingo.progress.v1')`: no
+current build writes that key, and it holds no device ID, so it can be pasted as it is.
+v0.2's key holds a device ID, so ask for it through the bug form's one-liner with
+`polilingo.progress.v2` alone. A learner from before v0.2 also holds a
 verbatim copy of their old state under `polilingo.progress.v1.bak-<date>`. Nearly every
 state bug is solved in one step from those blobs.
 

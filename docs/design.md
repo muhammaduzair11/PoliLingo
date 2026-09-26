@@ -4,13 +4,15 @@ The shipped visual language of PoliLingo: a warm, storybook-meets-product
 system built around a mascot companion, poster-scale typography and
 course-tinted surfaces. This document describes what is actually implemented
 in `app/globals.css`, `app/layout.tsx`, the `components/` modules and
-`lib/courses.ts`. Treat it as the source of truth for visual decisions; when
-this document and the code disagree, fix the document.
+`PRESENTATION` in `lib/content.ts` (each language's slug, tint and world
+art). Treat it as the source of truth for visual decisions; when this document
+and the code disagree, fix the document.
 
 ## 1. Design intent
 
-PoliLingo teaches Pashto, Hindko and Urdu in small, playful lessons. The
-design goals, in order:
+PoliLingo teaches Pakistan's languages in small, playful lessons: the
+languages in the current content release, Pashto and Urdu today. The design
+goals, in order:
 
 1. **Warm, not childish.** Playfulness comes from shape, motion and mascot
    acting — not from candy palettes or cartoon fonts. Surfaces read as paper
@@ -33,33 +35,35 @@ All tokens live in `:root` in `app/styles/tokens.css` and are mapped into Tailwi
 theme variables in the `@theme` block of the same file, which `app/globals.css`
 imports first.
 
-| Token | Value | Role |
-| --- | --- | --- |
-| `--background` | `#fffcf7` | Warm ivory paper; the default canvas |
-| `--foreground` / `--ink` | `#26183b` | Deep aubergine ink; all body and display text on light |
-| `--primary` | `#6935ce` | Brand violet; hero field, header CTA, footer band |
-| `--purple` | `#6230bd` | Deeper violet for accents on light |
-| `--ring` | `#8853e9` | Focus rings |
-| `--yellow` | `#ffda57` | Accent on violet only (hero keyword, primary CTA on purple) |
-| `--pink` | `#ff9fba` | Marquee band, playful dividers |
-| `--mint` | `#c4efcd` | Success-adjacent tint, decorative stars |
-| `--muted` / `--muted-foreground` | `#eee8f4` / `#6b6277` | Quiet surfaces and secondary text |
-| `--border` / `--input` | `#ded6e7` / `#ddd4e9` | Hairlines and field outlines |
-| `--accent` / `--secondary` | `#eee6ff` (fg `#311264`) | Lilac chips and secondary buttons |
-| `--color-destructive` | `#b63751` | Destructive actions |
-| `--radius` / `--radius-lg` / `--radius-xl` | `1rem` / `1rem` / `1.5rem` | Shape language |
+| Token                                      | Value                      | Role                                                        |
+| ------------------------------------------ | -------------------------- | ----------------------------------------------------------- |
+| `--background`                             | `#fffcf7`                  | Warm ivory paper; the default canvas                        |
+| `--foreground` / `--ink`                   | `#26183b`                  | Deep aubergine ink; all body and display text on light      |
+| `--primary`                                | `#6935ce`                  | Brand violet; hero field, header CTA, footer band           |
+| `--purple`                                 | `#6230bd`                  | Deeper violet for accents on light                          |
+| `--ring`                                   | `#8853e9`                  | Focus rings                                                 |
+| `--yellow`                                 | `#ffda57`                  | Accent on violet only (hero keyword, primary CTA on purple) |
+| `--pink`                                   | `#ff9fba`                  | Marquee band, playful dividers                              |
+| `--mint`                                   | `#c4efcd`                  | Success-adjacent tint, decorative stars                     |
+| `--muted` / `--muted-foreground`           | `#eee8f4` / `#6b6277`      | Quiet surfaces and secondary text                           |
+| `--border` / `--input`                     | `#ded6e7` / `#ddd4e9`      | Hairlines and field outlines                                |
+| `--accent` / `--secondary`                 | `#eee6ff` (fg `#311264`)   | Lilac chips and secondary buttons                           |
+| `--color-destructive`                      | `#b63751`                  | Destructive actions                                         |
+| `--radius` / `--radius-lg` / `--radius-xl` | `1rem` / `1rem` / `1.5rem` | Shape language                                              |
 
 ### Course identities
 
-Each language owns a tint, declared as `color` in `lib/courses.ts` and applied
-through the `--course-color` custom property on that course's surfaces
-(language card, onboarding art panel, learn-page map banner).
+Each language owns a tint, declared as `color` in `PRESENTATION` in
+`lib/content.ts` and applied through the `--course-color` custom property on
+that course's surfaces (language card, onboarding art panel, learn-page map
+banner). A language shows only while the content release holds it; Hindko's
+tint is kept for when it does, and is not shown today.
 
-| Course | Tint | Character |
-| --- | --- | --- |
+| Course | Tint      | Character                             |
+| ------ | --------- | ------------------------------------- |
 | Pashto | `#c4e5ff` | Sky blue; mountains and open horizons |
-| Hindko | `#d3f4d8` | Mint green; valleys and orchards |
-| Urdu | `#ffd3df` | Blossom pink; courtyards and lanterns |
+| Hindko | `#d3f4d8` | Mint green; valleys and orchards      |
+| Urdu   | `#ffd3df` | Blossom pink; courtyards and lanterns |
 
 ### Usage rules
 
@@ -85,13 +89,13 @@ fallbacks:
 
 ### Scale
 
-| Level | Treatment |
-| --- | --- |
-| Display / hero | `.hero h1`: `clamp(64px, 6.7vw, 94px)`, weight 700, `letter-spacing: -0.065em`, `line-height: 1.015` |
-| Section headings | 44–65px across breakpoints, weight 700, tight tracking |
-| Eyebrow / kicker | `.eyebrow`: 12px, weight 700, `letter-spacing: 0.16em`, uppercase |
-| Body | 17px Outfit 400/500 |
-| Native script | `.native`, sized per context (25px on cards up to ~46px in hero panels) |
+| Level            | Treatment                                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------- |
+| Display / hero   | `.hero h1`: `clamp(64px, 6.7vw, 94px)`, weight 700, `letter-spacing: -0.065em`, `line-height: 1.015` |
+| Section headings | 44–65px across breakpoints, weight 700, tight tracking                                               |
+| Eyebrow / kicker | `.eyebrow`: 12px, weight 700, `letter-spacing: 0.16em`, uppercase                                    |
+| Body             | 17px Outfit 400/500                                                                                  |
+| Native script    | `.native`, sized per context (25px on cards up to ~46px in hero panels)                              |
 
 Display type is deliberately poster-like: oversized, tightly tracked, and
 broken across lines for rhythm ("A little daily. / A lot more /
@@ -113,16 +117,22 @@ shaping both depend on the attributes.
 - **Sticker cards:** white or tinted panels with soft violet shadows and
   slight rotations on decorative children, so the page reads as stuck-down
   paper.
-- **Language cards:** three-up grid on desktop. Each has a numbered kicker
+- **Language cards:** three-up grid on desktop, one card per language in the
+  content release. With fewer than three, each card keeps its three-up width
+  and the row is centred. Each has a numbered kicker
   (`01 / EXPLORE`), the native endonym, then a `.world-frame` window 215px
   tall in which the world render bleeds to the edges. Hover lifts the render
   and rotates it 3deg.
 - **Marquee band:** `.marquee` is a pink kinetic divider, `animation: marquee
-  38s linear infinite`, repeating "FIND YOUR WORDS ✳ FIND YOUR PEOPLE ✳ …".
+38s linear infinite`, repeating "FIND YOUR WORDS ✳ FIND YOUR PEOPLE ✳ …".
   It is `aria-hidden`.
 - **Learning map:** the learn page lays lesson nodes along a dashed SVG path
   (`.path-line`); locked nodes are muted pills with a lock glyph, completed
-  nodes carry the course colour.
+  nodes carry the course colour. It is drawn for three lessons and fits any
+  number the release gives a course: the nodes repeat the three positions,
+  the first is a star and the last a flag, and the path (`mapPath()` in
+  `lib/learning-map.ts`) and the map's height grow by one stop per lesson.
+  The path always ends at the trophy, centred below the last stop.
 - **Hero composition:** split copy/art. Behind Poli sit `.hero-halo` (a solid
   yellow disc) and `.hero-orbit` rings; decorative stars float at the edges.
 - **Sticker pods:** `.poli-sticker` is an ivory rounded pod that hosts a
@@ -133,19 +143,19 @@ shaping both depend on the attributes.
 Poli is a cream markhor with violet spiral horns and an orange satchel. The
 renders are soft-clay 3D dioramas: saturated but never neon, with rounded
 geometry and visible material texture. World art is a floating island
-diorama per language (mountain gate for Pashto, valley house for Hindko,
-courtyard for Urdu).
+diorama per language (mountain gate for Pashto, courtyard for Urdu, and a
+valley house kept for Hindko).
 
 Masters live in `assets-src/` (see `docs/architecture.md` for the pipeline).
 Poses and their semantic use:
 
-| Pose | Used for |
-| --- | --- |
-| `welcome` | Hero, map idle, default greeting |
-| `thinking` | Study intro, resume card |
-| `celebrate` | Lesson and course completion |
-| `encourage` | Empty states, continue prompts |
-| `rest` | Settings, breaks, streak pauses |
+| Pose        | Used for                         |
+| ----------- | -------------------------------- |
+| `welcome`   | Hero, map idle, default greeting |
+| `thinking`  | Study intro, resume card         |
+| `celebrate` | Lesson and course completion     |
+| `encourage` | Empty states, continue prompts   |
+| `rest`      | Settings, breaks, streak pauses  |
 
 Rules:
 

@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import {
-  ArrowUpRight,
   ArrowLeft,
   BookOpen,
   Volume2,
@@ -24,7 +23,12 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useLearning } from './learning-provider';
-import { selectedCourse } from '@/lib/courses';
+import {
+  contentVersion,
+  courses,
+  phraseSources,
+  selectedCourse,
+} from '@/lib/content';
 import {
   exportProgress,
   importProgress,
@@ -85,8 +89,15 @@ export function Settings() {
     event.target.value = '';
     if (!file) return;
     const text = await file.text();
-    if (!importProgress(state, text).ok) {
-      setNotice('That file is not a PoliLingo progress export.');
+    const tried = importProgress(state, text);
+    if (!tried.ok) {
+      setNotice(
+        tried.reason === 'newer'
+          ? 'That file comes from a newer version of PoliLingo, so it cannot be read here yet. Nothing was changed.'
+          : tried.reason === 'damaged'
+            ? 'That progress file could not be read, so nothing was changed.'
+            : 'That file is not a PoliLingo progress export.',
+      );
       return;
     }
     update((s) => {
@@ -115,7 +126,7 @@ export function Settings() {
           <SettingRow
             icon={<Volume2 />}
             title="A little sound"
-            description="Play gentle sounds for answers. No pronunciation audio in this sample."
+            description="Play gentle sounds for answers. There is no pronunciation audio yet."
           >
             <Switch
               checked={state.prefs.sound}
@@ -180,31 +191,32 @@ export function Settings() {
         <section className="settings-card sources-card">
           <h2>A note about your first words</h2>
           <p>
-            These are introductory sample lessons, researched from phrase
-            references and community language resources. They have not yet been
-            reviewed by native-speaking teachers. Roman spellings are helpful
-            approximations, not pronunciation recordings.
+            Roman spellings are helpful approximations, not pronunciation
+            recordings.
           </p>
+          {/* Each language the release holds: the variety it teaches and
+              where its phrases come from, both read from the release. */}
+          {courses.map((c) => (
+            <p key={c.id}>
+              <strong>{c.name}</strong> · {c.varietyLabel}. Phrases draw on:{' '}
+              {phraseSources(c).map((source, i) => (
+                <span key={source}>
+                  {i > 0 && '; '}
+                  {/^https?:\/\//.test(source) ? (
+                    <a href={source} target="_blank" rel="noreferrer">
+                      {source}
+                    </a>
+                  ) : (
+                    source
+                  )}
+                </span>
+              ))}
+              .
+            </p>
+          ))}
           <p>
-            Pashto uses a Northern/Peshawar starting point. Urdu uses everyday
-            Pakistani expressions.
+            This build uses content release <code>{contentVersion}</code>.
           </p>
-          <div className="source-links">
-            <a
-              href="https://tplsites.s3.amazonaws.com/resources/PUSas-ENGus/grammar/ADDITIONAL_INFORMATION.htm"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Pashto phrase reference <ArrowUpRight size={15} />
-            </a>
-            <a
-              href="https://www.omniglot.com/language/phrases/urdu.php"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Urdu phrase reference <ArrowUpRight size={15} />
-            </a>
-          </div>
         </section>
         <section className="reset-card">
           <div>

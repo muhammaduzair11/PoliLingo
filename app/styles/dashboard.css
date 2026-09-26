@@ -117,10 +117,14 @@
   bottom: -20px;
   opacity: 0.9;
 }
+/* The map is drawn for three stops. --stops is the course's lesson count
+   (components/dashboard.tsx); each stop past three adds one stop's height
+   (min-height 90px + margin 34px) to the area and to the path behind it,
+   whose shape comes from mapPath() in lib/learning-map.ts. */
 .path-area {
   position: relative;
   padding: 30px 60px 24px;
-  min-height: 535px;
+  min-height: calc(535px + (var(--stops, 3) - 3) * 124px);
   max-width: 660px;
   margin: auto;
   background: radial-gradient(circle, #dacbe580 1px, transparent 1px);
@@ -131,7 +135,7 @@
   left: 18%;
   top: 40px;
   width: 60%;
-  height: 420px;
+  height: calc(420px + (var(--stops, 3) - 3) * 124px);
   fill: none;
   stroke: #e6def0;
   stroke-width: 11px;

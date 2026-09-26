@@ -179,6 +179,7 @@
     display: flex;
     flex-direction: column;
     gap: 18px;
+    max-width: none;
   }
   .language-card {
     padding: 19px 22px 16px;
@@ -534,9 +535,10 @@
   .map-banner > div {
     max-width: 75%;
   }
+  /* One stop is min-height 100px + margin 27px here. */
   .path-area {
     padding: 32px 15px 25px;
-    min-height: 530px;
+    min-height: calc(530px + (var(--stops, 3) - 3) * 127px);
   }
   .map-poli {
     width: 88px;
@@ -589,7 +591,7 @@
   .path-line {
     left: 19%;
     width: 63%;
-    height: 410px;
+    height: calc(410px + (var(--stops, 3) - 3) * 127px);
   }
   .path-trophy {
     margin-top: 14px;

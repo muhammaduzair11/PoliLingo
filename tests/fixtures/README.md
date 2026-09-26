@@ -49,3 +49,60 @@ On 2026-09-25 the learner finishes the Pashto lesson left half-way (20 XP, so 85
 taps "Play this lesson again", and leaves the new run after two answers. That new run
 replaces the one they finished, which is what a merge has to handle. The same rules apply:
 do not regenerate it.
+
+## `progress-v2.json`
+
+A `polilingo.progress.v2` blob written by v0.2's own storage code: the build before content
+releases, which is pull request #19 (`feat/progress-backup-export-import`). v0.2 is the
+last build to write the v2 key; the migration and one-deploy rollback tests read it.
+
+**Generated** on 2026-09-25 with Node 24, from `lib/progress.ts`, `lib/courses.ts` and
+`lib/random-id.ts` at `713afa7`, the head of #19, which is what `main` holds once #19 is
+merged:
+
+```sh
+mkdir -p /tmp/v02/lib
+for f in progress.ts courses.ts random-id.ts; do git show 713afa7:lib/$f > /tmp/v02/lib/$f; done
+node tests/fixtures/make-progress-v2.mjs /tmp/v02
+```
+
+It starts from `progress-v1-mvp.json`, as the learner's first load of v0.2 did: v0.2's own
+`hydrateProgress()` backs up and migrates the v1 key, and on 2026-09-22 the learner
+finishes the first Urdu lesson. It ends with 85 XP, the v1 blob's fingerprint recorded as
+merged, and the Pashto lesson the MVP left half-way still in progress. The same rules as
+above apply: pretty-printed by oxfmt, and do not regenerate it.
+
+## `progress-v2-after-rollback.json`
+
+The same learner after the app was rolled back one deploy, from content releases to v0.2:
+the blob v0.2 writes to `polilingo.progress.v2` once they carry on there. The rollback
+tests use it as what v0.2 leaves in the v2 key, since the current build never writes it.
+
+**Generated** on 2026-09-25 with Node 24, from the same `lib/` at `713afa7` as above,
+starting from `progress-v2.json` and the unchanged v1 key and backup:
+
+```sh
+node tests/fixtures/make-progress-v2-after-rollback.mjs /tmp/v02
+```
+
+On 2026-09-27 the learner finishes the Pashto lesson left half-way, then the second Urdu
+lesson with one mistake, for 125 XP in all. Do not regenerate it.
+
+## `progress-v2-opened.json`
+
+What v0.2 writes to `polilingo.progress.v2` when it is only opened, after a rollback of one
+deploy, by a learner who went straight from the MVP to content releases and so had no v2
+key. v0.2 migrates the v1 key, as it always does, and its provider saves the result as soon
+as the app has loaded, although the learner does nothing. The reset tests use it to check
+that such a blob does not bring back progress a reset took away.
+
+**Generated** on 2026-09-25 with Node 24, from the same `lib/` at `713afa7` as above,
+starting from `progress-v1-mvp.json`, its backup and a `polilingo.progress.v3` key, which
+v0.2 does not read:
+
+```sh
+node tests/fixtures/make-progress-v2-opened.mjs /tmp/v02
+```
+
+It ends with the MVP learner's 65 XP and the v1 blob's fingerprint recorded as merged. Do
+not regenerate it.
