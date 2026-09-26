@@ -1,6 +1,6 @@
 'use client';
 import { useLearning } from './learning-provider';
-import { type Course, type Phrase } from '@/lib/courses';
+import { type Course, type Phrase } from '@/lib/content';
 export function Native({
   phrase,
   course,
@@ -13,7 +13,7 @@ export function Native({
   const { state } = useLearning();
   return (
     <span className={`phrase ${large ? 'phrase-large' : ''}`}>
-      <span className="native" lang={course.lang} dir="rtl">
+      <span className="native" lang={course.lang} dir={course.dir}>
         {phrase.native}
       </span>
       {state.prefs.transliteration && (

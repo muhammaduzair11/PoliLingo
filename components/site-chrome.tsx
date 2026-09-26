@@ -9,7 +9,7 @@ import {
   Settings2,
 } from 'lucide-react';
 import { useLearning } from './learning-provider';
-import { selectedCourse } from '@/lib/courses';
+import { selectedCourse } from '@/lib/content';
 export function Brand() {
   return (
     <Link href="/" className="brand" aria-label="PoliLingo home">
@@ -45,6 +45,8 @@ export function MotionButton() {
 }
 export function Header({ home = false }: { home?: boolean }) {
   const { state } = useLearning();
+  // The remembered course only when the learner can see it; otherwise these
+  // links lead to the language picker, as for someone who has not chosen.
   const remembered = selectedCourse(state.selected);
   return (
     <header className={`site-header ${home ? 'home-header' : ''}`}>

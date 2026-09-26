@@ -1,6 +1,7 @@
 # PoliLingo
 
-A playful, responsive language-learning app for Pashto, Hazara/Abbottabad Hindko, and Urdu.
+A playful, responsive language-learning app for Pakistan's languages: the languages in the
+current content release, Pashto and Urdu today.
 Built with Next.js, React 19, TypeScript, Tailwind CSS, and customised shadcn / Base UI
 primitives.
 
@@ -30,15 +31,18 @@ Full setup instructions for a bare Windows machine: [`docs/local-setup-windows.m
 
 ## What it does today
 
-The homepage leads into two-step onboarding and a three-lesson course for each language.
-Lessons contain study cards and eight exercises, with repeat practice for mistakes.
+The homepage leads into two-step onboarding and a course for each language in the
+content release. Lessons contain study cards and exercises, with repeat practice for
+mistakes. Every count on the screens (languages, lessons, the learning map and its badges)
+comes from the release, so a release with more or fewer lessons needs no code change.
 
-Progress and in-flight feedback are stored under `polilingo.progress.v2` in `localStorage`.
+Progress and in-flight feedback are stored under `polilingo.progress.v3` in `localStorage`.
 The first load after v0.2 copies any older `polilingo.progress.v1` blob verbatim to
-`polilingo.progress.v1.bak-<date>` before migrating it, and never writes the old key again.
+`polilingo.progress.v1.bak-<date>` before migrating it. Neither that key nor v0.2's own,
+`polilingo.progress.v2`, is ever written again, so a rollback finds its key as it left it.
 If that copy cannot be made, the learner keeps going in memory and nothing is saved that
-session. Anything an older build later writes to the old key, during a rollback or in a tab
-left open from before, is merged in on the next load.
+session. Anything an older build later writes to either old key, during a rollback or in a
+tab left open from before, is merged in on the next load.
 Settings can export progress to a JSON file and import one back. An import combines
 completed lessons and streak days with what is already there; XP shows the higher of the
 two totals.
@@ -55,17 +59,42 @@ Those are Stage 1 deliverables — see
 
 ## Content and assets
 
-`lib/courses.ts` contains typed phrase records, exercise definitions, source links and
-usage notes. **Every phrase is a seed sample, not a certified curriculum.** Hindko in
-particular still needs review by a Hazara/Abbottabad-speaking teacher, so it is hidden
-from learners until then: `courses` lists only Pashto and Urdu, a learner's stored Hindko
-progress is kept, and Hindko URLs redirect temporarily to `/learn`.
+Curriculum lives in
+[muhammaduzair11/polilingo-content](https://github.com/muhammaduzair11/polilingo-content) as reviewed data
+with permanent IDs, provenance and a review workflow. Each content release builds a
+**learner copy** there: only the lessons whose publish gate is open all the way down, and
+only the fields a learner sees. That copy is committed here as `content/release.json`
+(ADR-0028). `lib/content.ts` is the only module that imports it, and presents the `Course`,
+`Lesson`, `Phrase` and `Exercise` shapes the screens use. Nothing about the curriculum is
+written in this repository.
 
-> Curriculum is moving out of this repository into
-> [muhammaduzair11/polilingo-content](https://github.com/muhammaduzair11/polilingo-content), where it becomes reviewed data
-> with stable IDs, provenance and a review workflow — so that language reviewers can
-> contribute without touching application code. See
-> [`migration-content-to-db.md`](https://github.com/muhammaduzair11/polilingo-docs/blob/main/archive/technical/migration-content-to-db.md).
+**`content/release.json` is generated. Never edit it by hand.** To change content, change
+the content repository and cut a release there (`content@YYYY.MM.N`). Then regenerate the
+file from a clean checkout of that tag, and open a pull request here with the changed file:
+
+```sh
+# in the content repository, with this repository checked out beside it as ../web
+git checkout content@YYYY.MM.N
+npm ci
+npm run build -- --target learner --release content@YYYY.MM.N --out ../web/content/release.json
+```
+
+The file records its release, the content commit and a content hash. `npm test` recomputes
+the hash, so a hand edit fails CI. A production build refuses a file that is not a tagged
+release: a development build of content, named `content@YYYY.MM.dev+<sha>`, can reach
+preview deployments but never production. Settings shows which release a build was made
+from.
+
+**The current phrases are demo data:** the MVP's seed phrases, live for testing until
+reviewed content replaces them. "Demo" is an internal word. The app never says it, and never
+tells learners anything about review state. Settings credits each language's sources, from
+the citations in the release.
+
+Hindko is not in the learner copy until a Hazara/Abbottabad-speaking reviewer has checked
+it, so the app does not show it, with no message. Its old URLs redirect temporarily to
+`/learn`. A returning Hindko learner sees the language picker rather than a missing page or
+another language, and their stored choice and progress are kept. The MVP's Pashto and Urdu
+lesson URLs (`/lesson/pashto/greetings`) redirect permanently to the lesson's permanent id.
 
 The character is Poli, a cream markhor with violet spiral horns and an orange satchel.
 Lossless PNG masters live in `assets-src/`; `npm run optimize-assets` generates an
@@ -138,14 +167,11 @@ Security and privacy concerns:
 **Copyright © 2026 PoliLingo. All rights reserved.**
 
 This repository is public so that the work can be read, referenced and reported on. It is
-**not** open source. No licence is granted to use, copy, modify or redistribute this code
-or the curriculum content within it.
+**not** open source. There is no licence file, and `package.json` says
+`"license": "UNLICENSED"` (ADR-0022). No licence is granted to use, copy, modify or
+redistribute the code, or the curriculum content in `content/release.json`.
 
-The curriculum, the recorded voices and the language metadata carry separate terms — see
-[`content/LICENSE-CONTENT.md`](https://github.com/muhammaduzair11/polilingo-content/blob/main/LICENSE-CONTENT.md)
-and
-[`content/CONSENT-POLICY.md`](https://github.com/muhammaduzair11/polilingo-content/blob/main/CONSENT-POLICY.md).
-Voice recordings are used under individual speaker releases and are not licensed to third
-parties under any circumstances.
+The curriculum is proprietary. Recorded voices are used under individual speaker releases
+and are not licensed to third parties under any circumstances.
 
 If you want to use something here, ask.

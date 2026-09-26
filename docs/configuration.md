@@ -93,10 +93,20 @@ that job actually touches.
 
 ### D3, D4 — content, around week 3
 
-| Variable                      | Public? | Notes                                                                                                                               |
-| ----------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_CONTENT_VERSION` | Yes     | Which content release this build used, e.g. `content@2026.10.1`. Set by CI. Makes a learner's bug report traceable to exact content |
-| `CONTENT_CHANNEL`             | Server  | `published` in production, `preview` locally to see unreviewed drafts                                                               |
+None. The content release itself is not configuration: `content/release.json` records
+which release and commit it was built from, `lib/content.ts` exports it as
+`contentVersion`, and Settings shows it, so a learner's bug report is traceable to exact
+content.
+
+There is no content channel. `content/release.json` is the learner copy of a release
+(ADR-0028): only lessons whose publish gate is open all the way down, and only
+learner-facing fields. Gated content, such as Hindko until it is reviewed, is not in the
+file, so no variable, mis-set or not, can show it. It is seen in the content repository,
+never through a web build or preview.
+
+Vercel sets `VERCEL_ENV` itself. When it is `production`, `next.config.ts` refuses a
+`content/release.json` whose release is not a tag (`content@YYYY.MM.N`), so a development
+build of content (`content@YYYY.MM.dev+<sha>`) can reach previews but never production.
 
 ### D10 — analytics, around week 8
 

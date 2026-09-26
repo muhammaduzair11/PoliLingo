@@ -14,14 +14,19 @@ import {
   Globe2,
 } from 'lucide-react';
 import { useLearning } from './learning-provider';
-import { courses, selectedCourse } from '@/lib/courses';
+import { courses, selectedCourse } from '@/lib/content';
+import { landingTeaser, exclaimed } from '@/lib/teaser';
+import { countWord, plural } from '@/lib/words';
 import { Art, Poli } from './art';
 import { Header, Footer } from './site-chrome';
-const LANGUAGE_COUNT = ['NO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'];
-
 export function Home() {
   const { state } = useLearning();
+  // Only a course the learner can see: a stored Hindko choice from the MVP
+  // shows no "Welcome back" link, and the language cards below are the way in.
   const remembered = selectedCourse(state.selected);
+  // The "try it" card asks a question from the release, so it never names a
+  // language the release does not hold. With none to ask, it is left out.
+  const teaser = landingTeaser(courses);
   const [sample, setSample] = useState<string | null>(null);
   const { play } = useLearning();
   return (
@@ -132,8 +137,8 @@ export function Home() {
           <div className="section-heading">
             <div>
               <div className="eyebrow purple">
-                {LANGUAGE_COUNT[courses.length] ?? courses.length} LANGUAGES. SO
-                MANY POSSIBILITIES.
+                {countWord(courses.length).toUpperCase()}{' '}
+                {plural(courses.length, 'LANGUAGE')}. SO MANY POSSIBILITIES.
               </div>
               <h2>
                 Where will your
@@ -146,7 +151,10 @@ export function Home() {
               No experience needed. Just a little curiosity.
             </p>
           </div>
-          <div className="language-grid">
+          <div
+            className="language-grid"
+            style={{ '--cards': courses.length } as CSSProperties}
+          >
             {courses.map((course, i) => (
               <Link
                 key={course.id}
@@ -155,8 +163,10 @@ export function Home() {
                 style={{ '--course-color': course.color } as CSSProperties}
               >
                 <div className="language-card-top">
-                  <span className="course-number">0{i + 1} / EXPLORE</span>
-                  <span className="native" lang={course.lang} dir="rtl">
+                  <span className="course-number">
+                    {String(i + 1).padStart(2, '0')} / EXPLORE
+                  </span>
+                  <span className="native" lang={course.lang} dir={course.dir}>
                     {course.native}
                   </span>
                 </div>
@@ -181,7 +191,10 @@ export function Home() {
                 </div>
                 <div className="language-card-meta">
                   <span>BEGINNER FRIENDLY</span>
-                  <span>3 LITTLE LESSONS</span>
+                  <span>
+                    {course.lessons.length} LITTLE{' '}
+                    {plural(course.lessons.length, 'LESSON')}
+                  </span>
                 </div>
               </Link>
             ))}
@@ -211,9 +224,11 @@ export function Home() {
               <br />
               This is learning you’ll actually look forward to.
             </p>
-            <a href="#try-it" className="text-link">
-              Get a little taste <ArrowRight size={20} />
-            </a>
+            {teaser && (
+              <a href="#try-it" className="text-link">
+                Get a little taste <ArrowRight size={20} />
+              </a>
+            )}
           </div>
           <div className="steps">
             <article>
@@ -257,82 +272,90 @@ export function Home() {
             </article>
           </div>
         </section>
-        <section id="try-it" className="sample-section section-wrap">
-          <div className="sample-copy">
-            <span className="pill">
-              <Sparkles size={15} /> YOUR FIRST WIN STARTS HERE
-            </span>
-            <h2>
-              You already have
-              <br />
-              it in you.
-            </h2>
-            <p>
-              One word can open a whole conversation.
-              <br />
-              Try this little bit of Urdu.
-            </p>
-            <span className="handwritten">Go on. Take a guess. ↗</span>
-          </div>
-          <div className="sample-card">
-            <div className="sample-top">
-              <span>URDU · A LITTLE HELLO</span>
-              <span>
-                <Star size={15} /> FIRST WORD
+        {teaser && (
+          <section id="try-it" className="sample-section section-wrap">
+            <div className="sample-copy">
+              <span className="pill">
+                <Sparkles size={15} /> YOUR FIRST WIN STARTS HERE
               </span>
+              <h2>
+                You already have
+                <br />
+                it in you.
+              </h2>
+              <p>
+                One word can open a whole conversation.
+                <br />
+                Try this little bit of {teaser.course.name}.
+              </p>
+              <span className="handwritten">Go on. Take a guess. ↗</span>
             </div>
-            <h3>How do you say “Thank you”?</h3>
-            <div className="sample-options">
-              {[
-                { n: 'سلام', r: 'Salaam', id: 'hello' },
-                { n: 'شکریہ', r: 'Shukriya', id: 'thanks' },
-                { n: 'خدا حافظ', r: 'Khuda hafiz', id: 'bye' },
-              ].map((p) => (
-                <button
-                  key={p.id}
-                  className={`sample-option ${sample === p.id ? (p.id === 'thanks' ? 'correct' : 'incorrect') : ''}`}
-                  onClick={() => {
-                    setSample(p.id);
-                    play(p.id === 'thanks');
-                  }}
-                  aria-pressed={sample === p.id}
+            <div className="sample-card">
+              <div className="sample-top">
+                <span>
+                  {teaser.course.name.toUpperCase()} ·{' '}
+                  {teaser.lesson.title.toUpperCase()}
+                </span>
+                <span>
+                  <Star size={15} /> FIRST WORD
+                </span>
+              </div>
+              <h3>{teaser.prompt}</h3>
+              <div className="sample-options">
+                {teaser.options.map((p) => {
+                  const right = p.id === teaser.answer.id;
+                  return (
+                    <button
+                      key={p.id}
+                      className={`sample-option ${sample === p.id ? (right ? 'correct' : 'incorrect') : ''}`}
+                      onClick={() => {
+                        setSample(p.id);
+                        play(right);
+                      }}
+                      aria-pressed={sample === p.id}
+                    >
+                      <span
+                        className="native"
+                        lang={teaser.course.lang}
+                        dir={teaser.course.dir}
+                      >
+                        {p.native}
+                      </span>
+                      <span>{p.roman}</span>
+                      {sample === p.id &&
+                        (right ? <Check size={17} /> : <RotateCcw size={17} />)}
+                    </button>
+                  );
+                })}
+              </div>
+              <output className="sample-response">
+                {sample === null ? (
+                  <>
+                    <Heart size={17} /> No pressure. That’s how we learn.
+                  </>
+                ) : sample === teaser.answer.id ? (
+                  <>
+                    <Check size={18} /> {exclaimed(teaser.answer.roman)} Look at
+                    you, making connections.
+                  </>
+                ) : (
+                  <>
+                    <Heart size={17} /> A good try! {teaser.answer.roman} means
+                    “{teaser.answer.meaning}”. Try it.
+                  </>
+                )}
+              </output>
+              {sample === teaser.answer.id && (
+                <Link
+                  href={`/onboarding/${teaser.course.id}`}
+                  className="button button-purple"
                 >
-                  <span className="native" lang="ur" dir="rtl">
-                    {p.n}
-                  </span>
-                  <span>{p.r}</span>
-                  {sample === p.id &&
-                    (p.id === 'thanks' ? (
-                      <Check size={17} />
-                    ) : (
-                      <RotateCcw size={17} />
-                    ))}
-                </button>
-              ))}
-            </div>
-            <output className="sample-response">
-              {sample === null ? (
-                <>
-                  <Heart size={17} /> No pressure. That’s how we learn.
-                </>
-              ) : sample === 'thanks' ? (
-                <>
-                  <Check size={18} /> Shukriya! Look at you, making connections.
-                </>
-              ) : (
-                <>
-                  <Heart size={17} /> A good try! Shukriya means “Thank you”.
-                  Try it.
-                </>
+                  Keep that feeling going <ArrowRight size={18} />
+                </Link>
               )}
-            </output>
-            {sample === 'thanks' && (
-              <Link href="/onboarding/urdu" className="button button-purple">
-                Keep that feeling going <ArrowRight size={18} />
-              </Link>
-            )}
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
         <section id="meet-poli" className="meet-section">
           <div className="section-wrap meet-inner">
             <div className="meet-art">

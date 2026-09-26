@@ -69,7 +69,7 @@ body:
         (F12), paste the line below, press Enter, and paste the result here.
 
         ```
-        (({ deviceId, userId, lastSyncedAt, importedIntoAccounts, ...rest }) => JSON.stringify(rest))(JSON.parse(localStorage.getItem('polilingo.progress.v2') || localStorage.getItem('polilingo.progress.v1') || '{}'))
+        (({ deviceId, userId, lastSyncedAt, importedIntoAccounts, ...rest }) => JSON.stringify(rest))(JSON.parse(localStorage.getItem('polilingo.progress.v3') || localStorage.getItem('polilingo.progress.v2') || localStorage.getItem('polilingo.progress.v1') || '{}'))
         ```
 
         It shows only your learning progress — XP, streaks, which lessons you have

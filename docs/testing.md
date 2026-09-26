@@ -61,6 +61,15 @@ own correct answer, missing romanisation, unreviewed content in a published cour
 Content bugs reach learners as wrong language, which is the most damaging kind of bug this
 project can ship.
 
+Here, `tests/content-release.test.mjs` checks the committed learner copy,
+`content/release.json`: its content hash, recomputed exactly as the content build does, so
+a hand edit fails; that it holds only learner-copy fields and no Hindko; and the invariants
+the app relies on, such as every course having lessons and every exercise using only its
+own lesson's phrases. It asserts **invariants, never counts**: no "three lessons", no "four
+phrases", no XP total worked out from today's lessons. A content release that adds, retires
+or resizes lessons must keep `npm test` green; tests in `learning.test.mjs` take their
+lessons and sizes from whichever release is committed for the same reason.
+
 ### Sometimes: React components
 
 **Not in v1.** ADR-0013 records this.
@@ -72,7 +81,12 @@ cost buys very little: tests written against a moving target get deleted rather 
 maintained.
 
 Instead: pure logic is extracted out of components and tested, and the UI is verified by
-the scripted manual pass below.
+the scripted manual pass below. `tests/screens.test.mjs` is where that logic is tested:
+which course a returning learner is taken to (`selectedCourse()`), where a lesson the
+release no longer holds leads (`missingLessonRedirect()`), how the learning map counts and
+draws a course of one, three or eight lessons (`lib/learning-map.ts`), the credits in
+Settings, the landing page's try-it question (`lib/teaser.ts`), and wording that depends
+on how many languages or lessons there are.
 
 Revisit when the UI stops changing weekly, or when a third developer joins — whichever
 comes first.
@@ -127,7 +141,7 @@ Per release, on the preview deployment:
   four scores in the release notes. A drop is a regression like any other.
 - **Keyboard only.** Complete one whole lesson without touching the mouse.
 - **Reduced motion.** Turn it on at the OS level and confirm decorative animation stops.
-- **RTL.** Confirm Pashto, Hindko and Urdu text renders right-to-left with correct
+- **RTL.** Confirm Pashto and Urdu text renders right-to-left with correct
   `lang` attributes, and that mixed English-and-native lines do not scramble.
 
 The last one matters more here than on most projects. Getting Arabic-script rendering

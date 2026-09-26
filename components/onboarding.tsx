@@ -15,7 +15,8 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useLearning } from './learning-provider';
-import { getCourse } from '@/lib/courses';
+import { getCourse } from '@/lib/content';
+import { countWord, plural } from '@/lib/words';
 import { Art } from './art';
 import { Header } from './site-chrome';
 import { Loading, NotFoundView } from './status-views';
@@ -36,7 +37,7 @@ export function Onboarding({ courseId }: { courseId: string }) {
           <span className="eyebrow">YOUR NEXT CHAPTER</span>
           <h2>
             {course.name}
-            <span className="native" lang={course.lang} dir="rtl">
+            <span className="native" lang={course.lang} dir={course.dir}>
               {course.native}
             </span>
           </h2>
@@ -85,17 +86,18 @@ export function Onboarding({ courseId }: { courseId: string }) {
                 <p>
                   <BookOpen />
                   <span>
-                    <strong>Three little lessons</strong>Greetings,
-                    introductions, and everyday essentials.
+                    <strong>
+                      {countWord(course.lessons.length)} little{' '}
+                      {plural(course.lessons.length, 'lesson')}
+                    </strong>
+                    Starting with “{course.lessons[0]?.title}”.
                   </span>
                 </p>
                 <p>
                   <Globe2 />
                   <span>
-                    <strong>{course.variety}</strong>
-                    {course.id === 'hindko'
-                      ? 'Introductory sample. Local phrasing varies; speaker review is still pending.'
-                      : 'A consistent starting point, with room to explore more later.'}
+                    <strong>{course.varietyLabel}</strong>A consistent starting
+                    point, with room to explore more later.
                   </span>
                 </p>
                 <p>

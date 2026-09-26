@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 import {
   ArrowUpRight,
   Check,
@@ -14,7 +14,13 @@ import {
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useLearning } from './learning-provider';
-import { courses, getCourse, selectedCourse } from '@/lib/courses';
+import { courses, getCourse, selectedCourse } from '@/lib/content';
+import {
+  courseProgress,
+  mapPath,
+  stopClass,
+  stopIcon,
+} from '@/lib/learning-map';
 import {
   lessonKey,
   localDate,
@@ -22,6 +28,7 @@ import {
   streak,
   unlocked,
 } from '@/lib/progress';
+import { countWord, plural } from '@/lib/words';
 import { randomId } from '@/lib/random-id';
 import { Art, Poli } from './art';
 import { Header, Footer } from './site-chrome';
@@ -29,10 +36,11 @@ import { Loading, NotFoundView } from './status-views';
 export function Dashboard({ courseId }: { courseId?: string }) {
   const { state, ready, update } = useLearning();
   const router = useRouter();
-  // /learn opens the remembered course. With none the learner can see -
-  // nothing chosen yet, or a hidden one such as Hindko - it shows the
-  // language picker instead of choosing a language for them, and the
-  // stored choice is left as it is.
+  // /learn/<slug> is the course the learner opened, and becomes their choice.
+  // /learn opens the remembered course. With none they can see - nothing
+  // chosen yet, or a course the release does not hold, such as Hindko from
+  // the MVP - it shows the language picker rather than choosing a language
+  // for them, and the stored choice is left exactly as it is.
   const course = courseId
     ? getCourse(courseId)
     : selectedCourse(state.selected);
@@ -45,12 +53,15 @@ export function Dashboard({ courseId }: { courseId?: string }) {
   }, [ready, courseId, course, router]);
   if (!ready) return <Loading />;
   if (!course) return courseId ? <NotFoundView /> : <Loading />;
-  const completed = course.lessons.filter(
-    (l) => state.completed[lessonKey(course.id, l.id)],
-  ).length;
-  const next =
-    course.lessons.find((l) => !state.completed[lessonKey(course.id, l.id)]) ??
-    course.lessons[0];
+  // Every count on the map is the release's: how many lessons this course
+  // has, and how many of those the learner has completed.
+  const {
+    done: completed,
+    total,
+    finished,
+    next,
+  } = courseProgress(state.completed, course);
+  const path = mapPath(total);
   const today = state.activity[localDate()] || 0;
   function start(lesson: string) {
     const key = lessonKey(course!.id, lesson);
@@ -59,7 +70,12 @@ export function Dashboard({ courseId }: { courseId?: string }) {
         ...s,
         sessions: {
           ...s.sessions,
-          [key]: newSession(course!.id, lesson, randomId()),
+          [key]: newSession(
+            course!.id,
+            lesson,
+            randomId(),
+            course!.lessons.find((l) => l.id === lesson)?.exercises.length ?? 0,
+          ),
         },
       }));
     router.push(`/lesson/${course!.id}/${lesson}`);
@@ -72,13 +88,13 @@ export function Dashboard({ courseId }: { courseId?: string }) {
           <div>
             <span className="eyebrow purple">A LITTLE MORE YOU, EVERY DAY</span>
             <h1>
-              {completed === 3
+              {finished
                 ? 'Look how far you’ve come.'
                 : 'Your next little adventure.'}
             </h1>
             <p>
-              {completed === 3
-                ? 'Three lessons. A whole new beginning. Keep your words fresh with a replay.'
+              {finished
+                ? `${countWord(total)} ${plural(total, 'lesson')}. A whole new beginning. Keep your words fresh with a replay.`
                 : 'Take a breath. Make a little room for something good.'}
             </p>
           </div>
@@ -101,7 +117,7 @@ export function Dashboard({ courseId }: { courseId?: string }) {
                   aria-current={c.id === course.id ? 'page' : undefined}
                   className={c.id === course.id ? 'active' : ''}
                 >
-                  <span className="native" lang={c.lang} dir="rtl">
+                  <span className="native" lang={c.lang} dir={c.dir}>
                     {c.native}
                   </span>
                   {c.name}
@@ -114,32 +130,36 @@ export function Dashboard({ courseId }: { courseId?: string }) {
                   CHAPTER 01 · YOUR FIRST CONNECTIONS
                 </span>
                 <h2>{course.name}, here you come.</h2>
-                <p>{course.variety} · Introductory sample</p>
+                <p>{course.varietyLabel}</p>
               </div>
               <Art name={course.image} alt="" sizes="200px" priority />
             </div>
-            <div className="path-area">
+            <div
+              className="path-area"
+              style={{ '--stops': total } as CSSProperties}
+            >
               <svg
                 className="path-line"
-                viewBox="0 0 400 530"
+                viewBox={`0 0 400 ${path.height}`}
                 preserveAspectRatio="none"
                 aria-hidden="true"
               >
-                <path d="M190 25 C390 120 35 160 145 265 S350 360 210 490" />
+                <path d={path.d} />
               </svg>
               <div className="map-poli">
-                <Poli pose={completed === 3 ? 'celebrate' : 'welcome'} />
+                <Poli pose={finished ? 'celebrate' : 'welcome'} />
                 <span>
-                  {completed === 3 ? 'You did that!' : 'I saved you a spot.'}
+                  {finished ? 'You did that!' : 'I saved you a spot.'}
                 </span>
               </div>
               {course.lessons.map((l, i) => {
                 const done = state.completed[lessonKey(course.id, l.id)];
                 const open = unlocked(state, course.id, l.id);
-                const active = next.id === l.id && completed !== 3;
+                const active = next?.id === l.id && !finished;
+                const icon = stopIcon(i, total);
                 return (
                   <div
-                    className={`lesson-stop stop-${i} ${active ? 'next-stop' : ''}`}
+                    className={`lesson-stop ${stopClass(i)} ${active ? 'next-stop' : ''}`}
                     key={l.id}
                   >
                     <button
@@ -152,9 +172,9 @@ export function Dashboard({ courseId }: { courseId?: string }) {
                         <Check size={31} />
                       ) : !open ? (
                         <Lock size={27} />
-                      ) : i === 0 ? (
+                      ) : icon === 'star' ? (
                         <Star size={31} fill="currentColor" />
-                      ) : i === 1 ? (
+                      ) : icon === 'heart' ? (
                         <Heart size={30} />
                       ) : (
                         <Flag size={30} />
@@ -170,16 +190,16 @@ export function Dashboard({ courseId }: { courseId?: string }) {
                           ? 'Complete the previous lesson'
                           : done
                             ? 'Completed · replay anytime'
-                            : '8 playful exercises'}
+                            : `${l.exercises.length} playful exercises`}
                       </p>
                     </div>
                   </div>
                 );
               })}
-              <div className={`path-trophy ${completed === 3 ? 'earned' : ''}`}>
+              <div className={`path-trophy ${finished ? 'earned' : ''}`}>
                 <Trophy size={35} />
                 <span>
-                  {completed === 3
+                  {finished
                     ? `${course.name} first steps badge earned!`
                     : 'Your first badge is waiting.'}
                 </span>
@@ -187,10 +207,12 @@ export function Dashboard({ courseId }: { courseId?: string }) {
             </div>
             <div className="map-footer">
               <Progress
-                value={(completed / 3) * 100}
+                value={total ? (completed / total) * 100 : 0}
                 aria-label="Course completion"
               />
-              <span>{completed} of 3 lessons completed</span>
+              <span>
+                {completed} of {total} {plural(total, 'lesson')} completed
+              </span>
             </div>
           </section>
           <aside className="dashboard-aside">
@@ -234,9 +256,7 @@ export function Dashboard({ courseId }: { courseId?: string }) {
               </div>
               <div className="badge-row">
                 {courses.map((c) => {
-                  const earned = c.lessons.every(
-                    (l) => state.completed[lessonKey(c.id, l.id)],
-                  );
+                  const earned = courseProgress(state.completed, c).finished;
                   return (
                     <div
                       key={c.id}

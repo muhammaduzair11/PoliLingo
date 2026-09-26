@@ -22,10 +22,19 @@
 .mobile-break {
   display: none;
 }
+/* Laid out for three languages. --cards is how many the content release
+   holds (components/home.tsx). With fewer, each card keeps the width it has
+   in a row of three and the row is centred, so no empty slot shows. */
 .language-grid {
+  --grid-gap: 22px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
+  grid-template-columns: repeat(var(--cards, 3), 1fr);
+  gap: var(--grid-gap);
+  max-width: calc(
+    var(--cards, 3) * (100% - 2 * var(--grid-gap)) / 3 + (var(--cards, 3) - 1) *
+      var(--grid-gap)
+  );
+  margin-inline: auto;
 }
 .language-card {
   display: block;

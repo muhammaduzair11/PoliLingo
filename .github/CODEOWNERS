@@ -50,10 +50,24 @@
 # expects at runtime and to what may or may not be sent to browsers.
 /.env.example                   @muhammaduzair11 @junaidaslam2006
 
-# Curriculum still living in code. This file moves to the content repository
-# during v0.2; until then, changes to it are content changes wearing a
-# TypeScript costume and deserve the same scrutiny a content pull request gets.
-/lib/courses.ts                 @muhammaduzair11 @junaidaslam2006
+# The content release and the module that reads it.
+#
+# content/release.json is a generated learner copy of a content release
+# (ADR-0028). NEVER EDIT IT BY HAND. A change to it is a content change
+# wearing a JSON costume: to change content, change the content repository
+# and cut a release there, then regenerate this file from a clean checkout
+# of that content@ tag and open a pull request with the result:
+#
+#   npm run build -- --target learner --release content@YYYY.MM.N --out ../web/content/release.json
+#
+# npm test recomputes the file's content hash, so a hand edit fails CI. Review
+# it as a content release: which release and commit it names, and what
+# learners will see. lib/content.ts is its only importer and changes what every
+# learner is shown; lib/redirects.ts turns it into redirects, and a permanent
+# one is remembered by browsers for good.
+/content/                       @muhammaduzair11 @junaidaslam2006
+/lib/content.ts                 @muhammaduzair11 @junaidaslam2006
+/lib/redirects.ts               @muhammaduzair11 @junaidaslam2006
 
 # The asset pipeline. Regenerating the image ladder incorrectly is not caught by
 # any test — it just looks slightly wrong on some screens.

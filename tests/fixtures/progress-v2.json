@@ -1,0 +1,93 @@
+{
+  "version": 2,
+  "deviceId": "4d51f2ba-e800-43f6-8aea-2acf540edfa6",
+  "userId": null,
+  "lastSyncedAt": null,
+  "importedIntoAccounts": [],
+  "v1Fingerprint": "1367-d6159044cc718042",
+  "selected": "urdu",
+  "dailyGoal": 2,
+  "xp": 85,
+  "completed": {
+    "pashto/greetings": true,
+    "pashto/introductions": true,
+    "hindko/greetings": true,
+    "urdu/greetings": true
+  },
+  "activity": { "2026-09-20": 2, "2026-09-21": 2, "2026-09-22": 1 },
+  "rewarded": [
+    "e486d03c-23d9-48c5-8f58-7bfe2bc8431d",
+    "6df515cc-98c7-49b5-9134-c369519e7c14",
+    "d9c33383-f4d8-4f55-a632-4a07a5e6ca4d",
+    "1ea10195-cd04-4623-b47b-76a8e900e371",
+    "1ba44575-1b08-43f0-9ae0-aeb96118fa70"
+  ],
+  "sessions": {
+    "pashto/greetings": {
+      "id": "1ea10195-cd04-4623-b47b-76a8e900e371",
+      "course": "pashto",
+      "lesson": "greetings",
+      "queue": [0, 1, 2, 3, 4, 5, 6, 7],
+      "cursor": 8,
+      "firstCorrect": 8,
+      "attempts": 8,
+      "studied": true,
+      "feedback": null,
+      "done": true,
+      "reward": 5
+    },
+    "pashto/introductions": {
+      "id": "6df515cc-98c7-49b5-9134-c369519e7c14",
+      "course": "pashto",
+      "lesson": "introductions",
+      "queue": [0, 1, 2, 3, 4, 5, 6, 7],
+      "cursor": 8,
+      "firstCorrect": 8,
+      "attempts": 8,
+      "studied": true,
+      "feedback": null,
+      "done": true,
+      "reward": 20
+    },
+    "hindko/greetings": {
+      "id": "d9c33383-f4d8-4f55-a632-4a07a5e6ca4d",
+      "course": "hindko",
+      "lesson": "greetings",
+      "queue": [0, 1, 2, 3, 4, 5, 6, 7],
+      "cursor": 8,
+      "firstCorrect": 8,
+      "attempts": 8,
+      "studied": true,
+      "feedback": null,
+      "done": true,
+      "reward": 20
+    },
+    "pashto/essentials": {
+      "id": "97db5063-3c72-4199-8ab8-27ec18792ee6",
+      "course": "pashto",
+      "lesson": "essentials",
+      "queue": [0, 1, 2, 3, 4, 5, 6, 7, 3],
+      "cursor": 3,
+      "firstCorrect": 3,
+      "attempts": 4,
+      "studied": true,
+      "feedback": { "correct": false },
+      "done": false,
+      "reward": 0
+    },
+    "urdu/greetings": {
+      "id": "1ba44575-1b08-43f0-9ae0-aeb96118fa70",
+      "course": "urdu",
+      "lesson": "greetings",
+      "queue": [0, 1, 2, 3, 4, 5, 6, 7],
+      "cursor": 8,
+      "firstCorrect": 8,
+      "attempts": 8,
+      "studied": true,
+      "feedback": null,
+      "done": true,
+      "reward": 20
+    }
+  },
+  "prefs": { "sound": true, "reducedMotion": false, "transliteration": false }
+}

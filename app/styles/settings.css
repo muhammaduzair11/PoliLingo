@@ -90,20 +90,12 @@
   color: #806c91;
   margin-bottom: 13px;
 }
-.source-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 11px 20px;
-  margin-top: 18px;
-}
-.source-links a {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12px;
+/* A citation that is a URL is linked in the credits line. */
+.sources-card p a {
   color: var(--purple);
   text-decoration: underline;
   text-underline-offset: 3px;
+  overflow-wrap: anywhere;
 }
 .reset-card {
   display: flex;
