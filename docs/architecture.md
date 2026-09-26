@@ -43,6 +43,12 @@ server to fall over.
 | `/_not-found`               | Static    | Fallback                                                          |
 
 Course identifiers are `pashto`, `hindko` and `urdu`, mapped in `lib/courses.ts`.
+Hindko is hidden from learners until it has been reviewed: `courses` and `getCourse`
+see only Pashto and Urdu, while progress is validated against `allCourses`, so a
+learner's stored Hindko progress stays valid. `/learn/hindko`, `/lesson/hindko/*` and
+`/onboarding/hindko` redirect temporarily (307) to `/learn` (`next.config.ts`), and
+`/learn` shows the language picker to anyone without a course they can see, rather than
+choosing one for them.
 
 ## 3. State model
 

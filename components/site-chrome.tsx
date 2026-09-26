@@ -9,6 +9,7 @@ import {
   Settings2,
 } from 'lucide-react';
 import { useLearning } from '@/components/learning-provider';
+import { selectedCourse } from '@/lib/courses';
 export function Brand() {
   return (
     <Link href="/" className="brand" aria-label="PoliLingo home">
@@ -44,6 +45,7 @@ export function MotionButton() {
 }
 export function Header({ home = false }: { home?: boolean }) {
   const { state } = useLearning();
+  const remembered = selectedCourse(state.selected);
   return (
     <header className={`site-header ${home ? 'home-header' : ''}`}>
       <div className="header-inner">
@@ -58,7 +60,7 @@ export function Header({ home = false }: { home?: boolean }) {
               </a>
             </>
           ) : (
-            <Link href={state.selected ? `/learn/${state.selected}` : '/'}>
+            <Link href={remembered ? `/learn/${remembered.id}` : '/'}>
               My adventure
             </Link>
           )}
@@ -77,14 +79,10 @@ export function Header({ home = false }: { home?: boolean }) {
           <Link
             className="button button-small button-ink"
             href={
-              state.selected
-                ? `/learn/${state.selected}`
-                : home
-                  ? '#languages'
-                  : '/'
+              remembered ? `/learn/${remembered.id}` : home ? '#languages' : '/'
             }
           >
-            {state.selected ? 'Keep going' : 'Let’s go'}
+            {remembered ? 'Keep going' : 'Let’s go'}
             <ArrowUpRight size={17} />
           </Link>
         </div>

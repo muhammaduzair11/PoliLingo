@@ -1,4 +1,8 @@
-import { courses, getCourse, type CourseId } from './courses.ts';
+import { allCourses, type CourseId } from './courses.ts';
+
+// Progress is checked against every course, shown or hidden: hiding a course
+// must never make a learner's stored progress on it look invalid.
+const findCourse = (id: string) => allCourses.find((c) => c.id === id);
 export type Session = {
   id: string;
   course: CourseId;
@@ -60,7 +64,7 @@ export function unlocked(
   course: CourseId,
   lesson: string,
 ): boolean {
-  const c = getCourse(course)!;
+  const c = findCourse(course)!;
   const i = c.lessons.findIndex((l) => l.id === lesson);
   return (
     i >= 0 &&
@@ -130,7 +134,7 @@ export function parseState(raw: string | null): ProgressState {
       !Number.isSafeInteger(s.xp) ||
       s.xp < 0 ||
       ![1, 2, 3].includes(s.dailyGoal) ||
-      (s.selected !== null && !getCourse(s.selected)) ||
+      (s.selected !== null && !findCourse(s.selected)) ||
       !s.prefs ||
       ['sound', 'reducedMotion', 'transliteration'].some(
         (k) => typeof s.prefs[k] !== 'boolean',
@@ -145,7 +149,7 @@ export function parseState(raw: string | null): ProgressState {
       !s.rewarded.every((x: unknown) => typeof x === 'string')
     )
       return fallback;
-    const validKeys = courses.flatMap((c) =>
+    const validKeys = allCourses.flatMap((c) =>
       c.lessons.map((l) => lessonKey(c.id, l.id)),
     );
     if (

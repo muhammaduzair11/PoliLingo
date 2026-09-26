@@ -49,7 +49,9 @@ Those are Stage 1 deliverables — see
 
 `lib/courses.ts` contains typed phrase records, exercise definitions, source links and
 usage notes. **Every phrase is a seed sample, not a certified curriculum.** Hindko in
-particular still needs review by a Hazara/Abbottabad-speaking teacher.
+particular still needs review by a Hazara/Abbottabad-speaking teacher, so it is hidden
+from learners until then: `courses` lists only Pashto and Urdu, a learner's stored Hindko
+progress is kept, and Hindko URLs redirect temporarily to `/learn`.
 
 > Curriculum is moving out of this repository into
 > [muhammaduzair11/polilingo-content](https://github.com/muhammaduzair11/polilingo-content), where it becomes reviewed data
