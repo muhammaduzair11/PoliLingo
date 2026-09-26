@@ -5,6 +5,11 @@ building a part of it reads this first and codes against it. **If this document 
 instinct disagree, this document wins; if this document is wrong or silent, stop and say so
 in your report rather than inventing a second convention.**
 
+The platform has been built to this contract. Where the build settled a detail the contract
+left open, or had to differ from it, the text is marked **As built**; those parts are the
+contract now. How the result fits together is in [`architecture.md`](architecture.md), and
+how to deploy it in [`runbook-deploy.md`](runbook-deploy.md).
+
 Decided by the founder on 2026-09-26, overriding older docs where they differ:
 
 - **One real production Supabase project** (`polilingo`, Singapore). No demo environment, no
@@ -127,12 +132,13 @@ Repository idioms that bind everyone (from the existing code):
   `USAGE` and `SELECT` on its tables, **filtered by RLS**, so `SECURITY INVOKER` page
   functions can read what the caller may see. No write grants to anyone but the owner.
 - `private`: helpers, trigger functions, builders, settings, seed bookkeeping. Not exposed.
-  `authenticated` gets `EXECUTE` only on the RLS helper functions policies call (§3.6) and
-  on the pure or RLS-scoped helpers that `SECURITY INVOKER` page functions call: `raise`,
-  `js_ws`, `normalise_native`, `text_fingerprint`, `canonical_json`, `native_problems`,
-  `lesson_problems`, `effective_gate`, `lesson_json`. Everything else in `private` (builders,
-  `bootstrap_first_admin`, trigger functions) has no grant. A track that needs another
-  `private` function from an invoker function asks the foundation for the grant.
+  `authenticated` gets `EXECUTE` only on the RLS helper functions policies call (§3.6) and,
+  **as built**, on the pure or RLS-scoped helpers that `SECURITY INVOKER` page functions
+  call: `raise`, `js_ws`, `normalise_native`, `text_fingerprint`, `canonical_json`,
+  `native_problems`, `lesson_problems`, `effective_gate`, `lesson_json`. Everything else in
+  `private` (builders, `bootstrap_first_admin`, trigger functions) has no grant. A track
+  that needs another `private` function from an invoker function asks the foundation for
+  the grant.
 - Default privileges: `revoke all on tables, sequences from anon, authenticated` and `revoke
 execute on functions from public, anon, authenticated` in all three schemas. Each API
   function then gets an explicit `grant execute … to authenticated` (and, for
@@ -290,17 +296,17 @@ with `private.native_problems(language, native, romanisation)` (codes
 `PL422_ROMANISATION_SCRIPT`, `PL422_ROMANISATION_NO_LATIN`; problems carry the character and
 its 1-based position); compute `text_fingerprint = private.text_fingerprint(native)` and
 `review_fingerprint = left(sha256(canonical_json({native, romanisation, meaning, context,
-usage_note, variety, citation})), 16)`, with a null `context` or `usage_note` left out, as
-the learner copy leaves them out. When `review_fingerprint` changes on update:
-`review_status := 'unreviewed'`, `current_decision_id := null`, `text_author :=
-private.change_author()` (the caller's contributor id, or the suggester during
-`accept_suggestion`), `revision_no := revision_no + 1`. An after trigger writes a
+usage_note, variety, citation})), 16)`, with (**as built**) a null `context` or
+`usage_note` left out, as the learner copy leaves them out. When `review_fingerprint`
+changes on update: `review_status := 'unreviewed'`, `current_decision_id := null`,
+`text_author := private.change_author()` (the caller's contributor id, or the suggester
+during `accept_suggestion`), `revision_no := revision_no + 1`. An after trigger writes a
 `revisions` row (reason `import` while seeding, otherwise from
-`current_setting('polilingo.revision_reason', true)`, defaulting to `create` on insert and
-`edit` on update; `polilingo.suggestion_id` fills `suggestion_id`). Demo items reject any
-update (`PL409_DEMO_FROZEN`) except while seeding. `revision_no` is owned by the database on
-every content table: it goes up by one whenever anything but bookkeeping changes, and it is
-what `p_expected_revision` compares with.
+`current_setting('polilingo.revision_reason', true)`, defaulting, **as built**, to `create`
+on insert and `edit` on update; `polilingo.suggestion_id` fills `suggestion_id`). Demo
+items reject any update (`PL409_DEMO_FROZEN`) except while seeding. `revision_no` is owned
+by the database on every content table: it goes up by one whenever anything but
+bookkeeping changes, and it is what `p_expected_revision` compares with.
 
 Transaction-local settings the triggers read: `polilingo.seeding` (`'on'` inside each seed's
 own transaction, always with `set local` or `set_config(…, true)`),
@@ -420,6 +426,19 @@ rewarded: [session ids], dailyGoal, selected }`.
 
 `public.get_my_progress() → jsonb` (definer, stable) returns the same state.
 
+**As built**, three account-wide limits sit beside the per-envelope ones, so no account can
+grow without end across imports: at most 5 000 completions and 20 000 session awards per
+account (an import that would pass either is refused with `PL422_BAD_ENVELOPE`, detail
+`{limit}`; an account at a limit still syncs what it already holds), and at most 20
+devices: a new device past that is folded into the account's device with the highest
+reported XP, which leaves the account's XP unchanged. A completion's 15 XP award is keyed by
+the lesson's id through the whole keymap (`private.award_lesson_key`), so an MVP key and its
+permanent id never pay twice.
+
+**As built**, Reset in Settings while signed in clears only this device (the device's
+`userId` goes with it, so the next sync does not ask): the account keeps its copy, and it
+returns at the next save. Settings says so before the learner confirms.
+
 ### 3.8 Row Level Security
 
 `SELECT` policies `to authenticated` (writes have no policies; only definer functions write).
@@ -436,11 +455,12 @@ contract. `anon` has nothing anywhere.
 | `content.lessons`, `items`, `review_decisions`, `countersignatures`, `suggestions`, `review_comments`                                       | `variety_id = any ((select private.readable_varieties())::text[])`                                                         |
 | `content.exercises`                                                                                                                         | `exists (select 1 from content.lessons l where l.id = exercises.lesson_id)`                                                |
 | `content.revisions`                                                                                                                         | `(variety_id is null and (select private.is_staff())) or variety_id = any ((select private.readable_varieties())::text[])` |
+| `private.*`                                                                                                                                 | no grants, no policies                                                                                                     |
 
-The `::text[]` cast matters: without it Postgres parses `any ((select …))` as `ANY
-(subquery)` and fails with `operator does not exist: text = text[]`. Write the same form in
-any query of your own.
-| `private.*` | no grants, no policies |
+**As built**, the variety policies read `variety_id = any ((select
+private.readable_varieties())::text[])`. The `::text[]` cast matters: without it Postgres
+parses `any ((select …))` as `ANY (subquery)` and fails with `operator does not exist: text
+= text[]`. Write the same form in any query of your own.
 
 `tests/db/invariants.test.mjs` asserts, each returning zero rows: RLS off anywhere in
 `public/content/private`; an undeclared schema; any table privilege held by `anon`,
@@ -472,7 +492,10 @@ Codes below omit the `PL` prefix. Signatures are final; tracks implement them ex
 - `export_my_data() → jsonb` (definer, stable): the caller's profile, progress, awards,
   devices, prefs, contributor, grants, and their own decisions/suggestions/comments.
 - `private.purge_profileless_users()`: deletes `auth.users` rows older than 24 hours with no
-  profile; scheduled daily with `pg_cron` when the extension is available.
+  profile; scheduled daily with `pg_cron` when the extension is available. **As built**: the
+  job is `polilingo-purge-profileless-users` at `17 3 * * *` (UTC); the migration schedules
+  it only when `pg_cron` is installed or can be, so the runbook enables the extension before
+  the first push. `delete_my_account` also revokes the open invitations the person issued.
 
 **B — sync** (`…001100_sync.sql`): `import_local_progress(p_envelope jsonb)`,
 `get_my_progress()`, `private.progress_state(uuid)`, `private.xp_total(uuid)`,
@@ -519,6 +542,30 @@ latest release), gated, demo, reviewed_live}`; reviewers per variety; accounts t
   signed in within 7 days (from `progress_imports`), learners with a completion, completions
   total; latest release `{name, published_at}`; target line `{reviewed_target_min: 250,
 reviewed_target_max: 400}`.
+
+**As built** (people and roles):
+
+- **Leaving ends every open role.** `update_contributor` setting `status` to `ended` ends
+  every grant that has not ended yet, now, and records each (`role.revoked`).
+- **Coming back replaces old roles.** When someone whose contributor is `ended` or `paused`
+  accepts an invitation, the contributor is made active again and every older role still
+  open ends first, so only the role they were just invited to is live.
+- **The last-admin check needs a lasting admin.** Ending or pausing an admin (`revoke_role`,
+  `update_contributor`) is refused with `409_LAST_ADMIN` unless another active, 18+ admin
+  holds a grant with **no end date**; an admin whose role is due to end does not count, so
+  staggered end dates cannot leave nobody in charge. (`delete_my_account`'s own check, in
+  track A, needs another admin active now.)
+- **Invitations.** Once accepted or revoked, an invitation is void: nobody can accept a
+  revoked one (`410_INVITATION_REVOKED`), and nobody but the person who accepted it can
+  accept a used one (`410_INVITATION_USED`; that person gets the same success however often
+  they open the link). An accepted invitation cannot be revoked (`410_INVITATION_USED`: end
+  the role instead); revoking twice is not an error. An invitation whose sender is no longer
+  an admin is void too (`410_INVITATION_REVOKED`, shown as `void` on `/admin/people`),
+  whatever its expiry says.
+- **One lock for admin changes.** `revoke_role`, `update_contributor` and
+  `delete_my_account` take the same transaction advisory lock,
+  `hashtextextended('polilingo.admins', 0)`, so two admins removing each other or
+  themselves at once cannot both pass the last-admin check.
 
 **D — review** (`…001300_review.sql`):
 
@@ -610,10 +657,28 @@ optional `rollback_release(p_release_name text, p_reason text)`; `page_admin_pub
 jsonb` (release history plus the preview). **Test:** the fixture seed's release #1 rebuilt by
 `build_learner_copy` has the same `contentHash`.
 
+**As built**, `rollback_release(p_release_name text, p_reason text) → jsonb {name,
+contentHash, lessons, items, restored}` (admin) is implemented. It appends a new release
+(`kind = 'rollback'`, the next name, the reason as its note) whose payload is the named
+release's learner copy with `release` renamed and `commit: null`, copies that release's
+`release_lessons` (source `carried`) and `release_items`, and audits `release.rolled_back`;
+`restored` is the name brought back. History is never rewritten. It takes the publish lock
+and the same `share` locks, and refuses in this order: `401_NOT_SIGNED_IN`,
+`403_NOT_ADMIN`, `422_BAD_INPUT` (not a release name), `422_COMMENT_REQUIRED` (no reason),
+`422_LENGTH` (reason over 500 characters), `404_NOT_FOUND` (no such release),
+`409_RELEASE_CLOCK`, `409_NOTHING_TO_PUBLISH` (the latest release already has that content
+hash), and `409_NOT_PUBLISHABLE` when the copy can no longer be shown: one of its lessons or
+phrases is missing, retired or moved, its gate is closed, a demo phrase is past its
+language's sunset, or reviewed lessons have since replaced its demo lessons (the detail lists
+`lessons` and `problems`). Because it checks the caller is an admin, it runs from the app,
+not the SQL editor.
+
 **G — release read** (`…001600_release_read.sql`): `get_learner_release(p_known_hash text
 default null) → jsonb` (definer, stable, **the only function `anon` may execute**): returns
-null when `overlay_enabled` is off; `{release, contentHash, unchanged: true}` when the hash
-matches the latest release; otherwise `{release, contentHash, payload}`.
+null when `overlay_enabled` is off (**as built**: also when nothing has been released);
+`{release, contentHash, unchanged: true}` when the hash matches the latest release;
+otherwise `{release, contentHash, payload}`. "Latest" is the highest `seq`, so a rollback,
+being a new release, is what learners get.
 
 **Error code catalogue** (`supabase/error-codes.json`, every one mapped in
 `lib/db-errors.ts`): `401_NOT_SIGNED_IN`; `403_NO_PROFILE`, `403_NOT_ADMIN`,
@@ -718,7 +783,8 @@ console pages render a "not configured" notice.
   Region → Singapore (`sin1`). Next 16 deprecates the `preferredRegion` segment config, and
   the deploy docs keep "no `vercel.json`"; Integration records the step in
   `docs/runbook-deploy.md` (or, if the founder prefers it in the repository, a
-  Foundation-owned `vercel.json` with `{ "regions": ["sin1"] }`).
+  Foundation-owned `vercel.json` with `{ "regions": ["sin1"] }`). **As built**: the runbook
+  step, no `vercel.json`.
 
 ### 4.3 Reads, writes and errors in the console
 
@@ -738,7 +804,8 @@ message: string }` (`lib/console/action-result.ts`) and calling `revalidatePath`
   is shown in small print for support.
 - `lib/console/access.ts` (server-only): `getAccess = cache(async () => my_context())`,
   `requireRole('admin' | 'editor' | 'reviewer' | 'staff')` →
-  `{ ok: true, context } | { ok: false, view }`, where `view` is the kit's `NoAccess` panel.
+  `{ ok: true, context } | { ok: false, view }` (**as built**; a page never throws or
+  redirects for a missing role), where `view` is the kit's `NoAccess` panel.
   A page writes `const gate = await requireRole('admin'); if (!gate.ok) return gate.view;`.
   UI guards are cosmetic; the database decides.
 - `lib/console/paths.ts`: route builders (`reviewItemPath(id)`, `editLessonPath(id)`, …).
@@ -748,9 +815,10 @@ message: string }` (`lib/console/action-result.ts`) and calling `revalidatePath`
 `app/(console)/layout.tsx` (dynamic): loads `getAccess()`; not signed in → redirect to
 `/sign-in?next=…`; no profile → the age declaration panel; renders `ConsoleShell` with nav
 entries by role: **Review** (reviewers), **Edit** (editors, admins), **Admin** (admins:
-Overview, People, Suggestions, Publish). The shell has a top bar (brand, "Workspace", the
-account menu with sign-out) and a side nav on desktop that becomes a tab strip under 800px
-(reviewers use phones).
+Overview, People, Suggestions, Publish). **As built**, an editor who is not an admin also
+gets **Suggestions** under Edit, since editors accept and decline them. The shell has a top
+bar (brand, "Workspace", the account menu with sign-out) and a side nav on desktop that
+becomes a tab strip under 800px (reviewers use phones).
 
 Kit (`components/console/`): `shell.tsx`, `nav.tsx` (client, `usePathname`),
 `page-header.tsx` (`title`, `description`, `actions`), `data-table.tsx` (stacks into cards
@@ -819,13 +887,24 @@ reason }` (format and schemaVersion, recomputed `contentHash` with `lib/canonica
 StorageLike | null) → string` (reads `polilingo.content.release`, verifies, activates if
   newer than the baseline, returns the active release name), `storeRelease(storage, copy)`,
   `fitSessions(state) → state` (drops unfinished runs whose `lessonSize` changed, as
-  `playable()` does).
+  `playable()` does). **As built**: the stored value is `{ source, copy }`, where `source`
+  is the Supabase project URL, so a copy from one project (a local stack) is never shown
+  against another; `forgetRelease(storage)` removes it.
 - `app/api/release/route.ts`: `GET ?known=<hash>` → fetches `get_learner_release()` from
   Supabase REST with the publishable key through `fetch(…, { next: { tags:
 ['learner-release'] } })` (one cached upstream fetch for everyone), compares with
   `known`, and returns `{ unchanged: true }` or `{ release, contentHash, payload }` with
   `Cache-Control: no-store`. With no env it returns `{ unchanged: true }`. Publish (F) calls
-  `revalidateTag('learner-release')`.
+  `revalidateTag('learner-release')`. **As built**: the fetch is a GET with only the
+  `apikey` header (so Next caches it) and a 60-second `revalidate` beside the tag, so a
+  kill-switch change, which nothing can tag, is picked up within a minute; an upstream
+  failure or timeout (8 s) answers `{ unchanged: true }`; and
+  when the function answers null (the kill switch is off, or nothing is released) the route
+  answers **`{ reset: true }`**, always with status 200. `releaseAnswer()` and
+  `releaseStep()` in `lib/release-verify.ts` hold the rules: on `{ reset: true }`, or a
+  release that is not newer than the baseline, the browser forgets its stored copy and goes
+  back to the baseline. Publish and rollback call **`updateTag('learner-release')`** in their
+  Server Actions, which expires the tag at once rather than serving the old answer once more.
 - `components/release-refresher.tsx` (foundation stub, G fills it): mounted by the provider;
   fetches after ready, on `visibilitychange` to visible, on `online`, and every 60 s while
   visible; on a verified newer copy stores it and, unless the path starts with `/lesson/`
@@ -860,6 +939,14 @@ token, type: 'email' })`, then `ensure_profile(band)`, then `location.assign(nex
   cookie, redirect to `safeNext(next)`. `app/auth/confirm/route.ts`: `verifyOtp({ token_hash,
 type })`, same. `lib/safe-next.ts` `safeNext(x) → string` allows only same-origin paths
   (rejects `//x`, `/\x`, schemes, and anything not starting with a single `/`).
+- **As built**, `/auth/confirm` **GET never uses the token**: mail scanners open every link
+  in an email, and a GET that signed in would use up the code in the same email (and a link
+  crafted by someone else would sign a visitor in to that person's account). GET redirects
+  (303, `no-store`, `no-referrer`) to `/sign-in/confirm?token_hash=…&type=…&next=…`, a page
+  with a **Finish signing in** button whose form POSTs back to `/auth/confirm`. Only that
+  POST, and only when it is same-origin (`Origin` or `Sec-Fetch-Site`, checked by
+  `isSameOriginPost()` in `lib/safe-next.ts`), calls `verifyOtp` and finishes like Google
+  (`app/auth/finish.ts`). Anything else goes back to `/sign-in` with a plain sentence.
 - `/account`: profile (email, age band), roles, sync status, **Download my data**
   (`export_my_data` as a JSON file), **Delete my account** (confirm dialog, `delete_my_account`,
   sign out, local progress kept), **Sign out** (`signOut({ scope: 'local' })`, local progress
@@ -933,6 +1020,11 @@ every stored `text_fingerprint` equals the YAML value, the stored `contentHash` 
 `private.canonical_json` recomputed, and — when `private.build_learner_copy` exists —
 rebuilding the release reproduces its `contentHash`; counts match. Finally `seed_runs` and
 an audit row.
+
+**As built**, the production seed is built with `--out dist/seed.sql` (in Windows PowerShell
+`>` writes UTF-16, which Postgres cannot read; `dist/` is ignored by git, and `--out` outside
+the content repository is refused), with `POLILINGO_CONTENT_ROOT` naming a clean checkout of
+the tag, and run once in the Supabase SQL editor ([`runbook-deploy.md`](runbook-deploy.md)).
 
 `.github/workflows/snapshot.yml` (nightly and on demand): `pg_dump --data-only --schema=content`
 from the production database (secret `SUPABASE_DB_URL`) into `snapshots/content.sql`,
