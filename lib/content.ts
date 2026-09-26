@@ -21,6 +21,16 @@
  *     what audio, mastery records and analytics will reference, and they are
  *     designed to appear in URLs (docs repo, technical/content-model.md).
  *   - a stable answer position, varied across exercises (see shuffled()).
+ *
+ * Live content (docs/platform.md 4.7). The committed file is the baseline:
+ * the server renders it and the build's redirects come from it. In the
+ * browser, a newer verified learner copy published from the database can
+ * replace it (lib/release-cache.ts, components/release-refresher.tsx).
+ * `learnerCopy`, `contentVersion`, `courses` and `legacyLessonIds` are live
+ * bindings that activateRelease() reassigns, and getCourse(), lessonSize(),
+ * knownLesson() and selectedCourse() read whichever copy is active. Only
+ * browser effects activate a release, so the first render in the browser
+ * always matches the server's.
  */
 import release from '../content/release.json' with { type: 'json' };
 
@@ -199,14 +209,21 @@ export function readLearnerCopy(file: unknown): LearnerCopy {
 }
 
 /**
- * The learner copy this build was made from, checked. Screens use `courses`;
- * this is for what describes the file itself (its tests, the build's
- * redirects).
+ * The learner copy this build was made from, checked: the baseline. What is
+ * fixed at build time (the redirects, hiddenCourseSlugs) reads this, never
+ * the active copy.
  */
-export const learnerCopy: LearnerCopy = readLearnerCopy(release);
+export const baselineCopy: LearnerCopy = readLearnerCopy(release);
 
-/** Which content release this build was made from, e.g. content@2026.09.1. */
-export const contentVersion = learnerCopy.release;
+/**
+ * The active learner copy: the baseline, or a newer published release the
+ * browser has verified and activated. Screens use `courses`; this is for
+ * what describes the copy itself.
+ */
+export let learnerCopy: LearnerCopy = baselineCopy;
+
+/** Which content release is active, e.g. content@2026.09.1. */
+export let contentVersion: string = baselineCopy.release;
 
 /**
  * A release name, content@YYYY.MM.N: the tag a learner copy was built from.
@@ -250,6 +267,13 @@ const PRESENTATION: Record<
   hno: { id: 'hindko', color: '#d3f4d8', image: 'world-hindko' },
   ur: { id: 'urdu', color: '#ffd3df', image: 'world-urdu' },
 };
+
+/**
+ * The language codes the app knows how to present. A learner copy holding
+ * any other language is refused before it is activated
+ * (lib/release-verify.ts): the screens would have no slug for it.
+ */
+export const PRESENTED_LANGUAGES: readonly string[] = Object.keys(PRESENTATION);
 
 // ---------------------------------------------------------------------------
 // Deterministic ordering. Distractors are listed in the content in a fixed
@@ -374,8 +398,11 @@ function toCourses(copy: LearnerCopy): Course[] {
     });
 }
 
-/** The courses learners see: every course in the learner copy, in display order. */
-export const courses: Course[] = toCourses(learnerCopy);
+/** The baseline's courses, for what is fixed at build time (lib/redirects.ts). */
+export const baselineCourses: Course[] = toCourses(baselineCopy);
+
+/** The courses learners see: every course in the active learner copy, in display order. */
+export let courses: Course[] = baselineCourses;
 
 /** A course the learner can see, by slug. A language not in the release is not found. */
 export function getCourse(id: string): Course | undefined {
@@ -431,34 +458,83 @@ export function phraseSources(course: Course): string[] {
 }
 
 /**
- * The slugs of languages the app knows how to show but the learner copy does
- * not hold, such as `hindko` until it is reviewed. Their old URLs redirect,
- * temporarily, to /learn (lib/redirects.ts).
+ * The slugs of languages the app knows how to show but the baseline learner
+ * copy does not hold, such as `hindko` until it is reviewed. Their old URLs
+ * redirect, temporarily, to /learn (lib/redirects.ts). Fixed at build time,
+ * like the redirects, so it reads the baseline and never the active copy.
  */
 export const hiddenCourseSlugs: CourseId[] = Object.values(PRESENTATION)
   .map((look) => look.id)
-  .filter((slug) => !getCourse(slug));
+  .filter((slug) => !baselineCourses.some((c) => c.id === slug));
 
-// Every lesson in the learner copy. Stored progress on a lesson the copy does
+// Every lesson in a learner copy. Stored progress on a lesson the copy does
 // not hold (retired, or in a language not shown) is kept all the same
-// (lib/progress.ts); these only say what this release has.
-const everyLesson = new Map(
-  learnerCopy.courses.flatMap((c) =>
-    c.units.flatMap((u) => u.lessons.map((l) => [l.id, l] as const)),
-  ),
-);
+// (lib/progress.ts); these only say what the active release has.
+function lessonIndex(copy: LearnerCopy): Map<string, LearnerLesson> {
+  return new Map(
+    copy.courses.flatMap((c) =>
+      c.units.flatMap((u) => u.lessons.map((l) => [l.id, l] as const)),
+    ),
+  );
+}
+function legacyIndex(copy: LearnerCopy): Record<string, string> {
+  return Object.fromEntries(
+    copy.keymap.lessons.map((row) => [row.legacy_key, row.lesson_id]),
+  );
+}
+let everyLesson = lessonIndex(baselineCopy);
 export function knownLesson(id: string): boolean {
   return everyLesson.has(id);
 }
-/** How many exercises a lesson has in this release. */
+/** How many exercises a lesson has in the active release. */
 export function lessonSize(id: string): number | undefined {
   return everyLesson.get(id)?.exercises.length;
 }
 
 /** legacy "pashto/greetings" -> "ps-lsn-0a41c2", from the keymap that travels with the release. */
-export const legacyLessonIds: Record<string, string> = Object.fromEntries(
-  learnerCopy.keymap.lessons.map((row) => [row.legacy_key, row.lesson_id]),
-);
+export let legacyLessonIds: Record<string, string> = legacyIndex(baselineCopy);
+
+// The baseline's derived views, kept so resetToBaseline() puts back the very
+// objects the module started with.
+const baseline = {
+  everyLesson,
+  legacyLessonIds,
+};
+
+/**
+ * Makes `copy` the active learner copy: every live binding above, and every
+ * reader (getCourse, lessonSize, knownLesson, selectedCourse,
+ * missingLessonRedirect), now answers from it. The caller has verified it
+ * (lib/release-verify.ts). Called only from browser effects, never while the
+ * server renders.
+ */
+export function activateRelease(copy: LearnerCopy): void {
+  if (copy === baselineCopy) {
+    resetToBaseline();
+    return;
+  }
+  // Everything is derived first, so a copy that cannot be read leaves the
+  // active one exactly as it was.
+  const next = {
+    courses: toCourses(copy),
+    everyLesson: lessonIndex(copy),
+    legacyLessonIds: legacyIndex(copy),
+  };
+  learnerCopy = copy;
+  contentVersion = copy.release;
+  courses = next.courses;
+  everyLesson = next.everyLesson;
+  legacyLessonIds = next.legacyLessonIds;
+}
+
+/** Makes the committed baseline the active learner copy again. */
+export function resetToBaseline(): void {
+  learnerCopy = baselineCopy;
+  contentVersion = baselineCopy.release;
+  courses = baselineCourses;
+  everyLesson = baseline.everyLesson;
+  legacyLessonIds = baseline.legacyLessonIds;
+}
 
 export function evaluate(
   exercise: Exercise,
