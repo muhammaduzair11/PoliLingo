@@ -19,7 +19,7 @@
         "oxc.oxc-vscode",
 
         // Tailwind v4 theme tokens live as CSS custom properties in
-        // app/globals.css, so autocomplete matters more than usual here.
+        // app/styles/tokens.css, so autocomplete matters more than usual here.
         "bradlc.vscode-tailwindcss",
 
         "EditorConfig.EditorConfig",
