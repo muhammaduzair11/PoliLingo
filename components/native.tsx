@@ -24,3 +24,29 @@ export function Native({
     </span>
   );
 }
+/**
+ * Native-script text with its language and direction, for the console,
+ * where there is no Course and no learner preference: the caller passes
+ * `lang` (ps, ur, hno) and `dir` from the language record.
+ */
+export function NativeText({
+  text,
+  lang,
+  dir,
+  large = false,
+}: {
+  text: string;
+  lang: string;
+  dir: 'rtl' | 'ltr';
+  large?: boolean;
+}) {
+  return (
+    <span
+      className={`native native-text${large ? ' native-text-large' : ''}`}
+      lang={lang}
+      dir={dir}
+    >
+      {text}
+    </span>
+  );
+}

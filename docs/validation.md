@@ -32,13 +32,28 @@ Checked on 2026-09-25 against `next build` and `next start`, in a browser at 144
 
 Before each release, repeat the returning-Hindko-learner check: in a fresh profile, set `localStorage['polilingo.progress.v1']` to a v1 record with `selected: 'hindko'` (or use the v3 key), load `/`, and check the points above, including that `/learn` lands on the language picker and that `selected` is still `hindko` afterwards.
 
-And check the copy. Screens must never tell learners about the state of the content:
+And check the copy. Learner screens must never tell learners about the state of the content:
 
 ```sh
-grep -rniE --include='*.ts' --include='*.tsx' "demo|sample|review|introductory|coming soon|hindko" components app lib
+grep -niE "demo|sample|review|introductory|coming soon|hindko" \
+  components/{home,dashboard,onboarding,lesson-player,settings,site-chrome,native,status-views,art}.tsx \
+  lib/{content,progress,learning-map,teaser,words}.ts \
+  app/page.tsx
+grep -rniE --include='*.ts' --include='*.tsx' "demo|sample|review|introductory|coming soon|hindko" \
+  app/learn app/lesson app/onboarding app/settings
 ```
 
 Every hit must be a comment, a class name, a variable or `lib/` code, never text a learner sees.
+
+The grep covers the learner surfaces only, on purpose. Since the platform work
+(`docs/platform.md`), the repository also holds the staff workspace (`app/(console)/`,
+`components/console/`, `lib/console/`, `supabase/error-codes.json`), whose whole job is to
+talk about review, demo content and Hindko to reviewers, editors and admins, and the
+account pages. Grepping the whole of `components`, `app` and `lib` would bury the learner
+hits under hundreds of legitimate staff ones, and the check would stop being read. The
+boundary that keeps staff words off learner pages is structural instead:
+`tests/boundaries.test.mjs` fails when a learner file imports the console, Supabase or the
+RPC helper, so staff copy cannot be rendered on a learner route by accident.
 
 ## Content boundary
 

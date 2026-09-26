@@ -15,6 +15,12 @@
 @import './styles/native.css';
 @import './styles/lesson.css';
 @import './styles/dialogs.css';
+@import './styles/console.css';
+@import './styles/account.css';
+@import './styles/console-admin.css';
+@import './styles/console-review.css';
+@import './styles/console-editor.css';
+@import './styles/console-publish.css';
 @import './styles/keyframes.css';
 @import './styles/responsive-1500.css';
 @import './styles/responsive-1100.css';
