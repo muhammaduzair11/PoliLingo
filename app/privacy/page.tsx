@@ -35,9 +35,9 @@ export default function PrivacyPage() {
             are no analytics tools or ad pixels in PoliLingo.
           </li>
           <li>
-            <strong>Your account is yours.</strong> Download everything it
-            holds, or delete it, from your{' '}
-            <Link href="/account">account page</Link> at any time.
+            <strong>Your account is yours.</strong> Download a copy of it, or
+            delete it, from your <Link href="/account">account page</Link> at
+            any time.
           </li>
         </ul>
       }
@@ -174,14 +174,20 @@ export default function PrivacyPage() {
             24 hours.
           </li>
           <li>
-            <strong>Download my data</strong> on your account page gives you
-            everything your account holds as a file.
+            <strong>Download my data</strong> on your account page gives you a
+            file with your email, what Google shared (if you used it), how you
+            sign in, your age band, your saved progress and any team role with
+            its history. The sign-in service’s security records (the IP address
+            and browser of each sign-in) aren’t in the file; ask us for them at
+            the address below.
           </li>
           <li>
             <strong>Delete my account</strong> on your account page deletes your
             sign-in, email address, age band and saved progress straight away.
-            For team members, it ends their roles and removes their private
-            details; their review history stays as described above.
+            For team members, it ends their roles, cancels invitations they sent
+            that nobody has used yet, and removes their private details and the
+            email address from past invitations; their review history stays as
+            described above.
           </li>
         </ul>
       </section>

@@ -118,7 +118,16 @@ begin
         'email', u.email,
         'email_confirmed_at', u.email_confirmed_at,
         'created_at', u.created_at,
-        'last_sign_in_at', u.last_sign_in_at
+        'last_sign_in_at', u.last_sign_in_at,
+        -- What the sign-in service stored with the sign-in, such as the name
+        -- and picture Google shares, and each way this account signs in.
+        'metadata', coalesce(u.raw_user_meta_data, '{}'::jsonb),
+        'sign_in_methods', coalesce((
+          select jsonb_agg(jsonb_build_object(
+            'provider', i.provider, 'created_at', i.created_at, 'last_sign_in_at', i.last_sign_in_at
+          ) order by i.provider collate "C", i.created_at)
+          from auth.identities i where i.user_id = v_uid
+        ), '[]'::jsonb)
       )
       from auth.users u where u.id = v_uid
     ),
@@ -230,8 +239,10 @@ end $$;
 -- and imports (the append-only ledgers let those rows go because
 -- polilingo.account_deletion names this user). A team member's contributor
 -- row stays, unlinked and ended, so the review history they wrote stays
--- attributed to the same ctr id; their private details are deleted and every
--- grant still running is ended.
+-- attributed to the same ctr id; their private details are deleted, every
+-- grant still running is ended and every invitation they issued that is
+-- still open is revoked. The email address is also taken out of the
+-- invitations that named it (see below).
 --
 -- The last active admin is refused (PL409_LAST_ADMIN): the workspace would
 -- have nobody to invite anyone. Admin changes take one advisory lock,
@@ -246,7 +257,9 @@ as $$
 declare
   v_uid uuid := auth.uid();
   v_ctr text;
+  v_email text;
   v_ended int := 0;
+  v_revoked int := 0;
 begin
   if v_uid is null then
     perform private.raise('PL401_NOT_SIGNED_IN', 'Please sign in first.');
@@ -273,6 +286,28 @@ begin
   end if;
 
   select c.id into v_ctr from public.contributors c where c.user_id = v_uid for update;
+  select lower(u.email) into v_email from auth.users u where u.id = v_uid;
+
+  -- The email address leaves the invitations too. An invitation this person
+  -- accepted, and any invitation to their address that is over (accepted,
+  -- revoked or expired), keeps its role and dates but not the address, the
+  -- name or the note. One still open is an admin's offer, not account data:
+  -- it stays, and a new account with the address can still accept it. The
+  -- placeholder keeps the column's lower-case email shape.
+  update public.invitations i
+  set email = 'removed-' || pg_catalog.replace(i.id::text, '-', '') || '@deleted.invalid',
+      display_name = null,
+      note = null
+  where i.email not like 'removed-%@deleted.invalid'
+    and (
+      (v_ctr is not null and i.accepted_contributor_id = v_ctr)
+      or i.accepted_by_user = v_uid
+      or (
+        v_email is not null
+        and i.email = v_email
+        and (i.accepted_at is not null or i.revoked_at is not null or i.expires_at <= now())
+      )
+    );
 
   if v_ctr is not null then
     -- End every grant that has not ended. A grant that starts later ends
@@ -286,15 +321,39 @@ begin
       and (g.ends_at is null or g.ends_at > now());
     get diagnostics v_ended = row_count;
 
+    -- Their authority goes with them: invitations they issued that nobody
+    -- has used yet (an admin invitation among them) can no longer be
+    -- accepted.
+    update public.invitations i
+    set revoked_at = now(), revoked_by = v_ctr
+    where i.created_by = v_ctr
+      and i.accepted_at is null
+      and i.revoked_at is null
+      and i.expires_at > now();
+    get diagnostics v_revoked = row_count;
+
     delete from public.contributor_private cp where cp.contributor_id = v_ctr;
 
     -- Recorded while the contributor is still linked, so the actor is them.
     -- The ctr id only: no email, no user id.
-    perform private.audit('account.deleted', 'contributor', v_ctr, jsonb_build_object('grants_ended', v_ended));
+    perform private.audit(
+      'account.deleted', 'contributor', v_ctr,
+      jsonb_build_object('grants_ended', v_ended, 'invitations_revoked', v_revoked)
+    );
 
-    update public.contributors
-    set user_id = null, status = 'ended'
-    where id = v_ctr;
+    -- A display name made from the email address (bootstrap_first_admin
+    -- uses the part before the @) would keep the link to it; it becomes the
+    -- contributor number instead. A name an admin chose stays.
+    update public.contributors c
+    set user_id = null,
+        status = 'ended',
+        display_name = case
+          when v_email is not null
+            and lower(c.display_name) = left(pg_catalog.split_part(v_email, '@', 1), 60)
+          then 'Former team member (' || v_ctr || ')'
+          else c.display_name
+        end
+    where c.id = v_ctr;
   else
     -- A learner: that an account was deleted, and nothing about whose.
     perform private.audit('account.deleted', 'account', null, null);
@@ -304,7 +363,7 @@ begin
   delete from auth.users u where u.id = v_uid;
   perform pg_catalog.set_config('polilingo.account_deletion', '', true);
 
-  return jsonb_build_object('deleted', true, 'grants_ended', v_ended);
+  return jsonb_build_object('deleted', true, 'grants_ended', v_ended, 'invitations_revoked', v_revoked);
 end $$;
 
 -- ---------------------------------------------------------------------------

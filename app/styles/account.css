@@ -873,3 +873,25 @@ output.signin-hint,
 output.signin-notice {
   display: block;
 }
+
+/* /account while it loads (app/account/loading.tsx) ----------------------- */
+
+.account-loading {
+  min-height: 160px;
+}
+output.account-loading-text {
+  display: block;
+  color: var(--ink);
+  font-weight: 600;
+}
+.account-loading-bar {
+  display: block;
+  height: 14px;
+  width: 70%;
+  border-radius: 1rem;
+  background: #f1e9fc;
+  animation: account-pulse 1.2s ease-in-out infinite;
+}
+.account-loading-bar-short {
+  width: 45%;
+}

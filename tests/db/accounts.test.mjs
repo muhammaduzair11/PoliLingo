@@ -566,6 +566,239 @@ describe('delete_my_account', () => {
     }));
 });
 
+/** An invitation row, inserted as postgres; returns its id. */
+async function invite(
+  client,
+  createdBy,
+  email,
+  { role = 'editor', language = 'ps', ageDays = 0, expiresInDays = 7 } = {},
+) {
+  await asPostgres(client);
+  return value(
+    client,
+    `insert into public.invitations (token_hash, role, language_code, email, display_name, note,
+       created_by, created_at, expires_at)
+     values (decode(md5(random()::text) || md5(random()::text), 'hex'), $1, $2, $3,
+       'Invited Person', 'Met at the workshop.', $4,
+       now() - make_interval(days => $5), now() - make_interval(days => $5) + make_interval(days => $6))
+     returning id`,
+    [
+      role,
+      role === 'admin' ? null : language,
+      email,
+      createdBy,
+      ageDays,
+      expiresInDays,
+    ],
+  );
+}
+
+describe('delete_my_account and invitations', () => {
+  test('the email address leaves every invitation that is over; an open one stays', () =>
+    tx(async (client) => {
+      const admin = await user(client);
+      const { contributorId: adminCtr } = await grant(client, admin, 'admin');
+      const editor = await user(client);
+      const { contributorId: editorCtr, grantId } = await grant(
+        client,
+        editor,
+        'editor',
+        { language: 'ps' },
+      );
+      const accepted = await invite(client, adminCtr, editor.email);
+      await client.query(
+        `update public.invitations
+         set accepted_at = now(), accepted_by_user = $2, accepted_contributor_id = $3, grant_id = $4
+         where id = $1`,
+        [accepted, editor.id, editorCtr, grantId],
+      );
+      const expired = await invite(client, adminCtr, editor.email, {
+        ageDays: 10,
+        expiresInDays: 3,
+      });
+      const revoked = await invite(client, adminCtr, editor.email);
+      await client.query(
+        `update public.invitations set revoked_at = now(), revoked_by = $2 where id = $1`,
+        [revoked, adminCtr],
+      );
+      const open = await invite(client, adminCtr, editor.email);
+      const someoneElse = await invite(
+        client,
+        adminCtr,
+        'someone.else@example.com',
+      );
+
+      await as(client, editor);
+      assert.equal(
+        (await value(client, 'select public.delete_my_account()')).deleted,
+        true,
+      );
+
+      await asPostgres(client);
+      const rows = await client.query(
+        `select id, email, display_name, note, role, accepted_contributor_id
+         from public.invitations where id = any($1::uuid[])`,
+        [[accepted, expired, revoked, open, someoneElse]],
+      );
+      const byId = Object.fromEntries(rows.rows.map((r) => [r.id, r]));
+      for (const id of [accepted, expired, revoked]) {
+        const row = byId[id];
+        assert.equal(
+          row.email,
+          `removed-${id.replaceAll('-', '')}@deleted.invalid`,
+        );
+        assert.equal(row.display_name, null);
+        assert.equal(row.note, null);
+        assert.equal(row.role, 'editor', 'the role and dates stay');
+      }
+      assert.equal(byId[accepted].accepted_contributor_id, editorCtr);
+      assert.equal(
+        byId[open].email,
+        editor.email,
+        'an open invitation is an admin’s offer and stays',
+      );
+      assert.equal(byId[someoneElse].email, 'someone.else@example.com');
+      assert.equal(
+        await count(
+          client,
+          `select count(*) from public.invitations
+           where email = $1 and (accepted_at is not null or revoked_at is not null or expires_at <= now())`,
+          [editor.email],
+        ),
+        0,
+        'no finished invitation still holds the address',
+      );
+      assert.equal(
+        await count(
+          client,
+          `select count(*) from public.invitations where accepted_contributor_id = $1 and email not like 'removed-%'`,
+          [editorCtr],
+        ),
+        0,
+        'the ctr id is no longer linked to an address',
+      );
+    }));
+
+  test("a departing admin's open invitations are revoked, and counted", () =>
+    tx(async (client) => {
+      const admin = await user(client);
+      const { contributorId: adminCtr } = await grant(client, admin, 'admin');
+      const other = await user(client);
+      const { contributorId: otherCtr } = await grant(client, other, 'admin');
+      const openAdmin = await invite(
+        client,
+        adminCtr,
+        'next.admin@example.com',
+        {
+          role: 'admin',
+        },
+      );
+      const openEditor = await invite(
+        client,
+        adminCtr,
+        'editor.to.be@example.com',
+      );
+      const expired = await invite(client, adminCtr, 'late@example.com', {
+        ageDays: 10,
+        expiresInDays: 3,
+      });
+      const byOther = await invite(client, otherCtr, 'kept@example.com');
+
+      await as(client, admin);
+      const result = await value(client, 'select public.delete_my_account()');
+      assert.equal(result.invitations_revoked, 2);
+
+      await asPostgres(client);
+      const rows = await client.query(
+        `select id, revoked_at is not null as revoked, revoked_by
+         from public.invitations where id = any($1::uuid[])`,
+        [[openAdmin, openEditor, expired, byOther]],
+      );
+      const byId = Object.fromEntries(rows.rows.map((r) => [r.id, r]));
+      assert.deepEqual(
+        [byId[openAdmin].revoked, byId[openAdmin].revoked_by],
+        [true, adminCtr],
+      );
+      assert.deepEqual(
+        [byId[openEditor].revoked, byId[openEditor].revoked_by],
+        [true, adminCtr],
+      );
+      assert.equal(
+        byId[expired].revoked,
+        false,
+        'an expired one is left as it was',
+      );
+      assert.equal(byId[byOther].revoked, false, "another admin's stays open");
+      assert.equal(
+        await count(
+          client,
+          `select count(*) from public.invitations
+           where created_by = $1 and revoked_at is null and accepted_at is null and expires_at > now()`,
+          [adminCtr],
+        ),
+        0,
+      );
+      const audit = await one(
+        client,
+        `select detail from public.audit_events where action = 'account.deleted' and target_id = $1`,
+        [adminCtr],
+      );
+      assert.deepEqual(audit.detail, {
+        grants_ended: 1,
+        invitations_revoked: 2,
+      });
+    }));
+
+  test('a display name made from the email becomes the contributor number; a chosen one stays', () =>
+    tx(async (client) => {
+      const derived = await user(client, {
+        email: 'Real.Person@Example.com',
+      });
+      const { contributorId: derivedCtr } = await grant(
+        client,
+        derived,
+        'editor',
+        { language: 'ps' },
+      );
+      const chosen = await user(client);
+      const { contributorId: chosenCtr } = await grant(
+        client,
+        chosen,
+        'editor',
+        {
+          language: 'ps',
+        },
+      );
+      await client.query(
+        `update public.contributors set display_name = 'Aisha K.' where id = $1`,
+        [chosenCtr],
+      );
+
+      for (const person of [derived, chosen]) {
+        await as(client, person);
+        await value(client, 'select public.delete_my_account()');
+      }
+
+      await asPostgres(client);
+      assert.equal(
+        await value(
+          client,
+          'select display_name from public.contributors where id = $1',
+          [derivedCtr],
+        ),
+        `Former team member (${derivedCtr})`,
+      );
+      assert.equal(
+        await value(
+          client,
+          'select display_name from public.contributors where id = $1',
+          [chosenCtr],
+        ),
+        'Aisha K.',
+      );
+    }));
+});
+
 // ---------------------------------------------------------------------------
 // export_my_data
 // ---------------------------------------------------------------------------
@@ -593,11 +826,34 @@ describe('export_my_data', () => {
         { variety: 'ps-var-yusufzai' },
       );
       await reviewHistory(client, otherCtr);
+      // What Google shares, and the two ways this account signs in.
+      await asPostgres(client);
+      await client.query(
+        `update auth.users set raw_user_meta_data = '{"full_name":"Test Person","avatar_url":"https://example.com/p.png"}'
+         where id = $1`,
+        [me.id],
+      );
+      await client.query(
+        `insert into auth.identities (user_id, provider_id, provider, identity_data, created_at, last_sign_in_at)
+         values ($1::text::uuid, $1::text, 'email', jsonb_build_object('sub', $1::text, 'email', $2::text), now(), now()),
+                ($1::text::uuid, 'google-' || $1::text, 'google', jsonb_build_object('sub', 'g', 'email', $2::text), now(), now()),
+                ($3::text::uuid, $3::text, 'email', jsonb_build_object('sub', $3::text, 'email', $4::text), now(), now())`,
+        [me.id, me.email, other.id, other.email],
+      );
 
       await as(client, me);
       const data = await value(client, 'select public.export_my_data()');
       assert.equal(data.format, 'polilingo.account-export@1');
       assert.equal(data.account.email, me.email);
+      assert.deepEqual(data.account.metadata, {
+        full_name: 'Test Person',
+        avatar_url: 'https://example.com/p.png',
+      });
+      assert.deepEqual(
+        data.account.sign_in_methods.map((m) => m.provider),
+        ['email', 'google'],
+      );
+      assert.ok(data.account.sign_in_methods.every((m) => m.created_at));
       assert.deepEqual(data.profile.age_band, '18+');
       assert.deepEqual(
         data.progress.completions.map((c) => [c.lesson_id, c.first_release]),

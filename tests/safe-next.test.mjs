@@ -1,7 +1,15 @@
 // lib/safe-next.ts: after sign-in, only a path on this site is followed.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_NEXT, safeNext, signInHref } from '../lib/safe-next.ts';
+import {
+  DEFAULT_NEXT,
+  emailLinkToken,
+  emailLinkType,
+  isSameOriginPost,
+  learnerBack,
+  safeNext,
+  signInHref,
+} from '../lib/safe-next.ts';
 
 test('same-site paths are kept, with their query and hash', () => {
   for (const [input, expected] of [
@@ -69,4 +77,62 @@ test('signInHref carries a safe next and drops an unsafe one', () => {
   assert.equal(signInHref('/learn/pashto'), '/sign-in?next=%2Flearn%2Fpashto');
   assert.equal(signInHref('//evil.example'), '/sign-in');
   assert.equal(signInHref(null), '/sign-in');
+});
+
+test('"Back to learning" only goes to learner pages', () => {
+  for (const [input, expected] of [
+    ['/learn/pashto?x', '/learn/pashto?x'],
+    ['/lesson/ps-lsn-aaaaaa', '/lesson/ps-lsn-aaaaaa'],
+    ['/settings#account', '/settings#account'],
+    ['/', '/'],
+    ['/admin', DEFAULT_NEXT],
+    ['/review/item/x', DEFAULT_NEXT],
+    ['/account', DEFAULT_NEXT],
+    ['/learner', DEFAULT_NEXT],
+  ])
+    assert.equal(learnerBack(input), expected, input);
+});
+
+test('email link types and token hashes: only what the email can carry', () => {
+  for (const type of ['email', 'magiclink', 'signup'])
+    assert.equal(emailLinkType(type), type);
+  for (const type of ['recovery', 'invite', '', null, undefined, 3])
+    assert.equal(emailLinkType(type), null, String(type));
+
+  const hex = 'a'.repeat(56);
+  assert.equal(emailLinkToken(hex), hex);
+  assert.equal(emailLinkToken(`pkce_${hex}`), `pkce_${hex}`);
+  for (const bad of [
+    '',
+    null,
+    undefined,
+    'short',
+    'a'.repeat(201),
+    `${hex}&next=//evil`,
+    `${hex} `,
+    `${hex}/`,
+  ])
+    assert.equal(emailLinkToken(bad), null, String(bad));
+});
+
+test('a sign-in POST must come from this site', () => {
+  const host = 'polilingo.app';
+  const ok = (origin, secFetchSite, h = host) =>
+    isSameOriginPost({ origin, secFetchSite, host: h });
+  assert.equal(ok('https://polilingo.app', 'same-origin'), true);
+  assert.equal(ok('https://polilingo.app', null), true);
+  assert.equal(ok(null, 'same-origin'), true);
+  assert.equal(ok('http://localhost:3000', null, 'localhost:3000'), true);
+  assert.equal(ok('https://POLILINGO.app', null, 'Polilingo.App'), true);
+
+  assert.equal(ok('https://evil.example', 'cross-site'), false);
+  assert.equal(ok('https://evil.example', null), false);
+  assert.equal(ok('https://polilingo.app.evil.example', null), false);
+  assert.equal(ok('https://polilingo.app', 'cross-site'), false);
+  assert.equal(ok('https://polilingo.app', 'same-site'), false);
+  assert.equal(ok('null', null), false);
+  assert.equal(ok(null, null), false);
+  assert.equal(ok(null, 'none'), false);
+  assert.equal(ok('https://polilingo.app', null, null), false);
+  assert.equal(ok('not a url', null), false);
 });

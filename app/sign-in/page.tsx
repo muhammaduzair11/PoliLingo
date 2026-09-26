@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { AuthFrame } from '@/components/account/auth-frame';
 import { SignInFlow } from '@/components/account/sign-in-flow';
-import { safeNext } from '@/lib/safe-next';
+import { learnerBack, safeNext } from '@/lib/safe-next';
 import { supabaseEnv } from '@/lib/supabase/env';
 
 export const metadata: Metadata = {
@@ -22,14 +22,6 @@ const NOTICES: Record<string, string> = {
 const first = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value;
 
-/** Learner paths only: "Back to learning" never lands on a workspace page. */
-function backFor(next: string): string {
-  return /^\/(?:learn|lesson|onboarding|settings)(?:[/?#]|$)/.test(next) ||
-    next === '/'
-    ? next
-    : '/learn';
-}
-
 export default async function SignInPage({
   searchParams,
 }: {
@@ -38,7 +30,7 @@ export default async function SignInPage({
   const params = await searchParams;
   const next = safeNext(first(params.next));
   const error = first(params.error);
-  const back = backFor(next);
+  const back = learnerBack(next);
   return (
     <AuthFrame back={back}>
       <SignInFlow

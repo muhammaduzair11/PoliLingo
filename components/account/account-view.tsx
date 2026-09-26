@@ -112,8 +112,8 @@ export function AccountView(props: Props) {
         </h2>
         <div className="account-row">
           <p>
-            Download a copy of everything your account holds: your email, age
-            band, saved progress and any team roles, as a JSON file.
+            Download a copy of your account as a JSON file: your email and how
+            you sign in, your age band, your saved progress and any team roles.
           </p>
           <DownloadButton action={props.exportMyData} />
         </div>
@@ -164,8 +164,9 @@ export function AccountView(props: Props) {
                 </li>
                 {props.isContributor && (
                   <li>
-                    Your team roles and your private contact details. Reviews
-                    and edits you made stay in the lesson history under your
+                    Your team roles, any invitation you sent that nobody has
+                    used yet, and your private contact details. Reviews and
+                    edits you made stay in the lesson history under your
                     contributor number, without your email.
                   </li>
                 )}

@@ -14,8 +14,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { AGE_BAND_COOKIE, parseAgeBand } from '@/lib/age-gate';
 import { callRpc } from '@/lib/rpc';
 
+/** 303, so the browser follows with a GET after the confirm route's POST. */
 function redirectTo(request: NextRequest, path: string): NextResponse {
-  const response = NextResponse.redirect(new URL(path, request.url));
+  const response = NextResponse.redirect(new URL(path, request.url), 303);
   response.headers.set('Cache-Control', 'private, no-store');
   return response;
 }

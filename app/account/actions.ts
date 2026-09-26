@@ -60,7 +60,10 @@ export async function deleteMyAccount(
   } catch {
     // Nothing to undo: the account no longer exists.
   }
-  revalidatePath('/account');
+  // No revalidatePath here: it would render /account again in this same
+  // response with the session already gone, which redirects to /sign-in and
+  // hides the farewell (or the under-13) screen. Both callers finish with a
+  // full page load instead.
   return actionOk(null);
 }
 
@@ -74,6 +77,6 @@ export async function signOutHere(): Promise<ActionResult<null>> {
   } catch (error) {
     return actionError(error);
   }
-  revalidatePath('/account');
+  // No revalidatePath, as in deleteMyAccount: the caller loads / afresh.
   return actionOk(null);
 }
