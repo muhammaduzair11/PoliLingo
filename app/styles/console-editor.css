@@ -868,6 +868,9 @@
   font-size: 13px;
   color: #8c2238;
 }
+.editor-reorder-error p {
+  margin: 0;
+}
 
 /* Loading and errors ----------------------------------------------------- */
 

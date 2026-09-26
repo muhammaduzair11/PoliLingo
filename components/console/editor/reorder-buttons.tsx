@@ -1,4 +1,5 @@
 'use client';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { reorderChildren, type ParentType } from '@/app/(console)/edit/actions';
 import {
@@ -33,7 +34,11 @@ export function ReorderButtons({
 }) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{
+    message: string;
+    stale: boolean;
+  } | null>(null);
+  const router = useRouter();
   const [refocus, setRefocus] = useState<MoveDirection | null>(null);
   const up = useRef<HTMLButtonElement>(null);
   const down = useRef<HTMLButtonElement>(null);
@@ -60,7 +65,15 @@ export function ReorderButtons({
         setMessage(text.charAt(0).toUpperCase() + text.slice(1));
         setRefocus(direction);
       } else {
-        setError(result.message);
+        // The database refuses a list that no longer matches (another tab
+        // or editor changed it): say so, and offer the fresh list.
+        const stale = result.code === 'PL422_BAD_INPUT';
+        setError({
+          message: stale
+            ? 'This list changed since you opened the page.'
+            : result.message,
+          stale,
+        });
       }
     });
   }
@@ -94,9 +107,21 @@ export function ReorderButtons({
         {pending ? 'Moving…' : message}
       </span>
       {error && (
-        <p className="editor-reorder-error" role="alert">
-          {error}
-        </p>
+        <div className="editor-reorder-error" role="alert">
+          <p>{error.message}</p>
+          {error.stale && (
+            <button
+              type="button"
+              className="console-button console-button-outline editor-inline-button"
+              onClick={() => {
+                setError(null);
+                router.refresh();
+              }}
+            >
+              Load the latest version
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

@@ -242,8 +242,10 @@ begin
 end $$;
 
 -- A reserved id handed in by the web (reserve_content_id), checked: minted
--- for this type and language, not retired, and not used yet.
-create function private.editor_claim(p_id text, p_type text, p_language text)
+-- for this type and language by this editor, not retired, and not used yet.
+-- Another editor's reservation is not free to take, so two editors never
+-- race for one id and the registry's minted_by stays true.
+create function private.editor_claim(p_id text, p_type text, p_language text, p_contributor text)
 returns text
 language plpgsql
 set search_path = ''
@@ -252,6 +254,7 @@ begin
   if not exists (
     select 1 from content.id_registry r
     where r.id = p_id and r.type = p_type and r.language_code = p_language and r.retired_at is null
+      and r.minted_by is not distinct from p_contributor
   ) or (p_type = 'item' and exists (select 1 from content.items i where i.id = p_id))
     or (p_type = 'exercise' and exists (select 1 from content.exercises e where e.id = p_id)) then
     perform private.raise('PL422_BAD_INPUT', format('%s isn''t a free reserved id for a new %s.', p_id, p_type),
@@ -259,6 +262,27 @@ begin
   end if;
   return p_id;
 end $$;
+
+-- Whether anything in a lesson (the lesson, a phrase or an exercise, live or
+-- retired) got a new revision after a review decision. revisions.seq and
+-- review_decisions.seq are separate sequences, so this compares times. With
+-- no decision to compare against, the lesson is free to go again.
+-- page_edit_lesson repeats this test inline (it reads over RLS).
+create function private.editor_changed_since_decision(p_lesson_id text, p_decision_id uuid)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select case
+    when not exists (select 1 from content.review_decisions d where d.id = p_decision_id) then true
+    else exists (
+      select 1 from content.revisions r
+      where r.lesson_id = p_lesson_id
+        and r.at > (select d.at from content.review_decisions d where d.id = p_decision_id)
+    )
+  end
+$$;
 
 -- Whether a lesson holds demo phrases (then it is frozen).
 create function private.editor_lesson_is_demo(p_lesson_id text)
@@ -680,7 +704,7 @@ begin
   v_variety := private.editor_variety(coalesce(v_f ->> 'variety', v_lesson.variety_id), v_language);
 
   if nullif(btrim(coalesce(p_fields ->> 'id', '')), '') is not null then
-    v_id := private.editor_claim(btrim(p_fields ->> 'id'), 'item', v_language);
+    v_id := private.editor_claim(btrim(p_fields ->> 'id'), 'item', v_language, v_me);
   else
     v_id := private.editor_mint('item', v_language, v_me);
   end if;
@@ -749,7 +773,7 @@ begin
   select count(*) into v_count from content.exercises e where e.lesson_id = p_lesson_id and e.retired_at is null;
   v_pos := private.editor_slot(v_count, p_position);
   if nullif(btrim(coalesce(p_fields ->> 'id', '')), '') is not null then
-    v_id := private.editor_claim(btrim(p_fields ->> 'id'), 'exercise', v_language);
+    v_id := private.editor_claim(btrim(p_fields ->> 'id'), 'exercise', v_language, v_me);
   else
     v_id := private.editor_mint('exercise', v_language, v_me);
   end if;
@@ -865,6 +889,7 @@ declare
   v_variety text;
   v_lesson content.lessons%rowtype;
   v_after content.lessons%rowtype;
+  v_moved jsonb;
 begin
   perform private.editor_keys(p_patch, array['title', 'subtitle', 'objective', 'variety', 'estimated_minutes']);
   if p_expected_revision is null then
@@ -916,8 +941,25 @@ begin
     perform private.editor_no_change(p_id);
   end if;
 
+  -- A new variety for the lesson carries the phrases that were in its old
+  -- one, so the lesson and its phrases go to the same reviewers. Their
+  -- review fingerprint includes the variety, so their approval is void.
+  -- A phrase set to another variety on purpose stays where it is.
+  if v_after.variety_id is distinct from v_lesson.variety_id then
+    with moved as (
+      update content.items i set variety_id = v_after.variety_id
+      where i.lesson_id = p_id and i.retired_at is null and i.variety_id = v_lesson.variety_id
+      returning i.id
+    )
+    select coalesce(jsonb_agg(m.id order by m.id collate "C"), '[]'::jsonb) into v_moved from moved m;
+  end if;
+
   perform private.audit('content.updated', 'lesson', p_id,
-    jsonb_build_object('fields', (select jsonb_agg(k order by k) from jsonb_object_keys(p_patch) k), 'revision_no', v_after.revision_no));
+    jsonb_build_object('fields', (select jsonb_agg(k order by k) from jsonb_object_keys(p_patch) k), 'revision_no', v_after.revision_no)
+    || case when jsonb_array_length(coalesce(v_moved, '[]'::jsonb)) > 0
+         then jsonb_build_object('variety', jsonb_build_object('from', v_lesson.variety_id, 'to', v_after.variety_id),
+           'items_moved_variety', v_moved)
+         else '{}'::jsonb end);
   return jsonb_build_object(
     'id', p_id,
     'revision_no', v_after.revision_no,
@@ -1428,6 +1470,7 @@ declare
   v_lesson content.lessons%rowtype;
   v_blocking jsonb;
   v_exercises int;
+  v_was text;
 begin
   select * into v_lesson from content.lessons l where l.id = p_lesson_id for update;
   if not found then
@@ -1446,7 +1489,12 @@ begin
     return jsonb_build_object('lesson_id', p_lesson_id, 'submitted_at', v_lesson.submitted_at,
       'review_status', v_lesson.review_status, 'already', true);
   end if;
-  if v_lesson.review_status <> 'unreviewed' then
+  -- Sent back by a reviewer: it goes again once anything in it changed after
+  -- that decision (a phrase's text or meaning does not move the lesson's
+  -- fingerprint, so its status alone can't tell).
+  if v_lesson.review_status = 'approved'
+     or (v_lesson.review_status in ('changes_requested', 'rejected')
+         and not private.editor_changed_since_decision(p_lesson_id, v_lesson.current_decision_id)) then
     perform private.raise('PL422_NO_CHANGE',
       case v_lesson.review_status
         when 'approved' then 'This lesson is already approved. Change it first if it needs another review.'
@@ -1472,10 +1520,18 @@ begin
       jsonb_build_object('lesson_id', p_lesson_id, 'exercises', v_exercises));
   end if;
 
-  update content.lessons l set submitted_at = now() where l.id = p_lesson_id
+  v_was := v_lesson.review_status;
+  -- Bookkeeping only (§3.5): no revision, no fingerprint change. A lesson
+  -- sent back by a reviewer is unreviewed again, so it lands in the queue.
+  update content.lessons l set
+    submitted_at = now(),
+    review_status = 'unreviewed',
+    current_decision_id = null
+  where l.id = p_lesson_id
   returning * into v_lesson;
   perform private.audit('content.submitted', 'lesson', p_lesson_id,
-    jsonb_build_object('submitted', true, 'review_fingerprint', v_lesson.review_fingerprint));
+    jsonb_build_object('submitted', true, 'review_fingerprint', v_lesson.review_fingerprint,
+      'previous_status', v_was));
   return jsonb_build_object('lesson_id', p_lesson_id, 'submitted_at', v_lesson.submitted_at,
     'review_status', v_lesson.review_status, 'already', false);
 end $$;
@@ -1868,6 +1924,17 @@ begin
       'review_status', v_lesson.review_status,
       'review_fingerprint', v_lesson.review_fingerprint,
       'submitted_at', v_lesson.submitted_at,
+      -- Sent back by a reviewer and changed since: it may go again (the
+      -- same test as private.editor_changed_since_decision, over RLS).
+      'changed_since_review', v_lesson.review_status in ('changes_requested', 'rejected') and (
+        not exists (select 1 from content.review_decisions d where d.id = v_lesson.current_decision_id)
+        or exists (
+          select 1 from content.revisions r
+          where r.lesson_id = v_lesson.id
+            and r.at > (select d.at from content.review_decisions d where d.id = v_lesson.current_decision_id)
+        )
+      ),
+      'reviewers', private.active_reviewer_count(v_lesson.variety_id),
       'revision_no', v_lesson.revision_no,
       'updated_at', v_lesson.updated_at,
       'retired_at', v_lesson.retired_at,
@@ -1976,7 +2043,8 @@ revoke all on function
   private.editor_slot(int, int),
   private.editor_shift(text, text, text, int, int),
   private.editor_mint(text, text, text),
-  private.editor_claim(text, text, text),
+  private.editor_claim(text, text, text, text),
+  private.editor_changed_since_decision(text, uuid),
   private.editor_lesson_is_demo(text),
   private.editor_demo_frozen(text, text),
   private.editor_not_found(text, text),

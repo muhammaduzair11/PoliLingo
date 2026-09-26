@@ -26,7 +26,9 @@ export function EditorLoadError({
       : error.code === 'PL403_OUTSIDE_LANGUAGE'
         ? `This ${what} is in a language you don't edit`
         : error.code === 'PL403_NOT_EDITOR'
-          ? `The ${what} aren't open to you`
+          ? what.endsWith('s')
+            ? `The ${what} aren't open to you`
+            : `This ${what} isn't open to you`
           : `We couldn't open the ${what}`;
   const retry = ![
     'PL404_NOT_FOUND',

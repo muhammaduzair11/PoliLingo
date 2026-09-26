@@ -14,6 +14,7 @@ import {
   MIN_EXERCISES,
   echo,
   formatDay,
+  handoffCopy,
   type EditExercise,
   type EditItem,
   type EditLessonPage,
@@ -260,6 +261,10 @@ export function SubmitPanel({
   );
   const inReview =
     lesson.submitted_at !== null && lesson.review_status === 'unreviewed';
+  const sentBack =
+    lesson.review_status === 'changes_requested' ||
+    lesson.review_status === 'rejected';
+  const copy = handoffCopy(varietyName, lesson.reviewers);
   return (
     <section className="editor-panel" aria-labelledby="submit-heading">
       <h2 id="submit-heading" className="editor-panel-title">
@@ -290,16 +295,20 @@ export function SubmitPanel({
         {locked
           ? "This lesson can't be sent for review."
           : inReview
-            ? `Waiting for a ${varietyName} reviewer since ${formatDay(lesson.submitted_at)}. You can keep editing: changes go to the reviewer too.`
+            ? `${copy.waiting} since ${formatDay(lesson.submitted_at)}. You can keep editing: changes go to the reviewer too.`
             : lesson.review_status === 'approved'
               ? 'Approved. Any change to it sends it back to review.'
-              : lesson.review_status === 'changes_requested'
-                ? 'The reviewer asked for changes. Make them, then send it back.'
-                : lesson.review_status === 'rejected'
-                  ? 'The reviewer turned this lesson down. Rework it, then send it again.'
-                  : ready
-                    ? `Ready. ${varietyName} reviewers will see it next.`
-                    : 'When every check is done, send it to a reviewer.'}
+              : sentBack && lesson.changed_since_review
+                ? ready
+                  ? "You've changed it since the review. Send it back when you're ready."
+                  : "You've changed it since the review. Finish the checks, then send it back."
+                : lesson.review_status === 'changes_requested'
+                  ? 'The reviewer asked for changes. Make them, then send it back.'
+                  : lesson.review_status === 'rejected'
+                    ? 'The reviewer turned this lesson down. Rework it, then send it again.'
+                    : ready
+                      ? copy.ready
+                      : 'When every check is done, send it to a reviewer.'}
       </p>
       {!locked && inReview && (
         <form action={withdrawAction}>
@@ -312,8 +321,13 @@ export function SubmitPanel({
       {!locked && !inReview && lesson.review_status !== 'approved' && (
         <SubmitButtonWithConfirm
           lessonId={lesson.id}
-          ready={ready}
-          varietyName={varietyName}
+          ready={ready && (!sentBack || lesson.changed_since_review)}
+          hint={
+            sentBack && !lesson.changed_since_review
+              ? 'Change something the reviewer asked about first.'
+              : 'Finish the checks above first.'
+          }
+          confirm={copy.confirm}
         />
       )}
       {withdrawResult && !withdrawResult.ok && (
@@ -326,11 +340,14 @@ export function SubmitPanel({
 function SubmitButtonWithConfirm({
   lessonId,
   ready,
-  varietyName,
+  hint,
+  confirm,
 }: {
   lessonId: string;
   ready: boolean;
-  varietyName: string;
+  /** Why the button is off, for screen readers. */
+  hint: string;
+  confirm: string;
 }) {
   const hintId = useId();
   if (!ready)
@@ -345,7 +362,7 @@ function SubmitButtonWithConfirm({
           Submit for review
         </button>
         <p id={hintId} className="editor-visually-hidden">
-          Finish the checks above first.
+          {hint}
         </p>
       </>
     );
@@ -355,7 +372,7 @@ function SubmitButtonWithConfirm({
       triggerLabel="Submit for review"
       triggerTone="primary"
       title="Send this lesson for review?"
-      description={`${varietyName} reviewers see it in their queue next. You can keep editing, or take it back, while it waits.`}
+      description={confirm}
       confirmLabel="Submit for review"
       pendingLabel="Sending…"
       fields={{ lesson_id: lessonId }}

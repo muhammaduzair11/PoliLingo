@@ -439,6 +439,72 @@ describe('ids', () => {
         'PL422_BAD_INPUT',
       );
     }));
+
+  test('a reserved id is claimed only by the editor who reserved it', () =>
+    tx(async (client) => {
+      const a = await editor(client, { language: 'ps' });
+      const itemId = await call(client, 'reserve_content_id', ['item', 'ps']);
+      const exerciseId = await call(client, 'reserve_content_id', [
+        'exercise',
+        'ps',
+      ]);
+      const b = await editor(client, { language: 'ps' });
+      const { lessonId, itemIds } = await newLesson(client, { items: 2 });
+      const taken = await expectCode(
+        rpc(client, 'create_item', [lessonId, item(5, { id: itemId })]),
+        'PL422_BAD_INPUT',
+      );
+      assert.match(taken.message, /isn't a free reserved id/);
+      await expectCode(
+        rpc(client, 'create_exercise', [
+          lessonId,
+          {
+            id: exerciseId,
+            kind: 'meaning',
+            answer: itemIds[0],
+            prompt: 'What does this mean?',
+            options: [itemIds[1]],
+          },
+        ]),
+        'PL422_BAD_INPUT',
+      );
+      assert.equal(
+        await value(
+          client,
+          'select count(*)::int from content.items where id = $1',
+          [itemId],
+        ),
+        0,
+      );
+
+      // The editor who reserved them still can, in any lesson they edit.
+      await as(client, a);
+      assert.equal(
+        (await call(client, 'create_item', [lessonId, item(5, { id: itemId })]))
+          .id,
+        itemId,
+      );
+      assert.equal(
+        await call(client, 'create_exercise', [
+          lessonId,
+          {
+            id: exerciseId,
+            kind: 'meaning',
+            answer: itemIds[0],
+            prompt: 'What does this mean?',
+            options: [itemIds[1]],
+          },
+        ]),
+        exerciseId,
+      );
+      const minted = await one(
+        client,
+        'select minted_by from content.id_registry where id = $1',
+        [itemId],
+      );
+      assert.equal(minted.minted_by, a.contributorId);
+      assert.notEqual(a.contributorId, b.contributorId);
+    }));
 });
 
 describe('creating', () => {
@@ -1043,6 +1109,88 @@ describe('editing', () => {
         'PL404_NOT_FOUND',
       );
     }));
+
+  test('a new lesson variety carries the phrases in the old one', () =>
+    tx(async (client) => {
+      const ed = await editor(client);
+      const { lessonId, itemIds } = await newLesson(client, { items: 2 });
+      // A third phrase set to another variety on purpose stays where it is.
+      const odd = (
+        await call(client, 'create_item', [
+          lessonId,
+          item(2, { variety: 'ps-var-fixture' }),
+        ])
+      ).id;
+      await asPostgres(client);
+      await client.query(
+        "update content.items set review_status = 'approved', last_approved_seq = 1 where id = any ($1)",
+        [itemIds],
+      );
+      await as(client, ed);
+      const rev = await value(
+        client,
+        'select revision_no from content.lessons where id = $1',
+        [lessonId],
+      );
+      await call(client, 'update_lesson', [
+        lessonId,
+        rev,
+        { variety: 'ps-var-fixture' },
+      ]);
+      const rows = (
+        await client.query(
+          'select id, variety_id, review_status from content.items where lesson_id = $1 order by position',
+          [lessonId],
+        )
+      ).rows;
+      assert.deepEqual(rows, [
+        {
+          id: itemIds[0],
+          variety_id: 'ps-var-fixture',
+          review_status: 'unreviewed',
+        },
+        {
+          id: itemIds[1],
+          variety_id: 'ps-var-fixture',
+          review_status: 'unreviewed',
+        },
+        { id: odd, variety_id: 'ps-var-fixture', review_status: 'unreviewed' },
+      ]);
+
+      // Back again: the two that followed come back; the one that was
+      // already in the new variety follows as well, since it is now in the
+      // lesson's old variety.
+      const rev2 = await value(
+        client,
+        'select revision_no from content.lessons where id = $1',
+        [lessonId],
+      );
+      await call(client, 'update_lesson', [
+        lessonId,
+        rev2,
+        { variety: 'ps-var-yusufzai' },
+      ]);
+      assert.deepEqual(
+        (
+          await client.query(
+            'select distinct variety_id from content.items where lesson_id = $1',
+            [lessonId],
+          )
+        ).rows,
+        [{ variety_id: 'ps-var-yusufzai' }],
+      );
+      await asPostgres(client);
+      const audit = await one(
+        client,
+        "select detail from public.audit_events where action = 'content.updated' and target_type = 'lesson' and target_id = $1 order by id desc limit 1",
+        [lessonId],
+      );
+      assert.deepEqual(audit.detail.variety, {
+        from: 'ps-var-fixture',
+        to: 'ps-var-yusufzai',
+      });
+      assert.equal(audit.detail.items_moved_variety.length, 3);
+    }));
 });
 
 describe('ordering and moving', () => {
@@ -1553,16 +1701,145 @@ describe('review hand-off', () => {
         'PL404_NOT_FOUND',
       );
 
-      // A lesson with changes requested goes back only after a change.
+      // An approved lesson is refused: nothing to review.
       await asPostgres(client);
       await client.query(
-        "update content.lessons set review_status = 'changes_requested' where id = $1",
+        "update content.lessons set review_status = 'approved' where id = $1",
         [ready.lessonId],
       );
       await as(client, ed);
       await expectCode(
         rpc(client, 'submit_lesson', [ready.lessonId]),
         'PL422_NO_CHANGE',
+      );
+    }));
+
+  test('a lesson sent back by a reviewer goes again only after a change', () =>
+    tx(async (client) => {
+      const ed = await editor(client);
+      const { lessonId, itemIds } = await newLesson(client, {
+        items: 3,
+        exercises: true,
+      });
+
+      // Everything so far happened an hour ago; a reviewer decided half an
+      // hour ago. (The test is one transaction, so now() never moves.)
+      const sendBack = async (decision) => {
+        await asPostgres(client);
+        await client.query("set local session_replication_role = 'replica'");
+        await client.query(
+          "update content.revisions set at = at - interval '1 hour' where lesson_id = $1 and at > now() - interval '1 minute'",
+          [lessonId],
+        );
+        await client.query("set local session_replication_role = 'origin'");
+        const fingerprint = await value(
+          client,
+          'select review_fingerprint from content.lessons where id = $1',
+          [lessonId],
+        );
+        const decisionId = await value(
+          client,
+          `insert into content.review_decisions
+             (target_type, lesson_id, variety_id, decision, reviewer_contributor_id, seen_fingerprint, comment, at)
+           values ('lesson', $1, 'ps-var-yusufzai', $2, $3, $4, 'Fix the second phrase.', now() - interval '30 minutes')
+           returning id`,
+          [lessonId, decision, ed.contributorId, fingerprint],
+        );
+        await client.query(
+          `update content.lessons set review_status = $2, current_decision_id = $3, submitted_at = null
+           where id = $1`,
+          [
+            lessonId,
+            decision === 'reject' ? 'rejected' : 'changes_requested',
+            decisionId,
+          ],
+        );
+        await as(client, ed);
+        return decisionId;
+      };
+
+      await sendBack('request_changes');
+      const before = await call(client, 'page_edit_lesson', [lessonId]);
+      assert.equal(before.lesson.changed_since_review, false);
+      const unchanged = await expectCode(
+        rpc(client, 'submit_lesson', [lessonId]),
+        'PL422_NO_CHANGE',
+      );
+      assert.match(unchanged.message, /Nothing has changed since the review/);
+
+      // A phrase's text is not in the lesson's fingerprint, but it counts.
+      const rev = await value(
+        client,
+        'select revision_no from content.items where id = $1',
+        [itemIds[1]],
+      );
+      await call(client, 'update_item', [
+        itemIds[1],
+        rev,
+        { meaning: 'A clearer meaning' },
+      ]);
+      assert.equal(
+        await value(
+          client,
+          'select review_status from content.lessons where id = $1',
+          [lessonId],
+        ),
+        'changes_requested',
+      );
+      const after = await call(client, 'page_edit_lesson', [lessonId]);
+      assert.equal(after.lesson.changed_since_review, true);
+      const revisionBefore = after.lesson.revision_no;
+      const resent = await call(client, 'submit_lesson', [lessonId]);
+      assert.equal(resent.already, false);
+      assert.equal(resent.review_status, 'unreviewed');
+      assert.ok(resent.submitted_at);
+      const row = await one(
+        client,
+        'select review_status, current_decision_id, submitted_at is not null as submitted, revision_no from content.lessons where id = $1',
+        [lessonId],
+      );
+      assert.deepEqual(row, {
+        review_status: 'unreviewed',
+        current_decision_id: null,
+        submitted: true,
+        revision_no: revisionBefore,
+      });
+      assert.equal(
+        await value(
+          client,
+          "select count(*)::int from content.review_queue where lesson_id = $1 and target_type = 'lesson'",
+          [lessonId],
+        ),
+        1,
+      );
+      await asPostgres(client);
+      const audit = await one(
+        client,
+        "select detail from public.audit_events where action = 'content.submitted' and target_id = $1 order by id desc limit 1",
+        [lessonId],
+      );
+      assert.equal(audit.detail.previous_status, 'changes_requested');
+      await as(client, ed);
+
+      // A rejected lesson: the same rule.
+      await sendBack('reject');
+      await expectCode(
+        rpc(client, 'submit_lesson', [lessonId]),
+        'PL422_NO_CHANGE',
+      );
+      const exRev = await value(
+        client,
+        'select revision_no from content.items where id = $1',
+        [itemIds[0]],
+      );
+      await call(client, 'update_item', [
+        itemIds[0],
+        exRev,
+        { usage_note: 'Said to elders.' },
+      ]);
+      assert.equal(
+        (await call(client, 'submit_lesson', [lessonId])).review_status,
+        'unreviewed',
       );
     }));
 
@@ -1601,6 +1878,8 @@ describe('review hand-off', () => {
       const page = await call(client, 'page_edit_lesson', [lessonId]);
       assert.equal(page.language.direction, 'rtl');
       assert.equal(page.lesson.demo, false);
+      assert.equal(page.lesson.reviewers, 2);
+      assert.equal(page.lesson.changed_since_review, false);
       assert.deepEqual(
         page.items.map((i) => i.id),
         itemIds,

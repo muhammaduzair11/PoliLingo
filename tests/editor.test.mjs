@@ -28,6 +28,7 @@ import {
   echo,
   formValues,
   gateLabel,
+  handoffCopy,
   itemById,
   lessonLocked,
   noticeTone,
@@ -526,4 +527,19 @@ test('dates read as words; lesson rows that only echo a child change are left ou
     ),
     ['item:create:10:00:00', 'lesson:edit:09:00:00', 'lesson:create:08:00:00'],
   );
+});
+
+test('the review hand-off names reviewers only when the variety has some', () => {
+  const some = handoffCopy('Yusufzai', 2);
+  assert.equal(some.ready, 'Ready. Yusufzai reviewers will see it next.');
+  assert.match(
+    some.confirm,
+    /^Yusufzai reviewers see it in their queue next\./,
+  );
+  assert.equal(some.waiting, 'Waiting for a Yusufzai reviewer');
+  const none = handoffCopy('Yusufzai', 0);
+  for (const line of [none.ready, none.confirm, none.waiting])
+    assert.match(line, /no one reviews Yusufzai yet/i);
+  assert.match(none.confirm, /until an admin invites a reviewer/);
+  assert.doesNotMatch(none.ready, /reviewers will see it/);
 });

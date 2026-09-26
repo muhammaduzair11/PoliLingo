@@ -173,6 +173,10 @@ export default async function EditLessonRoute({
               locked={locked !== null}
               provenance={provenanceDefaults(items)}
               today={today}
+              lessonVariety={lesson.variety_id}
+              varietyNames={Object.fromEntries(
+                page.varieties.map((v) => [v.id, v.name]),
+              )}
             />
           </section>
 

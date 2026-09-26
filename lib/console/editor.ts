@@ -183,6 +183,10 @@ export type EditLessonPage = {
     review_status: ReviewStatus;
     review_fingerprint: string;
     submitted_at: string | null;
+    /** Sent back by a reviewer and changed since, so it may go again. */
+    changed_since_review: boolean;
+    /** Active reviewers of the lesson's variety. */
+    reviewers: number;
     revision_no: number;
     updated_at: string;
     retired_at: string | null;
@@ -1074,4 +1078,40 @@ export function historyRows(
     const at = new Date(r.at).getTime();
     return !childTimes.some((t) => Math.abs(t - at) <= windowMs);
   });
+}
+
+// ---------------------------------------------------------------------------
+// Review hand-off copy
+// ---------------------------------------------------------------------------
+
+export type HandoffCopy = {
+  /** The panel's line when the lesson is ready to send. */
+  ready: string;
+  /** The line while it waits in the queue (after "since <day>."). */
+  waiting: string;
+  /** The submit confirm's description. */
+  confirm: string;
+};
+
+/**
+ * What the review panel says about who sees a lesson next. A variety with
+ * no active reviewer gets the truth: the lesson waits until an admin
+ * invites one.
+ */
+export function handoffCopy(
+  varietyName: string,
+  reviewers: number,
+): HandoffCopy {
+  const keepEditing = 'You can keep editing, or take it back, while it waits.';
+  if (reviewers > 0)
+    return {
+      ready: `Ready. ${varietyName} reviewers will see it next.`,
+      waiting: `Waiting for a ${varietyName} reviewer`,
+      confirm: `${varietyName} reviewers see it in their queue next. ${keepEditing}`,
+    };
+  return {
+    ready: `Ready. No one reviews ${varietyName} yet, so it will wait in the queue until an admin invites a reviewer.`,
+    waiting: `Waiting for a reviewer (no one reviews ${varietyName} yet)`,
+    confirm: `No one reviews ${varietyName} yet. It will wait in the queue until an admin invites a reviewer. ${keepEditing}`,
+  };
 }

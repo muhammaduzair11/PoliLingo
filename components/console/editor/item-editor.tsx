@@ -348,6 +348,8 @@ function ItemCard({
   submitted,
   locked,
   today,
+  lessonVariety,
+  varietyNames,
 }: {
   item: EditItem;
   ids: string[];
@@ -356,6 +358,8 @@ function ItemCard({
   submitted: boolean;
   locked: boolean;
   today: string;
+  lessonVariety: string;
+  varietyNames: Readonly<Record<string, string>>;
 }) {
   const [editing, setEditing] = useState(false);
   const { containerRef, triggerRef } = useEditFocus(editing);
@@ -468,6 +472,13 @@ function ItemCard({
             {SOURCE_TYPE_LABELS[item.source_type]} · {item.source_citation}
             {item.source_retrieved && ` · ${item.source_retrieved}`}
           </p>
+          {item.variety_id !== lessonVariety && (
+            <p className="editor-source">
+              Variety: {varietyNames[item.variety_id] ?? item.variety_id}, not
+              the lesson’s {varietyNames[lessonVariety] ?? lessonVariety}. Its
+              reviewers are that variety’s.
+            </p>
+          )}
           {decision && decision.current && decision.comment && (
             <Notice
               tone={decision.decision === 'approve' ? 'info' : 'warning'}
@@ -501,6 +512,8 @@ export function ItemList({
   locked,
   provenance,
   today,
+  lessonVariety,
+  varietyNames,
 }: {
   lessonId: string;
   items: EditItem[];
@@ -509,6 +522,9 @@ export function ItemList({
   locked: boolean;
   provenance: Provenance;
   today: string;
+  /** The lesson's variety; a phrase in another one says so. */
+  lessonVariety: string;
+  varietyNames: Readonly<Record<string, string>>;
 }) {
   const ids = items.map((i) => i.id);
   const [adding, setAdding] = useState(false);
@@ -551,6 +567,8 @@ export function ItemList({
               submitted={submitted}
               locked={locked}
               today={today}
+              lessonVariety={lessonVariety}
+              varietyNames={varietyNames}
             />
           ))}
         </ol>
