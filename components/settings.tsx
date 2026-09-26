@@ -103,6 +103,7 @@ function AccountRow() {
 }
 export function Settings() {
   const { state, ready, update } = useLearning();
+  const signedIn = useAccount().status === 'signed-in';
   const remembered = selectedCourse(state.selected);
   const [resetOpen, setResetOpen] = useState(false);
   const [notice, setNotice] = useState('');
@@ -258,7 +259,7 @@ export function Settings() {
             </p>
           ))}
           <p>
-            This build uses content release <code>{contentVersion}</code>.
+            You are using content release <code>{contentVersion}</code>.
           </p>
         </section>
         <section className="reset-card">
@@ -298,8 +299,9 @@ export function Settings() {
           <div>
             <h3>A fresh start</h3>
             <p>
-              Progress is saved only in this browser. Resetting clears your
-              lessons, XP, badges, and preferences so you can start again.
+              {signedIn
+                ? 'Resetting clears your lessons, XP, badges, and preferences on this device. Your account keeps its copy, and it comes back here the next time your progress saves.'
+                : 'Progress is saved only in this browser. Resetting clears your lessons, XP, badges, and preferences so you can start again.'}
             </p>
           </div>
           <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
@@ -310,9 +312,9 @@ export function Settings() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Start your adventure again?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This clears all your lessons, XP, streaks, badges, and
-                  preferences. There is no undo, so export your progress first
-                  if you might want it back.
+                  {signedIn
+                    ? 'This clears your lessons, XP, streaks, badges, and preferences on this device only. Your account still has your progress and will bring it back on the next save.'
+                    : 'This clears all your lessons, XP, streaks, badges, and preferences. There is no undo, so export your progress first if you might want it back.'}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

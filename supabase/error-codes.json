@@ -21,7 +21,7 @@
   "PL409_DEMO_NEVER_APPROVED": "Starter content can't be approved. It leaves the app once reviewed lessons replace it.",
   "PL409_ROLE_CONFLICT": "An admin can't also be a reviewer. Choose one role for this person.",
   "PL409_ALREADY_HAS_ROLE": "This person already has that role.",
-  "PL409_LAST_ADMIN": "You're the last admin, so this would leave the workspace with none. Add another admin first.",
+  "PL409_LAST_ADMIN": "This would leave PoliLingo without an admin. Invite another admin first.",
   "PL409_ADMIN_EXISTS": "There's already an admin.",
   "PL409_ALREADY_ENDED": "That role has already ended.",
   "PL409_NOT_SOLE": "This review doesn't need a countersign.",

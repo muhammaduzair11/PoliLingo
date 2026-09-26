@@ -156,7 +156,7 @@ describe('schema contract', () => {
          where n.nspname = any ($1)
            and has_function_privilege('anon', p.oid, 'execute')
            and not (n.nspname = 'public' and p.proname = 'get_learner_release'
-                    and p.proargtypes::oid[] = array['text'::regtype::oid])`,
+                    and p.oid = 'public.get_learner_release(text)'::regprocedure)`,
         [OUR_SCHEMAS],
       );
       assert.deepEqual(found, []);

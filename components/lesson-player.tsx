@@ -72,8 +72,11 @@ export function LessonPlayer({
   const [matchHint, setMatchHint] = useState('');
   const heading = useRef<HTMLHeadingElement>(null);
   // A lesson this release does not hold, in a course it does (retired, or an
-  // old bookmark of one): the course's map instead of "not found".
-  const away = missingLessonRedirect(courseId, lessonId);
+  // old bookmark of one): the course's map instead of "not found". Only once
+  // ready: the provider activates a published release in its mount effect,
+  // after this component's first effects, so a lesson that exists only in
+  // that release would otherwise be sent away on a direct load.
+  const away = ready ? missingLessonRedirect(courseId, lessonId) : undefined;
   useEffect(() => {
     if (away) router.replace(away);
   }, [away, router]);

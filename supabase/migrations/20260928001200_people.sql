@@ -587,6 +587,10 @@ begin
     perform private.raise('PL404_NOT_FOUND', 'We couldn''t find that role.');
   end if;
 
+  -- One lock for every change that can remove an admin (delete_my_account,
+  -- revoke_role, update_contributor), taken first, so two of them at the same
+  -- moment cannot both pass the last-admin check.
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('polilingo.admins', 0));
   select * into v_grant from public.role_grants g where g.id = p_grant_id for update;
   if not found then
     perform private.raise('PL404_NOT_FOUND', 'We couldn''t find that role.');
@@ -699,6 +703,10 @@ begin
     end if;
   end loop;
 
+  -- One lock for every change that can remove an admin (delete_my_account,
+  -- revoke_role, update_contributor), taken first, so two of them at the same
+  -- moment cannot both pass the last-admin check.
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('polilingo.admins', 0));
   select * into v_row from public.contributors c where c.id = p_contributor_id for update;
   if not found then
     perform private.raise('PL404_NOT_FOUND', 'We couldn''t find that person.');

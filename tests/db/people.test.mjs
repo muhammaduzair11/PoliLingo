@@ -18,6 +18,12 @@ import {
   value,
 } from './helpers.mjs';
 
+/** Removes a test account (as the owner) so its email can be reused. */
+async function dropUser(client, u) {
+  await asPostgres(client);
+  await client.query('delete from auth.users where id = $1', [u.id]);
+}
+
 // The seeded local accounts (supabase/seeds/10_people.sql).
 const SEED = {
   admin: {
@@ -745,7 +751,7 @@ describe('accept_invitation', () => {
 
       // Used by someone else: refused before their email is even looked at.
       await rpc(client, 'accept_invitation', { p_token: inv.token });
-      const other = await user(client, { email: 'one@example.org' });
+      const other = await user(client, { email: 'another.person@example.org' });
       await as(client, other);
       await expectCode(
         rpc(client, 'accept_invitation', { p_token: inv.token }),
@@ -781,6 +787,9 @@ describe('accept_invitation', () => {
       assert.match(err.message, /a•••@example\.org/);
       assert.equal(err.message.includes('amina@'), false);
 
+      // Real Supabase keeps one account per email, so each state below is the
+      // same address after the previous account is removed.
+      await dropUser(client, unverified);
       const noProfile = await user(client, {
         email: 'amina@example.org',
         ageBand: null,
@@ -791,6 +800,7 @@ describe('accept_invitation', () => {
         'PL403_NO_PROFILE',
       );
 
+      await dropUser(client, noProfile);
       const teen = await user(client, {
         email: 'amina@example.org',
         ageBand: '13-17',

@@ -237,9 +237,9 @@ test('callRpc returns data or a mapped error, and never throws', async () => {
     message: catalogueFile.PL403_NOT_ADMIN,
   });
   assert.deepEqual(fromRpc({ ok: true, data: 3 }), { ok: true, data: 3 });
-  assert.deepEqual(actionError(raised('PL422_NO_CHANGE')), {
+  assert.deepEqual(actionError(raised('PL409_STALE_EDIT')), {
     ok: false,
-    code: 'PL422_NO_CHANGE',
-    message: catalogueFile.PL422_NO_CHANGE,
+    code: 'PL409_STALE_EDIT',
+    message: catalogueFile.PL409_STALE_EDIT,
   });
 });

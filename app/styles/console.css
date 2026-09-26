@@ -785,3 +785,10 @@ textarea.console-input {
     font-size: 24px;
   }
 }
+
+/* Every console dialog scrolls inside the viewport, on phones too. */
+.console-dialog {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}

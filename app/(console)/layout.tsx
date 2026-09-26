@@ -83,7 +83,14 @@ function navFor(context: MyContext): NavGroup[] {
   if (hasRole(context, 'editor'))
     groups.push({
       label: 'Edit',
-      items: [{ href: editTreePath(), label: 'Lessons' }],
+      // Editors accept or decline reviewers' suggestions too; admins find
+      // Suggestions under Admin.
+      items: context.is_admin
+        ? [{ href: editTreePath(), label: 'Lessons' }]
+        : [
+            { href: editTreePath(), label: 'Lessons' },
+            { href: adminSuggestionsPath(), label: 'Suggestions' },
+          ],
     });
   if (hasRole(context, 'admin'))
     groups.push({
