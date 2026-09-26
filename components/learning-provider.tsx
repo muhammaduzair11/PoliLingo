@@ -11,6 +11,7 @@ import {
 import {
   hydrateProgress,
   initialState,
+  latestStored,
   localDate,
   STORAGE_KEY,
   type ProgressState,
@@ -85,7 +86,9 @@ export function LearningProvider({ children }: { children: ReactNode }) {
   }, [state, ready]);
   function refreshContent(name: string) {
     setContentRelease(name);
-    setState(fitSessions);
+    // A release can activate in a tab left idle: start from what another
+    // tab may have saved since, never write this tab's old copy over it.
+    setState((s) => fitSessions(latestStored(s, browserStorage())));
   }
   function play(correct: boolean) {
     if (!state.prefs.sound) return;

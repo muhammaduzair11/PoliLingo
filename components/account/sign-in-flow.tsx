@@ -34,6 +34,12 @@ import {
   platformOf,
   suggestedBrowser,
 } from '@/lib/in-app-browser';
+import {
+  emailLinkCookie,
+  emailLinkRedirect,
+  newEmailLinkNonce,
+  readEmailLinkCookie,
+} from '@/lib/safe-next';
 import { browserSupabase } from '@/lib/supabase/browser';
 
 type Step =
@@ -118,6 +124,20 @@ function field(form: FormData, name: string): string {
 
 function clearBandCookie() {
   document.cookie = `${AGE_BAND_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+}
+
+/**
+ * emailRedirectTo for an email code: ties the email's button to this
+ * browser (lib/safe-next.ts EMAIL_LINK_COOKIE). A resend keeps the same
+ * value, so the newest email's button works here too.
+ */
+function emailRedirect(next: string): string {
+  const nonce = readEmailLinkCookie(document.cookie) ?? newEmailLinkNonce();
+  document.cookie = emailLinkCookie(
+    nonce,
+    window.location.protocol === 'https:',
+  );
+  return emailLinkRedirect(window.location.origin, next, nonce);
 }
 
 /**
@@ -392,7 +412,7 @@ function ChooseStep({
         email: address,
         options: {
           shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/auth/confirm?next=${encodeURIComponent(next)}`,
+          emailRedirectTo: emailRedirect(next),
         },
       });
       if (error) setError(authMessage(error));
@@ -646,7 +666,7 @@ function CodeStep({
         email,
         options: {
           shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/auth/confirm?next=${encodeURIComponent(next)}`,
+          emailRedirectTo: emailRedirect(next),
         },
       });
       if (error) setError(authMessage(error));

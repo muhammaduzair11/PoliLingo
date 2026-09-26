@@ -3,6 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  accountHoldsProgress,
   getAccountSnapshot,
   getServerAccountSnapshot,
   initialAccount,
@@ -24,6 +25,21 @@ test('it starts unknown, and the server always renders unknown', () => {
   });
   assert.equal(getServerAccountSnapshot(), initialAccount);
   assert.ok(Object.isFrozen(getAccountSnapshot()));
+});
+
+test('the account holds the progress only after a sync succeeded', () => {
+  assert.equal(
+    accountHoldsProgress({ status: 'signed-in', sync: 'synced' }),
+    true,
+  );
+  for (const sync of ['idle', 'syncing', 'offline', 'error', 'paused'])
+    assert.equal(
+      accountHoldsProgress({ status: 'signed-in', sync }),
+      false,
+      sync,
+    );
+  for (const status of ['unknown', 'anonymous'])
+    assert.equal(accountHoldsProgress({ status, sync: 'synced' }), false);
 });
 
 test('signing in publishes the identity and an initial', () => {

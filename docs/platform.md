@@ -510,7 +510,8 @@ null) → jsonb` (admin): `403_NOT_ADMIN`, `404_NOT_FOUND`, `422_BAD_DATE`,
   `409_ALREADY_ENDED`, `409_LAST_ADMIN`.
 - `update_contributor(p_contributor_id text, p_patch jsonb) → jsonb` (admin for every field;
   the contributor themself for `attribution_name` only): `401`, `403_NOT_ADMIN`,
-  `422_BAD_INPUT`.
+  `422_BAD_INPUT`. Pausing or ending someone also cancels (audited) every open invitation to
+  their sign-in or contact address, so an old link cannot make them active again.
 - `page_admin_people() → jsonb` (definer, admin): contributors with private details, grants
   (active and ended), open invitations (never the token).
 - `page_admin_overview() → jsonb` (definer, staff; accounts section admin only): per language
@@ -847,7 +848,10 @@ StorageLike | null) → string` (reads `polilingo.content.release`, verifies, ac
 - Google: `signInWithOAuth({ provider: 'google', options: { redirectTo:
 origin + '/auth/callback?next=' + next } })`.
 - Email: `signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo:
-origin + '/auth/confirm?next=' + encodeURIComponent(next) } })`, then `verifyOtp({ email,
+origin + '/auth/confirm?next=' + encodeURIComponent(next) + '&n=' + nonce } })` (the
+  one-hour `pl_email_link` cookie holds the same nonce; `/sign-in/confirm` and the POST to
+  `/auth/confirm` refuse a link whose `n` is not this browser's, so someone else's link never
+  signs a learner in to the sender's account), then `verifyOtp({ email,
 token, type: 'email' })`, then `ensure_profile(band)`, then `location.assign(next)`. The
   email's button is built from that redirect (`supabase/templates/magic-link.html`:
   `{{ .RedirectTo }}&token_hash=…&type=email`), so `emailRedirectTo` must always carry

@@ -85,6 +85,70 @@ export function emailLinkToken(value: unknown): string | null {
 }
 
 /**
+ * The email's sign-in link works only in the browser that asked for the
+ * code. Asking sets this cookie to a random value and puts the same value in
+ * the link (`&n=`); /sign-in/confirm and the POST to /auth/confirm refuse a
+ * link whose value is not the cookie's. Without it, someone could send their
+ * own sign-in link to a learner, whose browser would then sign in to the
+ * sender's account and upload the learner's progress to it.
+ */
+export const EMAIL_LINK_COOKIE = 'pl_email_link';
+/** An hour, in seconds: as long as the email's code lasts (otp_expiry). */
+export const EMAIL_LINK_MAX_AGE = 60 * 60;
+
+/** The link's browser value, or null when it cannot be one. */
+export function emailLinkNonce(value: unknown): string | null {
+  return typeof value === 'string' && /^[A-Za-z0-9_-]{22,64}$/.test(value)
+    ? value
+    : null;
+}
+
+/** A fresh browser value: 18 random bytes, base64url (24 characters). */
+export function newEmailLinkNonce(): string {
+  const bytes = new Uint8Array(18);
+  globalThis.crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+/** The value of EMAIL_LINK_COOKIE in a Cookie header (document.cookie), or null. */
+export function readEmailLinkCookie(cookieHeader: string): string | null {
+  for (const part of cookieHeader.split(';')) {
+    const [name, ...rest] = part.trim().split('=');
+    if (name === EMAIL_LINK_COOKIE) return emailLinkNonce(rest.join('='));
+  }
+  return null;
+}
+
+/** The Set-Cookie attributes: an hour, the whole site, first-party only. */
+export function emailLinkCookie(nonce: string, secure: boolean): string {
+  return [
+    `${EMAIL_LINK_COOKIE}=${nonce}`,
+    'Path=/',
+    `Max-Age=${EMAIL_LINK_MAX_AGE}`,
+    'SameSite=Lax',
+    ...(secure ? ['Secure'] : []),
+  ].join('; ');
+}
+
+/** Whether a link's value is this browser's (both present and equal). */
+export function emailLinkMatches(cookie: unknown, fromLink: unknown): boolean {
+  const mine = emailLinkNonce(cookie);
+  return mine !== null && mine === emailLinkNonce(fromLink);
+}
+
+/** emailRedirectTo for signInWithOtp: /auth/confirm with next and the browser value. */
+export function emailLinkRedirect(
+  origin: string,
+  next: string,
+  nonce: string,
+): string {
+  return `${origin}/auth/confirm?next=${encodeURIComponent(next)}&n=${nonce}`;
+}
+
+/**
  * Whether a form POST came from a page on this site. The browser's Origin
  * header must name this host; without one, Sec-Fetch-Site must say
  * "same-origin". Anything else (another site, a sandboxed "null" origin, a

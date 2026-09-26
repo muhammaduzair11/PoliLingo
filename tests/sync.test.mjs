@@ -34,9 +34,27 @@ import {
   ledgerXp,
   parseSnapshot,
   retryDelay,
+  rewardedChange,
   snapshotToState,
   syncFailure,
 } from '../lib/sync.ts';
+
+test('a rewarded lesson syncs, and so does the first lesson after a reset', () => {
+  // Before the first envelope: nothing yet.
+  assert.deepEqual(rewardedChange(-1, 3), { known: -1, sync: false });
+  // Growth past what the account has syncs; no change does not.
+  assert.deepEqual(rewardedChange(40, 41), { known: 40, sync: true });
+  assert.deepEqual(rewardedChange(40, 40), { known: 40, sync: false });
+  // A reset in Settings (40 -> 0) re-baselines and syncs at once, which also
+  // brings the account's copy back; then every new lesson syncs again.
+  let known = 40;
+  const steps = [0, 1, 2, 3].map((rewarded) => {
+    const change = rewardedChange(known, rewarded);
+    known = change.known;
+    return change.sync;
+  });
+  assert.deepEqual(steps, [true, true, true, true]);
+});
 
 const NOW = new Date('2026-09-27T10:00:00.000Z');
 const TODAY = '2026-09-27';

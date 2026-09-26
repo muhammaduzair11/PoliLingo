@@ -8,7 +8,7 @@ import {
   NETWORK_MESSAGE,
   NOT_CONFIGURED_MESSAGE,
 } from '@/lib/db-errors';
-import { localDate, streak } from '@/lib/progress';
+import { latestStored, localDate, streak } from '@/lib/progress';
 import { callRpc } from '@/lib/rpc';
 import { browserSupabase } from '@/lib/supabase/browser';
 import {
@@ -20,11 +20,21 @@ import {
   focusDue,
   parseSnapshot,
   retryDelay,
+  rewardedChange,
   syncFailure,
 } from '@/lib/sync';
 import { AccountSwitchDialog } from './account-switch-dialog';
 
 type Reason = 'sign-in' | 'progress' | 'focus' | 'online' | 'retry' | 'add';
+
+/** `localStorage`, or null when the browser blocks even reaching it. */
+function browserStorage(): Storage | null {
+  try {
+    return localStorage;
+  } catch {
+    return null;
+  }
+}
 
 /** Whether "Not now" paused sync to this account in this tab. */
 function pausedFor(userId: string): boolean {
@@ -190,7 +200,11 @@ export function SyncAgent() {
         uid,
         now,
       ).rewarded.length;
-      update((s) => applySnapshot(s, snapshot, uid, now));
+      // A retry or an online event can land in a tab left idle: start from
+      // what another tab may have saved since (lib/progress.ts latestStored).
+      update((s) =>
+        applySnapshot(latestStored(s, browserStorage()), snapshot, uid, now),
+      );
       setAccount({ sync: 'synced', lastSyncedAt: now.toISOString() });
       if (reason === 'add') {
         setAdding(false);
@@ -233,11 +247,12 @@ export function SyncAgent() {
     };
   }, [ready, userId, update]);
 
-  // A lesson rewarded since the last sync.
+  // A lesson rewarded since the last sync, or progress reset in Settings.
   const rewarded = state.rewarded.length;
   useEffect(() => {
-    if (knownRewarded.current >= 0 && rewarded > knownRewarded.current)
-      run.current('progress');
+    const change = rewardedChange(knownRewarded.current, rewarded);
+    knownRewarded.current = change.known;
+    if (change.sync) run.current('progress');
   }, [rewarded]);
 
   function add() {

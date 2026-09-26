@@ -38,7 +38,7 @@ import {
 } from '@/lib/progress';
 import { Header, Footer } from './site-chrome';
 import { accountsEnabled } from './account/accounts-enabled';
-import { useAccount } from '@/lib/account-store';
+import { accountHoldsProgress, useAccount } from '@/lib/account-store';
 import { Loading } from './status-views';
 function SettingRow({
   icon,
@@ -103,7 +103,11 @@ function AccountRow() {
 }
 export function Settings() {
   const { state, ready, update } = useLearning();
-  const signedIn = useAccount().status === 'signed-in';
+  // The "account keeps its copy" wording only when the last sync succeeded:
+  // otherwise some progress may exist only here, and a reset loses it.
+  const account = useAccount();
+  const accountHasIt = accountHoldsProgress(account);
+  const unsaved = account.status === 'signed-in' && !accountHasIt;
   const remembered = selectedCourse(state.selected);
   const [resetOpen, setResetOpen] = useState(false);
   const [notice, setNotice] = useState('');
@@ -299,9 +303,11 @@ export function Settings() {
           <div>
             <h3>A fresh start</h3>
             <p>
-              {signedIn
+              {accountHasIt
                 ? 'Resetting clears your lessons, XP, badges, and preferences on this device. Your account keeps its copy, and it comes back here the next time your progress saves.'
-                : 'Progress is saved only in this browser. Resetting clears your lessons, XP, badges, and preferences so you can start again.'}
+                : unsaved
+                  ? 'Some of your progress isn’t saved to your account yet. Resetting clears your lessons, XP, badges, and preferences on this device, and what isn’t saved can’t come back.'
+                  : 'Progress is saved only in this browser. Resetting clears your lessons, XP, badges, and preferences so you can start again.'}
             </p>
           </div>
           <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
@@ -312,9 +318,9 @@ export function Settings() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Start your adventure again?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  {signedIn
+                  {accountHasIt
                     ? 'This clears your lessons, XP, streaks, badges, and preferences on this device only. Your account still has your progress and will bring it back on the next save.'
-                    : 'This clears all your lessons, XP, streaks, badges, and preferences. There is no undo, so export your progress first if you might want it back.'}
+                    : `${unsaved ? 'Some of your progress isn’t saved to your account yet. ' : ''}This clears all your lessons, XP, streaks, badges, and preferences. There is no undo, so export your progress first if you might want it back.`}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

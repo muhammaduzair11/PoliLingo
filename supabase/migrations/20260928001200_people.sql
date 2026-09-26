@@ -662,6 +662,7 @@ declare
   v_text text;
   v_row public.contributors%rowtype;
   v_status text;
+  v_inv public.invitations%rowtype;
 begin
   if auth.uid() is null then
     perform private.raise('PL401_NOT_SIGNED_IN', 'Please sign in first.');
@@ -727,6 +728,29 @@ begin
   -- they are ever made active again.
   if v_status = 'ended' and v_row.status <> 'ended' then
     perform private.end_open_grants(v_row.id, private.current_contributor_id(), 'Left the team');
+  end if;
+
+  -- Pausing or ending someone cancels every invitation still open to them:
+  -- accepting one makes a contributor active again, so an old link must not
+  -- undo the pause. An admin who wants them back sends a new invitation.
+  if v_status <> 'active' and v_status <> v_row.status then
+    for v_inv in
+      update public.invitations i
+      set revoked_at = now(), revoked_by = private.current_contributor_id()
+      where i.accepted_at is null
+        and i.revoked_at is null
+        and i.email in (
+          select pg_catalog.lower(pg_catalog.btrim(u.email)) from auth.users u where u.id = v_row.user_id
+          union
+          select cp.contact_email from public.contributor_private cp where cp.contributor_id = v_row.id
+        )
+      returning i.*
+    loop
+      perform private.audit('invitation.revoked', 'invitation', v_inv.id::text, jsonb_build_object(
+        'role', v_inv.role, 'language', v_inv.language_code, 'variety', v_inv.variety_id,
+        'reason', case v_status when 'paused' then 'Paused' else 'Left the team' end
+      ));
+    end loop;
   end if;
 
   update public.contributors c

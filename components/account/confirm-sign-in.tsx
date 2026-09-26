@@ -14,11 +14,14 @@ import { Card } from './sign-in-flow';
 export function ConfirmSignIn({
   tokenHash,
   type,
+  nonce,
   next,
   back,
 }: {
   tokenHash: string;
   type: string;
+  /** The link's browser value (lib/safe-next.ts EMAIL_LINK_COOKIE). */
+  nonce: string;
   /** Already checked by safeNext(). */
   next: string;
   back: string;
@@ -58,6 +61,7 @@ export function ConfirmSignIn({
       >
         <input type="hidden" name="token_hash" value={tokenHash} />
         <input type="hidden" name="type" value={type} />
+        <input type="hidden" name="n" value={nonce} />
         <input type="hidden" name="next" value={next} />
         <button
           type="submit"

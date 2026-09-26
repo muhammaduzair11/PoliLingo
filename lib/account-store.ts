@@ -44,6 +44,18 @@ export const initialAccount: AccountSnapshot = Object.freeze({
 let snapshot: AccountSnapshot = initialAccount;
 const listeners = new Set<() => void>();
 
+/**
+ * Whether the account is known to hold everything on this device: signed in
+ * and the last sync succeeded. Only then may a reset say the account will
+ * bring the progress back. Paused, offline, failed or unfinished syncs may
+ * have left progress that exists only here.
+ */
+export function accountHoldsProgress(
+  account: Pick<AccountSnapshot, 'status' | 'sync'>,
+): boolean {
+  return account.status === 'signed-in' && account.sync === 'synced';
+}
+
 /** The first letter or digit of an email, upper-cased, or null. */
 export function initialFor(email: string | null | undefined): string | null {
   const match = email?.match(/[\p{L}\p{N}]/u);

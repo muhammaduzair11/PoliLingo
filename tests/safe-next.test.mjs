@@ -3,6 +3,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEFAULT_NEXT,
+  EMAIL_LINK_COOKIE,
+  emailLinkCookie,
+  emailLinkMatches,
+  emailLinkNonce,
+  emailLinkRedirect,
+  newEmailLinkNonce,
+  readEmailLinkCookie,
   emailLinkToken,
   emailLinkType,
   isSameOriginPost,
@@ -113,6 +120,42 @@ test('email link types and token hashes: only what the email can carry', () => {
     `${hex}/`,
   ])
     assert.equal(emailLinkToken(bad), null, String(bad));
+});
+
+test('an email link works only in the browser that asked for the code', () => {
+  const mine = newEmailLinkNonce();
+  assert.match(mine, /^[A-Za-z0-9_-]{24}$/);
+  assert.notEqual(newEmailLinkNonce(), mine);
+  assert.equal(emailLinkNonce(mine), mine);
+  for (const bad of ['', null, undefined, 'short', `${mine}&x`, 'a'.repeat(65)])
+    assert.equal(emailLinkNonce(bad), null, String(bad));
+
+  // The cookie this browser sets, read back as document.cookie shows it.
+  const cookie = emailLinkCookie(mine, true);
+  assert.equal(
+    cookie,
+    `${EMAIL_LINK_COOKIE}=${mine}; Path=/; Max-Age=3600; SameSite=Lax; Secure`,
+  );
+  assert.equal(
+    readEmailLinkCookie(`pl_age_band=18%2B; ${EMAIL_LINK_COOKIE}=${mine}`),
+    mine,
+  );
+  assert.equal(readEmailLinkCookie('pl_age_band=18%2B'), null);
+  assert.equal(readEmailLinkCookie(`${EMAIL_LINK_COOKIE}=`), null);
+
+  // The link carries the same value after next.
+  assert.equal(
+    emailLinkRedirect('https://polilingo.app', '/learn/pashto', mine),
+    `https://polilingo.app/auth/confirm?next=%2Flearn%2Fpashto&n=${mine}`,
+  );
+
+  // Someone else's link (their value, or none) in this browser: refused.
+  assert.equal(emailLinkMatches(mine, mine), true);
+  assert.equal(emailLinkMatches(mine, newEmailLinkNonce()), false);
+  assert.equal(emailLinkMatches(undefined, mine), false);
+  assert.equal(emailLinkMatches(mine, null), false);
+  assert.equal(emailLinkMatches(undefined, undefined), false);
+  assert.equal(emailLinkMatches('', ''), false);
 });
 
 test('a sign-in POST must come from this site', () => {

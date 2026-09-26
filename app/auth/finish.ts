@@ -25,7 +25,7 @@ function redirectTo(request: NextRequest, path: string): NextResponse {
 export function backToSignIn(
   request: NextRequest,
   next: string,
-  reason: 'link' | 'cancelled' | 'profile',
+  reason: 'link' | 'browser' | 'cancelled' | 'profile',
 ): NextResponse {
   return redirectTo(
     request,

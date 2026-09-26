@@ -549,17 +549,18 @@ describe('accept_invitation', () => {
 
   test('a reviewer who left does not get their old variety back by accepting another role', () =>
     tx(async (client) => {
-      // The seeded reviewer of ps-var-yusufzai is invited as an editor, then
-      // made to leave before accepting.
+      // The seeded reviewer of ps-var-yusufzai leaves, then is invited back
+      // as an editor.
+      await as(client, SEED.admin);
+      await rpc(client, 'update_contributor', {
+        p_contributor_id: 'ctr-0103',
+        p_patch: { status: 'ended' },
+      });
       const inv = await invite(client, {
         p_role: 'editor',
         p_variety: null,
         p_language: 'ps',
         p_email: SEED.reviewerPs.email,
-      });
-      await rpc(client, 'update_contributor', {
-        p_contributor_id: 'ctr-0103',
-        p_patch: { status: 'ended' },
       });
       await as(client, SEED.reviewerPs);
       assert.equal(
@@ -603,15 +604,16 @@ describe('accept_invitation', () => {
 
   test('a paused contributor is made active with the new role, and their paused roles end', () =>
     tx(async (client) => {
+      await as(client, SEED.admin);
+      await rpc(client, 'update_contributor', {
+        p_contributor_id: 'ctr-0103',
+        p_patch: { status: 'paused' },
+      });
       const inv = await invite(client, {
         p_role: 'editor',
         p_variety: null,
         p_language: 'ps',
         p_email: SEED.reviewerPs.email,
-      });
-      await rpc(client, 'update_contributor', {
-        p_contributor_id: 'ctr-0103',
-        p_patch: { status: 'paused' },
       });
       await as(client, SEED.reviewerPs);
       await rpc(client, 'accept_invitation', { p_token: inv.token });
@@ -642,6 +644,66 @@ describe('accept_invitation', () => {
         ),
         true,
       );
+    }));
+
+  test('pausing or ending someone cancels the invitations still open to them', () =>
+    tx(async (client) => {
+      for (const status of ['paused', 'ended']) {
+        // Sent before the change: accepting it must not undo the pause.
+        const before = await invite(client, {
+          p_role: 'editor',
+          p_variety: null,
+          p_language: 'ps',
+          p_email: SEED.reviewerPs.email,
+        });
+        await rpc(client, 'update_contributor', {
+          p_contributor_id: 'ctr-0103',
+          p_patch: { status },
+        });
+        await as(client, SEED.reviewerPs);
+        assert.equal(await value(client, 'select private.is_staff()'), false);
+        assert.equal(
+          (await rpc(client, 'peek_invitation', { p_token: before.token }))
+            .status,
+          'revoked',
+        );
+        await expectCode(
+          rpc(client, 'accept_invitation', { p_token: before.token }),
+          'PL410_INVITATION_REVOKED',
+        );
+        assert.equal(await value(client, 'select private.is_staff()'), false);
+        assert.equal(
+          await value(client, `select private.can_edit_language('ps')`),
+          false,
+        );
+        await asPostgres(client);
+        assert.equal(
+          await value(
+            client,
+            `select status from public.contributors where id = 'ctr-0103'`,
+          ),
+          status,
+        );
+        const revoked = await one(
+          client,
+          `select i.revoked_by, a.actor_contributor_id as actor
+           from public.invitations i
+           join public.audit_events a
+             on a.action = 'invitation.revoked' and a.target_id = i.id::text
+           where i.id = $1`,
+          [before.invitation_id],
+        );
+        assert.deepEqual(revoked, {
+          revoked_by: 'ctr-0101',
+          actor: 'ctr-0101',
+        });
+        // Back to active for the next round.
+        await as(client, SEED.admin);
+        await rpc(client, 'update_contributor', {
+          p_contributor_id: 'ctr-0103',
+          p_patch: { status: 'active' },
+        });
+      }
     }));
 
   test('an invitation stops working once its sender is no longer an admin', () =>

@@ -13,6 +13,8 @@ export const metadata: Metadata = {
 /** What the callback routes put in ?error=, in plain words. */
 const NOTICES: Record<string, string> = {
   link: 'That sign-in link has expired or was already used. Start again here.',
+  browser:
+    'That sign-in link only works in the browser where you asked for the code. Type the 6-digit code there, or start again here.',
   cancelled:
     'Google sign-in was cancelled. You can try again, or use your email.',
   profile:

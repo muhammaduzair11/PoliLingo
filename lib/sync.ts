@@ -300,6 +300,23 @@ export function retryDelay(failures: number): number {
   return Math.min(RETRY_MAX_MS, RETRY_BASE_MS * 2 ** Math.min(n - 1, 16));
 }
 
+/**
+ * What the sync agent does when the device's rewarded-session count becomes
+ * `rewarded`, given `known`, the count the account already has from it (-1
+ * before the first envelope goes out: nothing yet). Growth syncs. A count
+ * below `known` means progress was reset here: the new count becomes the
+ * baseline, so the next lesson syncs again, and it syncs at once, which also
+ * brings the account's copy back.
+ */
+export function rewardedChange(
+  known: number,
+  rewarded: number,
+): { known: number; sync: boolean } {
+  if (known < 0) return { known, sync: false };
+  if (rewarded < known) return { known: rewarded, sync: true };
+  return { known, sync: rewarded > known };
+}
+
 /** Whether a focus at `now` should sync, given the last sync started at `last` (ms). */
 export function focusDue(last: number | null, now: number): boolean {
   return last === null || now - last >= FOCUS_INTERVAL_MS;

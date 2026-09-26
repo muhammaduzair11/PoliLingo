@@ -10,10 +10,18 @@
  * /sign-in/confirm, a page with a "Finish signing in" button, and the
  * button's POST (from this site only) turns the token into a session and
  * finishes like Google does.
+ *
+ * The link also carries `n`, the value of this browser's EMAIL_LINK_COOKIE
+ * when it asked for the code (lib/safe-next.ts). The POST signs in only when
+ * they match, so a link someone else asked for signs nobody in here.
  */
+import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import {
+  EMAIL_LINK_COOKIE,
+  emailLinkMatches,
+  emailLinkNonce,
   emailLinkToken,
   emailLinkType,
   isSameOriginPost,
@@ -34,6 +42,8 @@ export function GET(request: NextRequest) {
   confirm.searchParams.set('token_hash', tokenHash);
   confirm.searchParams.set('type', type);
   confirm.searchParams.set('next', next);
+  const nonce = emailLinkNonce(params.get('n'));
+  if (nonce) confirm.searchParams.set('n', nonce);
   const response = NextResponse.redirect(confirm, 303);
   response.headers.set('Cache-Control', 'private, no-store');
   response.headers.set('Referrer-Policy', 'no-referrer');
@@ -54,6 +64,9 @@ export async function POST(request: NextRequest) {
   const type = emailLinkType(form?.get('type'));
   if (!sameOrigin || !tokenHash || !type)
     return backToSignIn(request, next, 'link');
+  const store = await cookies();
+  if (!emailLinkMatches(store.get(EMAIL_LINK_COOKIE)?.value, form?.get('n')))
+    return backToSignIn(request, next, 'browser');
   const supabase = await serverSupabase();
   if (!supabase) return backToSignIn(request, next, 'link');
   try {
@@ -65,6 +78,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return backToSignIn(request, next, 'link');
   }
+  store.delete(EMAIL_LINK_COOKIE);
   return finishSignIn(request, supabase, next);
 }
 

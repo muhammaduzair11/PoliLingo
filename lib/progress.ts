@@ -772,6 +772,31 @@ export function hydrateProgress(
   return { state: loaded.state, persist: true };
 }
 /**
+ * Where a change the learner did not make in this tab starts from (a newer
+ * content release activating, an account snapshot landing): `state` with
+ * the live key, as stored now, merged in (mergeProgress). Every change is
+ * written at once, so the key differs from a tab's copy when another tab has
+ * saved since; merging it means a tab left idle never writes its old copy
+ * over the lessons another tab saved, and nothing this tab holds is dropped
+ * either. Returns `state` itself when the key holds exactly it, or nothing
+ * readable.
+ */
+export function latestStored(
+  state: ProgressState,
+  storage: Pick<StorageLike, 'getItem'> | null,
+): ProgressState {
+  let raw: string | null = null;
+  try {
+    raw = storage?.getItem(STORAGE_KEY) ?? null;
+  } catch {
+    return state;
+  }
+  if (!raw || storedVersion(raw) !== 3) return state;
+  if (raw === JSON.stringify(state)) return state;
+  const stored = readState(raw, state.deviceId);
+  return stored ? mergeProgress(state, stored) : state;
+}
+/**
  * Writes a `polilingo.progress.export@1` file: `{ format, exportedAt, state }`,
  * with `state` exactly as stored, so each completion carries the content
  * release it was first completed in. An older file's `true` imports as
