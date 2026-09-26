@@ -2,11 +2,15 @@
  * The redirects the content release implies, for next.config.ts. Worked out
  * from the learner copy through lib/content.ts, so they change with the
  * release and nobody keeps a list by hand.
+ *
+ * Redirects are fixed when the app is built, so they come from the baseline
+ * copy (content/release.json) and never from a newer release a browser has
+ * activated since (docs/platform.md 4.7).
  */
 import {
-  courses,
+  baselineCopy,
+  baselineCourses,
   hiddenCourseSlugs,
-  learnerCopy,
   type CourseId,
 } from './content.ts';
 
@@ -41,8 +45,8 @@ function hiddenCourse(slug: CourseId): Redirect {
  * will never mean anything else, so bookmarks and shared links can update.
  */
 function legacyLessons(): Redirect[] {
-  const slug = new Map(courses.map((c) => [c.courseId, c.id]));
-  return learnerCopy.keymap.lessons.flatMap((row) => {
+  const slug = new Map(baselineCourses.map((c) => [c.courseId, c.id]));
+  return baselineCopy.keymap.lessons.flatMap((row) => {
     const course = slug.get(row.course_id);
     return course
       ? [
