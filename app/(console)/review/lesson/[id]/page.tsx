@@ -87,7 +87,8 @@ export default async function ReviewLessonPage({
     retired: lesson.retired,
   });
   // Nothing to decide here (a starter or retired lesson, or someone who does
-  // not review this variety): the decision card would be a bare heading.
+  // not review this variety): the decision card would be a bare heading, so
+  // it is left out and the page drops to one column.
   const readOnly =
     stance.kind === 'demo' ||
     stance.kind === 'retired' ||
@@ -203,7 +204,9 @@ export default async function ReviewLessonPage({
           </Notice>
         )}
 
-        <div className="review-layout">
+        <div
+          className={`review-layout${readOnly ? ' review-layout-single' : ''}`}
+        >
           <div className="review-main">
             <section className="review-card" aria-labelledby="lesson-about">
               <h2 id="lesson-about" className="review-section-title">

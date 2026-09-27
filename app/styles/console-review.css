@@ -66,6 +66,10 @@
   align-items: start;
   gap: 20px;
 }
+/* Read only, with nothing for the right column: the main one takes it all */
+.review-layout-single {
+  grid-template-columns: minmax(0, 1fr);
+}
 .review-main,
 .review-side {
   display: flex;

@@ -436,10 +436,7 @@ function ChooseStep({
       <h1 className="signin-title" tabIndex={-1} ref={headingRef}>
         {words.title}
       </h1>
-      <p className="signin-lead">
-        No password to remember. Your progress on this device stays here either
-        way.
-      </p>
+      <p className="signin-lead">{words.lead}</p>
       {inApp ? (
         <InAppHelp app={IN_APP_NAMES[inApp]} userAgent={userAgent} />
       ) : (

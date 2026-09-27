@@ -122,6 +122,10 @@ test('the sign-in words follow where next leads', () => {
   assert.equal(SIGN_IN_WORDS.invite.title, 'Accept your invitation');
   assert.equal(SIGN_IN_WORDS.workspace.eyebrow, 'SIGN IN TO THE WORKSPACE');
   assert.equal(SIGN_IN_WORDS.learner.eyebrow, 'SAVE YOUR PROGRESS');
+  // Only a learner is told about progress on this device.
+  for (const audience of ['invite', 'workspace'])
+    assert.doesNotMatch(SIGN_IN_WORDS[audience].lead, /progress/);
+  assert.match(SIGN_IN_WORDS.learner.lead, /progress/);
 });
 
 test('email link types and token hashes: only what the email can carry', () => {

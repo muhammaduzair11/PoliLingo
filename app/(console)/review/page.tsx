@@ -9,9 +9,10 @@ import { Stat, StatGrid } from '@/components/console/stat';
 import { StatusBadge } from '@/components/console/status-badge';
 import { LoadError } from '@/components/console/review/load-error';
 import { PhraseSummary } from '@/components/console/review/phrase';
-import { getAccess, requireRole } from '@/lib/console/access';
+import { getAccess, hasRole, requireRole } from '@/lib/console/access';
 import {
   adminPublishPath,
+  editTreePath,
   learnPath,
   reviewItemPath,
   reviewLessonPath,
@@ -34,8 +35,9 @@ export const metadata: Metadata = { title: 'Review queue' };
 export default async function ReviewQueuePage() {
   const gate = await requireRole('reviewer');
   if (!gate.ok) {
-    // An admin who is not also a reviewer lands here from the nav or a
-    // link. Say why the queue is not theirs rather than "no role here".
+    // An admin or editor who is not also a reviewer lands here from the nav
+    // or a link ("Back to the queue"). Say why the queue is not theirs
+    // rather than "no role here".
     const access = await getAccess();
     if (access.state === 'ready' && access.context.is_admin)
       return (
@@ -49,6 +51,23 @@ export default async function ReviewQueuePage() {
               href={adminPublishPath()}
             >
               See what&apos;s approved in Publish
+            </Link>
+          </p>
+        </NoAccess>
+      );
+    if (access.state === 'ready' && hasRole(access.context, 'editor'))
+      return (
+        <NoAccess title="Editors don't approve phrases">
+          <p>
+            A native-speaker reviewer does, so nobody checks their own work. A
+            lesson joins their queue when you submit it.
+          </p>
+          <p className="console-actions">
+            <Link
+              className="console-button console-button-primary"
+              href={editTreePath()}
+            >
+              Back to your lessons
             </Link>
           </p>
         </NoAccess>
