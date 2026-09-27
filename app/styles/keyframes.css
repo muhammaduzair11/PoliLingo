@@ -23,3 +23,11 @@
     transform: translateX(-50%);
   }
 }
+@keyframes sample-reveal {
+  50% {
+    transform: translateY(-3px);
+    box-shadow:
+      0 0 0 6px #429d6433,
+      0 6px 0 #cfe9d7;
+  }
+}

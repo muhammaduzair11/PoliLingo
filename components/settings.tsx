@@ -4,6 +4,8 @@ import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import {
   ArrowLeft,
   BookOpen,
+  CircleAlert,
+  CircleCheck,
   Volume2,
   Pause,
   Download,
@@ -40,26 +42,79 @@ import { Header, Footer } from './site-chrome';
 import { accountsEnabled } from './account/accounts-enabled';
 import { accountHoldsProgress, useAccount } from '@/lib/account-store';
 import { Loading } from './status-views';
+/**
+ * One setting: icon, title, a line of help and its control. A row holding a
+ * switch is a <label>, so tapping anywhere on it, title included, flips the
+ * switch; a row holding a link stays a plain block.
+ */
 function SettingRow({
   icon,
   title,
   description,
+  toggle = false,
   children,
 }: {
   icon: ReactNode;
   title: string;
   description: string;
+  toggle?: boolean;
   children: ReactNode;
 }) {
+  const Row = toggle ? 'label' : 'div';
   return (
-    <div className="setting-row">
-      <span className="setting-icon">{icon}</span>
-      <div>
-        <h3>{title}</h3>
-        <p>{description}</p>
-      </div>
+    <Row className={`setting-row ${toggle ? 'setting-toggle' : ''}`}>
+      <span className="setting-icon" aria-hidden="true">
+        {icon}
+      </span>
+      <span className="setting-text">
+        <span className="setting-title">{title}</span>
+        <span className="setting-description">{description}</span>
+      </span>
       {children}
-    </div>
+    </Row>
+  );
+}
+const MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+/**
+ * "September 2026" from a release tag such as content@2026.09.1, for the
+ * learner-facing note; undefined for a tag in any other shape.
+ */
+function releaseMonth(tag: string): string | undefined {
+  const match = /^content@(\d{4})\.(\d{2})\.\d+$/.exec(tag);
+  const month = match ? MONTHS[Number(match[2]) - 1] : undefined;
+  return month && `${month} ${match![1]}`;
+}
+type Notice = { tone: 'ok' | 'problem'; text: string } | null;
+/** A status line under the controls it reports on, read out as it changes. */
+function NoticeLine({ notice }: { notice: Notice }) {
+  return (
+    <output
+      className={`settings-notice ${notice ? `settings-notice-${notice.tone}` : ''}`}
+    >
+      {notice && (
+        <>
+          {notice.tone === 'ok' ? (
+            <CircleCheck size={18} aria-hidden="true" />
+          ) : (
+            <CircleAlert size={18} aria-hidden="true" />
+          )}
+          <span>{notice.text}</span>
+        </>
+      )}
+    </output>
   );
 }
 /**
@@ -75,13 +130,13 @@ function AccountRow() {
     <section className="settings-card account-setting" aria-label="Account">
       <SettingRow
         icon={<UserRound />}
-        title={signedIn ? 'Your account' : 'Save your progress'}
+        title={signedIn ? 'Your account' : 'Take your progress with you'}
         description={
           account.status === 'unknown'
             ? 'Checking…'
             : signedIn
               ? (account.email ?? 'Signed in')
-              : 'Sign in to keep your progress on every device.'
+              : 'Sign in to keep your lessons, streak and XP on every device.'
         }
       >
         {account.status === 'anonymous' && (
@@ -89,7 +144,7 @@ function AccountRow() {
             className="button button-small button-purple"
             href="/sign-in?next=%2Fsettings"
           >
-            Sign in
+            Save my progress
           </Link>
         )}
         {signedIn && (
@@ -110,7 +165,11 @@ export function Settings() {
   const unsaved = account.status === 'signed-in' && !accountHasIt;
   const remembered = selectedCourse(state.selected);
   const [resetOpen, setResetOpen] = useState(false);
-  const [notice, setNotice] = useState('');
+  // Each message shows beside what it is about: export and import under
+  // their buttons, a reset under the reset card.
+  const [transferNotice, setTransferNotice] = useState<Notice>(null);
+  const [resetNotice, setResetNotice] = useState<Notice>(null);
+  const updated = releaseMonth(contentVersion);
   const fileInput = useRef<HTMLInputElement>(null);
   function exportNow() {
     const text = exportProgress(state, new Date().toISOString());
@@ -129,7 +188,10 @@ export function Settings() {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
     // The page cannot tell whether the file was saved, so it does not say so.
-    setNotice('Your progress file is downloading. Keep it somewhere safe.');
+    setTransferNotice({
+      tone: 'ok',
+      text: 'Your progress file is downloading. Keep it somewhere safe.',
+    });
   }
   async function importFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -138,20 +200,25 @@ export function Settings() {
     const text = await file.text();
     const tried = importProgress(state, text);
     if (!tried.ok) {
-      setNotice(
-        tried.reason === 'newer'
-          ? 'That file comes from a newer version of PoliLingo, so it cannot be read here yet. Nothing was changed.'
-          : tried.reason === 'damaged'
-            ? 'That progress file could not be read, so nothing was changed.'
-            : 'That file is not a PoliLingo progress export.',
-      );
+      setTransferNotice({
+        tone: 'problem',
+        text:
+          tried.reason === 'newer'
+            ? 'That file comes from a newer version of PoliLingo, so it cannot be read here yet. Nothing was changed.'
+            : tried.reason === 'damaged'
+              ? 'That progress file could not be read, so nothing was changed.'
+              : 'That file is not a PoliLingo progress export, so nothing was changed.',
+      });
       return;
     }
     update((s) => {
       const result = importProgress(s, text);
       return result.ok ? result.state : s;
     });
-    setNotice('Welcome back. Your progress has been merged in.');
+    setTransferNotice({
+      tone: 'ok',
+      text: 'Welcome back. Your progress has been merged in.',
+    });
   }
   if (!ready) return <Loading />;
   return (
@@ -174,6 +241,7 @@ export function Settings() {
           <SettingRow
             icon={<Volume2 />}
             title="A little sound"
+            toggle
             description="Play gentle sounds for answers. There is no pronunciation audio yet."
           >
             <Switch
@@ -187,6 +255,7 @@ export function Settings() {
           <SettingRow
             icon={<Pause />}
             title="A calmer adventure"
+            toggle
             description="Pause floating decorations and reduce movement. Your device’s motion preference is also respected."
           >
             <Switch
@@ -203,6 +272,7 @@ export function Settings() {
           <SettingRow
             icon={<BookOpen />}
             title="A little help with the script"
+            toggle
             description="Show Roman transliteration alongside native-script words."
           >
             <Switch
@@ -262,11 +332,13 @@ export function Settings() {
               .
             </p>
           ))}
-          <p>
-            You are using content release <code>{contentVersion}</code>.
+          <p title={contentVersion}>
+            {updated
+              ? `Lessons last updated ${updated}.`
+              : 'Lessons are kept up to date as new ones are reviewed.'}
           </p>
         </section>
-        <section className="reset-card">
+        <section className="reset-card transfer-card">
           <div>
             <h3>Your progress, in your hands</h3>
             <p>
@@ -275,20 +347,22 @@ export function Settings() {
               combined; your XP shows the higher of the two totals.
             </p>
           </div>
-          <button
-            type="button"
-            className="button button-outline"
-            onClick={exportNow}
-          >
-            <Download size={16} /> Export progress
-          </button>
-          <button
-            type="button"
-            className="button button-outline"
-            onClick={() => fileInput.current?.click()}
-          >
-            <Upload size={16} /> Import progress
-          </button>
+          <div className="reset-actions">
+            <button
+              type="button"
+              className="button button-outline"
+              onClick={exportNow}
+            >
+              <Download size={16} /> Export progress
+            </button>
+            <button
+              type="button"
+              className="button button-outline"
+              onClick={() => fileInput.current?.click()}
+            >
+              <Upload size={16} /> Import progress
+            </button>
+          </div>
           <input
             ref={fileInput}
             type="file"
@@ -298,6 +372,7 @@ export function Settings() {
             tabIndex={-1}
             onChange={importFile}
           />
+          <NoticeLine notice={transferNotice} />
         </section>
         <section className="reset-card">
           <div>
@@ -311,7 +386,7 @@ export function Settings() {
             </p>
           </div>
           <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
-            <AlertDialogTrigger className="button button-outline">
+            <AlertDialogTrigger className="button button-danger">
               Reset progress
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -323,15 +398,22 @@ export function Settings() {
                     : `${unsaved ? 'Some of your progress isn’t saved to your account yet. ' : ''}This clears all your lessons, XP, streaks, badges, and preferences. There is no undo, so export your progress first if you might want it back.`}
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Keep my progress</AlertDialogCancel>
+              {/* The safe choice leads and is the filled button; the reset
+                  is red (dialogs.css). */}
+              <AlertDialogFooter className="reset-dialog-footer">
+                <AlertDialogCancel className="reset-keep">
+                  Keep my progress
+                </AlertDialogCancel>
                 <AlertDialogAction
+                  className="reset-confirm"
                   onClick={() => {
                     update(resetProgress);
                     setResetOpen(false);
-                    setNotice(
-                      'A fresh start. Your progress and preferences have been reset.',
-                    );
+                    setTransferNotice(null);
+                    setResetNotice({
+                      tone: 'ok',
+                      text: 'A fresh start. Your progress and preferences have been reset.',
+                    });
                   }}
                 >
                   Reset everything
@@ -339,8 +421,8 @@ export function Settings() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          <NoticeLine notice={resetNotice} />
         </section>
-        <output>{notice}</output>
       </main>
       <Footer />
     </>
