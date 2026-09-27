@@ -1,6 +1,6 @@
 'use server';
 /**
- * The lesson editor's writes (docs/platform.md 3.9 E, 4.10): the lesson's
+ * The lesson editor’s writes (docs/platform.md 3.9 E, 4.10): the lesson’s
  * details, its phrases and exercises, "Generate exercises", and handing the
  * lesson to review. Each calls database functions as the signed-in person;
  * the database decides (role, language, demo freeze, text rules, option
@@ -62,12 +62,12 @@ async function run<T>(
 const STALE_FORM = {
   code: 'PL422_BAD_INPUT',
   message:
-    "We couldn't tell which version you edited. Reload the page and try again.",
+    'We couldn’t tell which version you edited. Reload the page and try again.',
 };
 
 type Saved = { id: string; revision_no: number };
 
-/** The lesson's title, subtitle, objective, variety and length. */
+/** The lesson’s title, subtitle, objective, variety and length. */
 export async function updateLesson(
   _previous: EditorResult<Saved> | null,
   formData: FormData,
@@ -115,7 +115,7 @@ export async function createItem(
   return result;
 }
 
-/** A phrase's text, meaning, notes and source. Text changes void approval. */
+/** A phrase’s text, meaning, notes and source. Text changes void approval. */
 export async function updateItem(
   _previous: EditorResult<Saved> | null,
   formData: FormData,
@@ -155,7 +155,7 @@ export async function createExercise(
   return result;
 }
 
-/** An exercise's kind, answer, prompt, choices and difficulty. */
+/** An exercise’s kind, answer, prompt, choices and difficulty. */
 export async function updateExercise(
   _previous: EditorResult<Saved> | null,
   formData: FormData,
@@ -248,7 +248,7 @@ type Submission = {
   already: boolean;
 };
 
-/** Sends the lesson to its variety's reviewers. */
+/** Sends the lesson to its variety’s reviewers. */
 export async function submitLesson(
   _previous: EditorResult<Submission> | null,
   formData: FormData,

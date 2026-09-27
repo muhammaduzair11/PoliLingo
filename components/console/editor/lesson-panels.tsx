@@ -1,10 +1,9 @@
 'use client';
-import { useActionState, useId, useState } from 'react';
-import { ConfirmAction } from '@/components/console/confirm-action';
+import { useActionState, useEffect, useId, useRef, useState } from 'react';
+import { Notice } from '@/components/console/notice';
 import { SubmitButton } from '@/components/console/submit-button';
 import {
   generateExercises,
-  submitLesson,
   updateLesson,
   withdrawSubmission,
 } from '@/app/(console)/edit/lesson/[id]/actions';
@@ -12,12 +11,15 @@ import {
   EXERCISE_KIND_LABELS,
   LIMITS,
   MIN_EXERCISES,
+  checklistProblems,
   echo,
   formatDay,
   handoffCopy,
+  sentBack,
   type EditExercise,
   type EditItem,
   type EditLessonPage,
+  type Problem,
   type ReadinessCheck,
 } from '@/lib/console/editor';
 import {
@@ -26,28 +28,51 @@ import {
   type GeneratedKind,
 } from '@/lib/console/exercise-generator';
 import { ActionNotice } from './action-notice';
+import { ProblemLines } from './lesson-aside';
+import { SubmitForReview, useLessonStatus } from './lesson-status';
+import { UnsavedNote, useDirtyForm } from './unsaved';
 
 type Lesson = EditLessonPage['lesson'];
 type Variety = { id: string; name: string };
 
-/** The lesson's title, subtitle, objective, variety and length. */
-export function LessonMetaForm({
+/** The lesson’s title, subtitle, objective, variety and length. */
+function LessonMetaForm({
   lesson,
   varieties,
+  onSaved,
+  onCancel,
 }: {
   lesson: Lesson;
   varieties: Variety[];
+  onSaved: () => void;
+  onCancel: () => void;
 }) {
-  const [result, formAction] = useActionState(updateLesson, null);
+  const [result, formAction] = useActionState(
+    async (
+      previous: Awaited<ReturnType<typeof updateLesson>> | null,
+      formData: FormData,
+    ) => {
+      const next = await updateLesson(previous, formData);
+      if (next.ok) onSaved();
+      return next;
+    },
+    null,
+  );
   const values = result && !result.ok ? result.values : undefined;
   const field = result && !result.ok ? result.field : undefined;
+  const { ref, dirty, onChange } = useDirtyForm();
   const titleId = useId();
   const subtitleId = useId();
   const objectiveId = useId();
   const varietyId = useId();
   const minutesId = useId();
   return (
-    <form action={formAction} className="console-form">
+    <form
+      ref={ref}
+      action={formAction}
+      onChange={onChange}
+      className="console-form"
+    >
       <input type="hidden" name="lesson_id" value={lesson.id} />
       <input type="hidden" name="revision_no" value={lesson.revision_no} />
       <div className="console-field">
@@ -96,7 +121,7 @@ export function LessonMetaForm({
           What the learner can do by the end, in one sentence.
         </p>
       </div>
-      <div className="editor-field-row">
+      <div className="editor-field-row editor-field-row-minutes">
         <div className="console-field">
           <label htmlFor={varietyId} className="console-label">
             Variety
@@ -131,15 +156,118 @@ export function LessonMetaForm({
               'estimated_minutes',
               lesson.estimated_minutes,
             )}
+            aria-describedby={`${minutesId}-hint`}
             aria-invalid={field === 'estimated_minutes' || undefined}
           />
+          <p id={`${minutesId}-hint`} className="console-hint">
+            Up to {LIMITS.minutes.max} minutes.
+          </p>
         </div>
       </div>
-      <ActionNotice result={result} success="Lesson details saved." />
+      <ActionNotice result={result} />
       <div className="console-actions">
         <SubmitButton pendingLabel="Saving…">Save details</SubmitButton>
+        <button
+          type="button"
+          className="console-button console-button-quiet"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+        <UnsavedNote dirty={dirty} />
       </div>
     </form>
+  );
+}
+
+/**
+ * "About this lesson": a short summary (objective, variety, length), with
+ * "Edit details" opening the form in its place, as a phrase card does. The
+ * form is out of the way until it is wanted, so the phrases are near the top.
+ */
+export function LessonDetails({
+  lesson,
+  varieties,
+  varietyName,
+  locked,
+}: {
+  lesson: Lesson;
+  varieties: Variety[];
+  varietyName: string;
+  locked: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const section = useRef<HTMLElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const was = useRef(editing);
+  useEffect(() => {
+    if (editing && !was.current)
+      section.current
+        ?.querySelector<HTMLElement>('input:not([type=hidden]), textarea')
+        ?.focus();
+    if (!editing && was.current) trigger.current?.focus();
+    was.current = editing;
+  }, [editing]);
+  return (
+    <section
+      ref={section}
+      className="editor-section"
+      aria-labelledby="details-heading"
+    >
+      <div className="editor-section-head">
+        <h2 id="details-heading">About this lesson</h2>
+        {!locked && !editing && (
+          <button
+            ref={trigger}
+            type="button"
+            className="console-button console-button-outline editor-small-button"
+            aria-expanded={false}
+            onClick={() => {
+              setSaved(false);
+              setEditing(true);
+            }}
+          >
+            Edit details
+          </button>
+        )}
+      </div>
+      {editing ? (
+        <LessonMetaForm
+          lesson={lesson}
+          varieties={varieties}
+          onSaved={() => {
+            setEditing(false);
+            setSaved(true);
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      ) : (
+        <dl className="editor-details">
+          <dt>Objective</dt>
+          <dd>{lesson.objective}</dd>
+          {lesson.subtitle && (
+            <>
+              <dt>Subtitle</dt>
+              <dd>{lesson.subtitle}</dd>
+            </>
+          )}
+          <dt>Variety</dt>
+          <dd>{varietyName}</dd>
+          <dt>Length</dt>
+          <dd>
+            {lesson.estimated_minutes
+              ? `About ${lesson.estimated_minutes} minutes`
+              : 'Not set'}
+          </dd>
+        </dl>
+      )}
+      <div className="editor-result" aria-live="polite">
+        {saved && !editing && (
+          <p className="editor-saved">Lesson details saved.</p>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -162,6 +290,8 @@ function planSummary(counts: Record<GeneratedKind, number>): string {
 /**
  * "Generate exercises": previews the plan the generator makes from the
  * phrases (the same plan the server makes again when saving), then adds it.
+ * The button goes once everything is planned, so focus moves to the
+ * confirmation rather than falling back to the top of the page.
  */
 export function GeneratePanel({
   lessonId,
@@ -175,11 +305,17 @@ export function GeneratePanel({
   const [result, formAction] = useActionState(generateExercises, null);
   const [showPlan, setShowPlan] = useState(false);
   const planId = useId();
+  const resultRef = useRef<HTMLDivElement>(null);
   const plan = planExercises(items, exercises);
   const meaningOf = new Map(items.map((i) => [i.id, i.meaning]));
   const success =
     result?.ok &&
     `Added ${result.data.added} ${result.data.added === 1 ? 'exercise' : 'exercises'}. Check them below; you can edit or reorder any of them.`;
+  useEffect(() => {
+    if (!result) return;
+    const frame = requestAnimationFrame(() => resultRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [result]);
   return (
     <div className="editor-generate">
       <div className="editor-generate-text">
@@ -195,7 +331,7 @@ export function GeneratePanel({
         ) : (
           <p className="editor-muted">
             Adds {planSummary(planCounts(plan))}, with wrong choices from this
-            lesson&apos;s own phrases.
+            lesson’s own phrases.
             {items.length < 3 &&
               ` With 3 or more phrases you get at least ${MIN_EXERCISES}.`}
           </p>
@@ -227,49 +363,84 @@ export function GeneratePanel({
           <li key={e.key}>
             <span className="editor-kind">{EXERCISE_KIND_LABELS[e.kind]}</span>{' '}
             {e.prompt}
-            {e.kind === 'meaning' && (
+            {(e.kind === 'meaning' || e.kind === 'assemble') && (
               <span className="editor-muted"> ({meaningOf.get(e.answer)})</span>
             )}
           </li>
         ))}
       </ol>
-      <ActionNotice result={result} success={success} />
+      <div ref={resultRef} tabIndex={-1} className="editor-generate-result">
+        <ActionNotice result={result} success={success} />
+      </div>
     </div>
   );
 }
 
 /**
- * The lesson's readiness and its review hand-off: Submit for review when it
- * is ready (a confirm first), Withdraw while it waits.
+ * The lesson’s review hand-off, in one panel: the checklist (each problem
+ * under it with a link to the phrase or exercise at fault), what happens
+ * next, Submit for review when it is ready (a confirm first), Withdraw
+ * while it waits, and anything else worth knowing as a quiet footnote.
  */
 export function SubmitPanel({
   lesson,
   checks,
+  problems,
   ready,
   varietyName,
   locked,
 }: {
   lesson: Lesson;
   checks: ReadinessCheck[];
+  /** editorProblems(page): the panel lists those the rows don’t cover. */
+  problems: Problem[];
   ready: boolean;
   varietyName: string;
   locked: boolean;
 }) {
+  const { sent, clearSent } = useLessonStatus();
+  const heading = useRef<HTMLHeadingElement>(null);
   const [withdrawResult, withdrawAction] = useActionState(
-    withdrawSubmission,
+    async (
+      previous: Awaited<ReturnType<typeof withdrawSubmission>> | null,
+      formData: FormData,
+    ) => {
+      const next = await withdrawSubmission(previous, formData);
+      if (next.ok) clearSent();
+      return next;
+    },
     null,
   );
+  const hintId = useId();
   const inReview =
     lesson.submitted_at !== null && lesson.review_status === 'unreviewed';
-  const sentBack =
-    lesson.review_status === 'changes_requested' ||
-    lesson.review_status === 'rejected';
+  const back = sentBack(lesson);
   const copy = handoffCopy(varietyName, lesson.reviewers);
+  const { blocking, notes } = checklistProblems(problems);
+
+  // After Submit (here or in the status strip) the button that had focus is
+  // gone: focus the panel’s heading, where the confirmation now is. After
+  // the confirm dialog has closed and handed focus back.
+  useEffect(() => {
+    if (sent === 0) return;
+    const timer = window.setTimeout(() => heading.current?.focus(), 150);
+    return () => window.clearTimeout(timer);
+  }, [sent]);
+
   return (
-    <section className="editor-panel" aria-labelledby="submit-heading">
-      <h2 id="submit-heading" className="editor-panel-title">
+    <section
+      className="editor-panel editor-review-panel"
+      aria-labelledby="submit-heading"
+    >
+      <h2
+        id="submit-heading"
+        ref={heading}
+        tabIndex={-1}
+        className="editor-panel-title"
+      >
         Review
       </h2>
+      {sent > 0 && inReview && <Notice tone="success">{copy.sent}</Notice>}
       {!locked && (
         <ul className="editor-checks">
           {checks.map((check) => (
@@ -280,28 +451,31 @@ export function SubmitPanel({
               <span className="editor-check-mark" aria-hidden="true">
                 {check.ok ? '✓' : '•'}
               </span>
-              <span>
+              <span className="editor-check-body">
                 <strong>{check.label}</strong>{' '}
                 <span className="editor-visually-hidden">
                   {check.ok ? '(done)' : '(to do)'}
                 </span>
                 <span className="editor-check-detail">{check.detail}</span>
+                {check.key === 'problems' && blocking.length > 0 && (
+                  <ProblemLines problems={blocking} />
+                )}
               </span>
             </li>
           ))}
         </ul>
       )}
-      <p className="editor-panel-text" aria-live="polite">
+      <p className="editor-panel-text">
         {locked
-          ? "This lesson can't be sent for review."
+          ? 'This lesson can’t be sent for review.'
           : inReview
             ? `${copy.waiting} since ${formatDay(lesson.submitted_at)}. You can keep editing: changes go to the reviewer too.`
             : lesson.review_status === 'approved'
               ? 'Approved. Any change to it sends it back to review.'
-              : sentBack && lesson.changed_since_review
+              : back && lesson.changed_since_review
                 ? ready
-                  ? "You've changed it since the review. Send it back when you're ready."
-                  : "You've changed it since the review. Finish the checks, then send it back."
+                  ? 'You’ve changed it since the review. Send it back when you’re ready.'
+                  : 'You’ve changed it since the review. Finish the checks, then send it back.'
                 : lesson.review_status === 'changes_requested'
                   ? 'The reviewer asked for changes. Make them, then send it back.'
                   : lesson.review_status === 'rejected'
@@ -318,65 +492,41 @@ export function SubmitPanel({
           </SubmitButton>
         </form>
       )}
-      {!locked && !inReview && lesson.review_status !== 'approved' && (
-        <SubmitButtonWithConfirm
-          lessonId={lesson.id}
-          ready={ready && (!sentBack || lesson.changed_since_review)}
-          hint={
-            sentBack && !lesson.changed_since_review
-              ? 'Change something the reviewer asked about first.'
-              : 'Finish the checks above first.'
-          }
-          confirm={copy.confirm}
-        />
-      )}
+      {!locked &&
+        !inReview &&
+        lesson.review_status !== 'approved' &&
+        (ready ? (
+          <SubmitForReview
+            lessonId={lesson.id}
+            resend={back}
+            confirm={copy.confirm}
+          />
+        ) : (
+          <div className="editor-submit-off">
+            <button
+              type="button"
+              className="console-button console-button-primary"
+              disabled
+              aria-describedby={hintId}
+            >
+              {back ? 'Send back to reviewer' : 'Submit for review'}
+            </button>
+            <p id={hintId} className="editor-submit-hint">
+              {back && !lesson.changed_since_review
+                ? 'Change something the reviewer asked about first.'
+                : 'Finish the checks above first.'}
+            </p>
+          </div>
+        ))}
       {withdrawResult && !withdrawResult.ok && (
         <ActionNotice result={withdrawResult} />
       )}
+      {!locked && notes.length > 0 && (
+        <div className="editor-panel-notes">
+          <p className="editor-panel-notes-title">Good to know</p>
+          <ProblemLines problems={notes} quiet />
+        </div>
+      )}
     </section>
-  );
-}
-
-function SubmitButtonWithConfirm({
-  lessonId,
-  ready,
-  hint,
-  confirm,
-}: {
-  lessonId: string;
-  ready: boolean;
-  /** Why the button is off, for screen readers. */
-  hint: string;
-  confirm: string;
-}) {
-  const hintId = useId();
-  if (!ready)
-    return (
-      <>
-        <button
-          type="button"
-          className="console-button console-button-primary"
-          disabled
-          aria-describedby={hintId}
-        >
-          Submit for review
-        </button>
-        <p id={hintId} className="editor-visually-hidden">
-          {hint}
-        </p>
-      </>
-    );
-  return (
-    <ConfirmAction
-      action={submitLesson}
-      triggerLabel="Submit for review"
-      triggerTone="primary"
-      title="Send this lesson for review?"
-      description={confirm}
-      confirmLabel="Submit for review"
-      pendingLabel="Sending…"
-      fields={{ lesson_id: lessonId }}
-      successMessage="Sent. It's in the review queue now."
-    />
   );
 }
