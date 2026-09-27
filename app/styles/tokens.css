@@ -38,5 +38,13 @@
   --pink: #ff9fba;
   --mint: #c4efcd;
   --radius: 1rem;
+  /* Secondary text on paper, white and the course tints: at least 4.5:1 on
+     #fff, #fffcf7, #ede5f7 and the Pashto and Urdu tints. Other partials
+     read it as var(--text-muted, #6b5a7b), so their order does not matter. */
+  --text-muted: #6b5a7b;
+  /* Running text grows a little with the viewport and never drops below the
+     phone size, so a laptop never shows smaller copy than a phone. */
+  --text-body: clamp(15px, 0.6vw + 10px, 18px);
+  --text-small: clamp(14px, 0.3vw + 12px, 15px);
   color-scheme: light;
 }
