@@ -100,6 +100,7 @@ export function ReleaseHistory({
   action: RollbackAction;
 }) {
   const [outcome, setOutcome] = useState<PublishOutcome | null>(null);
+  const outcomeId = useId();
   if (releases.length === 0)
     return (
       <EmptyState title="Nothing has been published yet">
@@ -135,14 +136,24 @@ export function ReleaseHistory({
       align: 'end',
       cell: (row) =>
         canGoBack(row) ? (
-          <RollbackButton row={row} action={action} onDone={setOutcome} />
+          <RollbackButton
+            row={row}
+            action={action}
+            onDone={setOutcome}
+            focusAfter={outcomeId}
+          />
         ) : (
           <span className="publish-muted">—</span>
         ),
     });
   return (
     <div className="publish-history">
-      <div aria-live="polite" className="publish-outcome">
+      <div
+        id={outcomeId}
+        tabIndex={-1}
+        aria-live="polite"
+        className="publish-outcome"
+      >
         {outcome && <ReleaseOutcome key={outcome.name} outcome={outcome} />}
       </div>
       <DataTable rows={releases} rowKey={(row) => row.name} columns={columns} />
@@ -154,10 +165,13 @@ function RollbackButton({
   row,
   action,
   onDone,
+  focusAfter,
 }: {
   row: HistoryRow;
   action: RollbackAction;
   onDone: (outcome: PublishOutcome) => void;
+  /** Where focus goes once this row's button has left the table. */
+  focusAfter: string;
 }) {
   const reasonId = useId();
   const hintId = useId();
@@ -183,6 +197,7 @@ function RollbackButton({
       pendingLabel="Going back…"
       tone="danger"
       fields={{ release: row.name }}
+      focusAfter={focusAfter}
       onSuccess={onDone}
     >
       <div className="console-field">

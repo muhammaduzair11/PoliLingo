@@ -131,7 +131,8 @@ const FIXTURE = {
 
 test('the honest line shows the reviewed count against the target', () => {
   assert.equal(reviewedLine(0, 250), '0 of 250 reviewed phrases');
-  assert.equal(reviewedLine(1, 250), '1 of 250 reviewed phrase');
+  assert.equal(reviewedLine(1, 250), '1 of 250 reviewed phrases');
+  assert.equal(reviewedLine(1, 0), '1 reviewed phrase');
   assert.equal(reviewedLine(5, 250), '5 of 250 reviewed phrases');
   assert.equal(reviewedLine(1234, 250), '1,234 reviewed phrases');
   assert.equal(reviewedLine(Number.NaN, 250), '0 of 250 reviewed phrases');

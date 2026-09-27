@@ -216,3 +216,10 @@
     margin: 10px 0;
   }
 }
+/* A short phone (a 664px-tall screen): on the goal step the banner makes way,
+   so the first choice is in view above the sticky button. Step 1 keeps it. */
+@media (max-width: 580px) and (max-height: 700px) {
+  .onboarding-page[data-step='2'] .onboard-art {
+    display: none;
+  }
+}

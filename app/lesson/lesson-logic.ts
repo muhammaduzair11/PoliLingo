@@ -28,16 +28,22 @@ export function isRotation<T>(order: T[], base: T[]): boolean {
   return false;
 }
 
-/** The first seeded order `bad` accepts, or the plain seeded order when none is. */
+/**
+ * The first seeded order `bad` does not refuse. When every one is refused,
+ * the first one `fallback` (a looser test) accepts, or else the plain
+ * seeded order.
+ */
 function seededOrder<T>(
   list: T[],
   seed: string,
   bad: (order: T[]) => boolean,
+  fallback?: (order: T[]) => boolean,
 ): T[] {
   for (let n = 0; n < TRIES; n++) {
     const order = shuffled(list, n ? `${seed}~${n}` : seed);
     if (!bad(order)) return order;
   }
+  if (fallback) return seededOrder(list, seed, fallback);
   return shuffled(list, seed);
 }
 
@@ -104,9 +110,20 @@ export function spellsAnswer(words: string[], answer: string[]): boolean {
 }
 
 /**
+ * Whether any two of the answer's words sit side by side in the answer's
+ * order: "is Sara" in "My fine is Sara am name" starts the answer off.
+ */
+export function pairsAnswer(words: string[], answer: string[]): boolean {
+  for (let i = 0; i + 1 < answer.length; i++)
+    if (spellsAnswer(words, answer.slice(i, i + 2))) return true;
+  return false;
+}
+
+/**
  * The word bank's order, as indexes into `bank`, whose first `answerLength`
- * words are the answer. It never shows the answer's words side by side in
- * the answer's order, and never repeats an earlier attempt's order.
+ * words are the answer. No two of the answer's words sit side by side in
+ * the answer's order (or, when no order manages that, at least not the
+ * whole answer), and no earlier attempt's order comes back.
  */
 export function bankOrder(
   bank: string[],
@@ -115,17 +132,16 @@ export function bankOrder(
 ): number[] {
   const answer = bank.slice(0, answerLength);
   const indexes = bank.map((_, i) => i);
+  const words = (o: number[]) => o.map((i) => bank[i]);
   const shown: number[][] = [];
+  const repeats = (o: number[]) => shown.some((s) => sameOrder(s, o));
   for (const seed of seeds)
     shown.push(
       seededOrder(
         indexes,
         seed,
-        (o) =>
-          spellsAnswer(
-            o.map((i) => bank[i]),
-            answer,
-          ) || shown.some((s) => sameOrder(s, o)),
+        (o) => pairsAnswer(words(o), answer) || repeats(o),
+        (o) => spellsAnswer(words(o), answer) || repeats(o),
       ),
     );
   return shown[shown.length - 1];
@@ -148,17 +164,48 @@ export function givesAway(text: string, phrase: Phrase): boolean {
   });
 }
 
+/** The Arabic-script words in `text`. */
+function scriptWords(text: string): string[] {
+  return [...text.matchAll(SCRIPT_RUN)].flatMap((m) =>
+    m[0].split(/[\s‌‍]+/).filter(Boolean),
+  );
+}
+
+/**
+ * Whether `text` names a word that only the right choice's script has, when
+ * the choices are shown in script: "ښه is read here…" points straight at
+ * زه ښه یم. A word every choice shares, or one of a wrong choice's, is fair.
+ */
+export function pointsAtAnswer(text: string, exercise: Exercise): boolean {
+  if (exercise.kind === 'meaning') return false;
+  const said = scriptWords(text);
+  if (said.length === 0) return false;
+  const answer = new Set(scriptWords(exercise.phrase.native));
+  const elsewhere = new Set(
+    exercise.options
+      .filter((p) => p.id !== exercise.phrase.id)
+      .flatMap((p) => scriptWords(p.native)),
+  );
+  return said.some((w) => answer.has(w) && !elsewhere.has(w));
+}
+
 /**
  * What "A little hint?" says for a choice exercise: the phrase's situation
- * or its usage note, whichever comes first and does not say the answer. A
- * context exercise already sets the scene, so only its note is used. Empty
- * when neither will do; Poli then crosses out a wrong choice instead.
+ * or its usage note, whichever comes first and neither says the answer nor
+ * names a word only the answer has. A context exercise already sets the
+ * scene, so only its note is used. Empty when neither will do; Poli then
+ * crosses out a wrong choice instead.
  */
 export function hintNudge(exercise: Exercise): string {
   const { context, note } = exercise.phrase;
   const candidates = exercise.kind === 'context' ? [note] : [context, note];
   return (
-    candidates.find((c) => c.trim() && !givesAway(c, exercise.phrase)) ?? ''
+    candidates.find(
+      (c) =>
+        c.trim() &&
+        !givesAway(c, exercise.phrase) &&
+        !pointsAtAnswer(c, exercise),
+    ) ?? ''
   );
 }
 

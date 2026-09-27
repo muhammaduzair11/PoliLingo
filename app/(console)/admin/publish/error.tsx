@@ -18,7 +18,7 @@ export default function PublishError({
       <PageHeader eyebrow="Admin" title="Publish" />
       <Notice
         tone="error"
-        title="We couldn't open Publish"
+        title="We couldn’t open Publish"
         code={error.digest ?? null}
       >
         <p>Nothing was published or changed. Please try again.</p>

@@ -523,8 +523,10 @@ select.signin-input {
 }
 /* A 44px tall hit area that leaves the line height alone. */
 .signin-foot a {
+  display: inline-block;
   padding: 12px 2px;
   margin: -12px -2px;
+  line-height: 20px;
 }
 /* Step 2's way back to the age question. */
 .signin-change {
@@ -1105,14 +1107,18 @@ select.signin-input {
 /* A short laptop screen (a projector at 1280x720): a mouse, not a thumb, so
    the small links can be less tall, and all of step 2 fits with no scroll. */
 @media (max-height: 760px) and (min-width: 581px) {
+  /* Still 44px to hit, but they take 36px and 32px of the height. */
   .auth-back {
-    min-height: 36px;
+    margin-top: -4px;
+    margin-bottom: -4px;
   }
   .auth-main {
     padding-bottom: 8px;
   }
+  /* More above than below, so the page's last 4px hold the rest. */
   .auth-foot a {
-    min-height: 32px;
+    margin-top: -8px;
+    margin-bottom: -4px;
   }
   .poli-says-art {
     width: 56px;

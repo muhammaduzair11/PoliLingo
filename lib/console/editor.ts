@@ -1282,13 +1282,23 @@ const DAY_FORMAT = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'UTC',
 });
 
-/** "26 September 2026" for an ISO date or timestamp (UTC), or '' when unreadable. */
+// Pakistan Standard Time is UTC+5 all year, so a timestamp moved on five
+// hours and read in UTC is the day it was in Pakistan, where the team
+// works (as the admin pages show it).
+const PKT_OFFSET_MS = 5 * 60 * 60 * 1000;
+
+/**
+ * "26 September 2026" for an ISO date as it stands, or for a timestamp the
+ * day it was in Pakistan; '' when unreadable.
+ */
 export function formatDay(iso: string | null | undefined): string {
   if (!iso) return '';
-  const date = new Date(
-    /^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T00:00:00Z` : iso,
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(iso);
+  const date = new Date(dateOnly ? `${iso}T00:00:00Z` : iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return DAY_FORMAT.format(
+    dateOnly ? date : new Date(date.getTime() + PKT_OFFSET_MS),
   );
-  return Number.isNaN(date.getTime()) ? '' : DAY_FORMAT.format(date);
 }
 
 /** Lesson rows that a child’s change writes too (its fingerprint follows them). */

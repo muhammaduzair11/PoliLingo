@@ -806,7 +806,9 @@ test('gates and locks', () => {
 
 test('dates read as words; lesson rows that only echo a child change are left out', () => {
   assert.equal(formatDay('2026-12-11'), '11 December 2026');
-  assert.equal(formatDay('2026-09-26T23:30:00Z'), '26 September 2026');
+  // A timestamp is the day it was in Pakistan (UTC+5), as the admin sees it.
+  assert.equal(formatDay('2026-09-26T18:30:00Z'), '26 September 2026');
+  assert.equal(formatDay('2026-09-26T19:30:00Z'), '27 September 2026');
   assert.equal(formatDay(null), '');
   assert.equal(formatDay('not a date'), '');
   const row = (object_type, reason, at) => ({

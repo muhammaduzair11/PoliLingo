@@ -317,7 +317,7 @@ export function PublishScreen({
       <Section
         id="publish-countersign"
         title="Waiting for a countersign"
-        description="Approvals from a variety's only reviewer go live once an admin confirms them."
+        description="Approvals from a variety’s only reviewer go live once an admin confirms them."
       >
         <CountersignQueue
           rows={countersignRows}

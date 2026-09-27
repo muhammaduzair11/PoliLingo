@@ -935,3 +935,23 @@
     display: none;
   }
 }
+/* A narrow phone (360-400px): at the middle stop Poli stands beside the
+   label, so there Poli is a little smaller and the gaps a little tighter,
+   and "You, in a new language" and "4 playful exercises" keep whole lines. */
+@media (max-width: 400px) {
+  .stop-1.next-stop {
+    gap: 11px;
+  }
+  .stop-1.next-stop .stop-label {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  .stop-1 .map-poli {
+    width: 54px;
+    margin-left: -10px;
+  }
+  .stop-1 .map-poli img {
+    width: 54px;
+    height: 62px;
+  }
+}

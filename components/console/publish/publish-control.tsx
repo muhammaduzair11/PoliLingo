@@ -61,6 +61,7 @@ export function PublishControl({
   ) => Promise<ActionResult<PublishOutcome>>;
 }) {
   const noteId = useId();
+  const outcomeId = useId();
   const [outcome, setOutcome] = useState<PublishOutcome | null>(null);
   const [stale, setStale] = useState<StaleRefusal | null>(null);
 
@@ -99,6 +100,9 @@ export function PublishControl({
           confirmLabel="Publish now"
           pendingLabel="Publishing…"
           fields={{ expected_hash: contentHash }}
+          // The button leaves once the page says "up to date", so focus
+          // goes to what came of it.
+          focusAfter={outcomeId}
           onSuccess={setOutcome}
         >
           <div className="console-field">
@@ -136,7 +140,12 @@ export function PublishControl({
           Nothing was changed. Please tell the team.
         </Notice>
       )}
-      <div aria-live="polite" className="publish-outcome">
+      <div
+        id={outcomeId}
+        tabIndex={-1}
+        aria-live="polite"
+        className="publish-outcome"
+      >
         {stale && <StaleNotice refusal={stale} />}
         {outcome && <ReleaseOutcome key={outcome.name} outcome={outcome} />}
       </div>

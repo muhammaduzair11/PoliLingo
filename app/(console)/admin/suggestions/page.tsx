@@ -96,7 +96,7 @@ export default async function AdminSuggestionsPage() {
       <PageHeader
         eyebrow="Admin"
         title="Suggested fixes"
-        description="Reviewers suggest fixes to phrases they can't approve as written. Accepting one applies it word for word and sends the phrase back for another reviewer to approve."
+        description="Reviewers suggest fixes to phrases they can’t approve as written. Accepting one applies it word for word and sends the phrase back for another reviewer to approve."
       />
 
       <OutcomeProvider>

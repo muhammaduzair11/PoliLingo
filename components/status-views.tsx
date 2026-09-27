@@ -8,12 +8,13 @@ import { useLearning } from './learning-provider';
 import { Header } from './site-chrome';
 /**
  * While stored progress loads. The header is the one the page will have, so
- * nothing above the content moves when it arrives.
+ * nothing above the content moves when it arrives. A lesson has no site
+ * header (it has its own bar), so it asks for none.
  */
-export function Loading() {
+export function Loading({ header = true }: { header?: boolean }) {
   return (
     <>
-      <Header />
+      {header && <Header />}
       <main id="main-content" className="loading-page" aria-busy="true">
         <div className="loading-mark">
           <Mountain size={42} />

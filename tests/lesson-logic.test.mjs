@@ -14,6 +14,8 @@ import {
   hintNudge,
   isRotation,
   matchOrders,
+  pairsAnswer,
+  pointsAtAnswer,
   scriptRuns,
   spellsAnswer,
   typeset,
@@ -109,6 +111,12 @@ test('the word bank never spells the answer, and changes on a second try', () =>
   );
   // One word is never "in order" in a way that gives anything away.
   assert.ok(!spellsAnswer(['Help'], ['Help']));
+  // Nor may two of the answer's words start it off side by side.
+  const sara = ['My', 'name', 'is', 'Sara'];
+  assert.ok(pairsAnswer(['My', 'fine', 'is', 'Sara', 'am', 'name'], sara));
+  assert.ok(pairsAnswer(['Sara', 'My', 'name', 'fine'], sara));
+  assert.ok(!pairsAnswer(['Sara', 'is', 'name', 'My'], sara));
+  assert.ok(!pairsAnswer(['name', 'am', 'My', 'Sara', 'fine', 'is'], sara));
   for (const ex of exercises.filter((e) => e.kind === 'assemble')) {
     const answer = ex.phrase.meaning.split(' ');
     const bank = [...answer, ...ex.tiles];
@@ -129,7 +137,7 @@ test('the word bank never spells the answer, and changes on a second try', () =>
           bank.map((_, i) => i),
         );
         assert.ok(
-          !spellsAnswer(
+          !pairsAnswer(
             order.map((i) => bank[i]),
             answer,
           ),
@@ -150,12 +158,33 @@ test('a hint never says the answer; without safe words, Poli crosses out a wrong
   assert.ok(givesAway('Ask “how are you” kindly.', phrase));
   assert.ok(givesAway('Say tsanga ye to a friend.', phrase));
   assert.ok(!givesAway('Ask a friend how they are.', phrase));
+  // A word only the right choice has points at it; shared words do not.
+  const fine = { id: 'a', native: 'زه ښه یم' };
+  const context = {
+    kind: 'context',
+    phrase: fine,
+    options: [
+      fine,
+      { id: 'b', native: 'زه د پاکستان یم' },
+      { id: 'c', native: 'مننه' },
+    ],
+  };
+  assert.ok(pointsAtAnswer('ښه is read here with the Northern “kh”.', context));
+  assert.ok(
+    !pointsAtAnswer('زه is “I”, as in any sentence about you.', context),
+  );
+  assert.ok(!pointsAtAnswer('Answer the question kindly.', context));
+  // Where the phrase is the question, naming its words is fair.
+  assert.ok(
+    !pointsAtAnswer('ښه is read “kh”.', { ...context, kind: 'meaning' }),
+  );
   for (const ex of exercises.filter((e) =>
     ['meaning', 'translation', 'context'].includes(e.kind),
   )) {
     const nudge = hintNudge(ex);
     if (nudge) {
       assert.ok(!givesAway(nudge, ex.phrase), ex.id);
+      assert.ok(!pointsAtAnswer(nudge, ex), ex.id);
       assert.ok(!/source/i.test(nudge), ex.id);
     } else {
       const crossed = crossedOut(ex, `${ex.id}:run:0`);

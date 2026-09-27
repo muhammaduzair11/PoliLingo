@@ -343,6 +343,10 @@
 .review-preview-card .native-preview-meaning {
   font-size: 16px;
 }
+/* As dark as the lesson's own (lesson.css), for 4.5:1 on white. */
+.review-preview-card .phrase .roman {
+  color: var(--text-muted, #6b5a7b);
+}
 .review-preview-note {
   margin: 0;
   padding: 10px 14px;

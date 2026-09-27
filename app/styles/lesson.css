@@ -169,9 +169,22 @@
 .prompt-bubble .phrase-large .native {
   font-size: 36px;
   line-height: 1.45;
+  text-wrap: balance;
 }
 .prompt-bubble .phrase-large .roman {
   font-size: 15px;
+}
+/* Native-script answers side by side: a long phrase ("میرا تعلق پاکستان سے
+   ہے") stays on one line, so the cards in a row keep one height. Phones
+   stack them full width (responsive-580.css). */
+@media (min-width: 581px) {
+  .lesson-page .answer-options--native .answer-option {
+    padding-left: 36px;
+    padding-right: 36px;
+  }
+  .lesson-page .answer-options--native .native {
+    font-size: 25px;
+  }
 }
 /* A laptop or projector: shorter, so Poli is too. */
 @media (max-height: 780px) {
@@ -350,7 +363,9 @@
   border-style: dashed;
   box-shadow: 0 3px 0 #f0d78a;
 }
-.match-column .answer-option.match-wrong {
+/* Also while the tapped card is still hovered, which a tap leaves it. */
+.match-column .answer-option.match-wrong,
+.match-column .answer-option.match-wrong:hover {
   background: #ffe9d6;
   border-color: #d9822b;
   box-shadow: 0 3px 0 #eab88a;
@@ -864,6 +879,16 @@
   .lesson-page .lesson-mascot-row .poli {
     width: 68px;
     height: 72px;
+  }
+  /* A long phrase in the bubble fits beside Poli on one line (or balances
+     over two), so the row stays about as tall as Poli. */
+  .lesson-page .prompt-bubble .phrase-large .native {
+    font-size: clamp(22px, 6.4vw, 28px);
+  }
+  /* The eyebrow keeps to one line: the language and the kind of question.
+     The lesson's name is on the map the learner came from. */
+  .lesson-page .lesson-label-title {
+    display: none;
   }
 }
 /* A short phone: Poli a little smaller again. */

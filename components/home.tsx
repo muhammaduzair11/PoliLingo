@@ -184,7 +184,8 @@ export function Home() {
                   <Art
                     name={course.image}
                     alt={`${course.name} miniature adventure world`}
-                    sizes="(min-width: 1024px) 36vw, (min-width: 640px) 55vw, 100vw"
+                    // A phone card's world is 116px square (responsive-580.css).
+                    sizes="(min-width: 1024px) 36vw, (min-width: 640px) 55vw, (min-width: 581px) 100vw, 120px"
                   />
                   <span className="world-spark" aria-hidden="true">
                     ✦

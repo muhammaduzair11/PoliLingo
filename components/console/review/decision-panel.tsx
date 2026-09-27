@@ -174,7 +174,7 @@ function ApproveDialog({
           action={formAction}
           className="console-dialog-form review-approve-form"
         >
-          <AlertDialogHeader>
+          <AlertDialogHeader className="console-dialog-header">
             <AlertDialogTitle>Approve this {what}?</AlertDialogTitle>
             <AlertDialogDescription>
               {targetType === 'item'
@@ -216,8 +216,10 @@ function ApproveDialog({
               </Notice>
             )}
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="console-dialog-footer">
+            <AlertDialogCancel className="console-button console-button-outline">
+              Cancel
+            </AlertDialogCancel>
             <SubmitButton
               pendingLabel="Approving…"
               disabled={!complete}

@@ -316,8 +316,8 @@ export function LessonPlayer({
     return () => clearTimeout(timer);
   }, [boardComplete]);
   if (!course) return <NotFoundView />;
-  if (!lesson) return <Loading />;
-  if (!ready || !initialized) return <Loading />;
+  if (!lesson) return <Loading header={false} />;
+  if (!ready || !initialized) return <Loading header={false} />;
   if (!unlocked(state, course.id, lesson.id)) {
     const previous =
       course.lessons[course.lessons.findIndex((l) => l.id === lesson.id) - 1];
@@ -337,7 +337,7 @@ export function LessonPlayer({
       </main>
     );
   }
-  if (!session || !exercise) return <Loading />;
+  if (!session || !exercise) return <Loading header={false} />;
   // The lesson's own exercise count, recorded when the session began. The
   // first pass is exercises 0..size-1; anything after that is a retry.
   // A finished run is kept even when the release has since changed the
@@ -813,7 +813,11 @@ export function LessonPlayer({
       <section className={`lesson-shell lesson-kind-${exercise.kind}`}>
         <div className="lesson-label">
           <span>
-            {course.name.toUpperCase()} · {lesson.title.toUpperCase()}
+            {course.name.toUpperCase()}
+            <span className="lesson-label-title">
+              {' '}
+              · {lesson.title.toUpperCase()}
+            </span>
           </span>
           <span>
             {retrying ? 'A LITTLE SECOND TRY' : EYEBROW[exercise.kind]}
@@ -1019,8 +1023,11 @@ export function LessonPlayer({
                 `It starts with “${bank[0]}”.`
               ) : nudge ? (
                 <ScriptText text={nudge} course={course} />
-              ) : (
+              ) : crossable ? (
                 'Poli crossed one out. One fewer to choose from.'
+              ) : (
+                // Only one wrong choice: crossing it out would give it away.
+                'Read each one slowly. Which one fits?'
               )}
             </p>
           </details>

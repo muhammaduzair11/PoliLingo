@@ -233,12 +233,14 @@
   font-size: 17px;
   letter-spacing: -0.02em;
   max-width: 190px;
+  text-wrap: balance;
 }
 .stop-label p {
   font-size: var(--text-small);
   color: var(--text-muted);
   margin-top: 4px;
   line-height: 1.4;
+  text-wrap: balance;
 }
 .start-here {
   font-size: 12px;
@@ -272,12 +274,36 @@
   flex-shrink: 0;
   margin-left: -8px;
 }
-/* Beside the cup, standing on the same line, clear of the words under it. */
+/* Once the badge is earned, Poli stands in the trophy's own row, left of
+   the cup, with the badge line below them both: in the flow, so neither
+   can reach the last stop or cover the words. The cup stays centred under
+   the path. The badge line says what the speech tag would. */
+.path-trophy.earned {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 8px;
+}
+.path-trophy.earned > svg {
+  grid-column: 2;
+  grid-row: 1;
+}
+.path-trophy.earned > span {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  text-align: center;
+  text-wrap: balance;
+}
 .path-trophy .map-poli {
-  right: calc(50% + 30px);
-  top: auto;
-  bottom: calc(100% - 42px);
+  position: static;
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: end;
   translate: none;
+}
+.path-trophy .map-poli > span {
+  display: none;
 }
 .map-poli img {
   width: 96px;

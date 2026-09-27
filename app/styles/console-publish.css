@@ -115,6 +115,10 @@
 .publish-outcome:empty {
   display: none;
 }
+/* It takes focus after a publish or a go back, whose button has gone. */
+.publish-outcome:focus {
+  outline: none;
+}
 .publish-optional {
   font-weight: 400;
   color: var(--muted-foreground);

@@ -42,7 +42,10 @@ export function EditorLoadError({
         tone={error.code === 'PL404_NOT_FOUND' ? 'info' : 'error'}
         code={error.code}
       >
-        {error.message}
+        {/* The database's own sentence would only repeat the title. */}
+        {error.code === 'PL404_NOT_FOUND'
+          ? 'The link may be incomplete or out of date.'
+          : error.message}
       </Notice>
       <p className="console-actions">
         {retry && (

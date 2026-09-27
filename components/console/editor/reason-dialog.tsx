@@ -83,7 +83,7 @@ function ReasonDialog({
       </AlertDialogTrigger>
       <AlertDialogContent className="console-dialog">
         <form action={formAction} className="console-dialog-form">
-          <AlertDialogHeader>
+          <AlertDialogHeader className="console-dialog-header">
             <AlertDialogTitle>{title}</AlertDialogTitle>
             <AlertDialogDescription>{description}</AlertDialogDescription>
           </AlertDialogHeader>
@@ -112,8 +112,10 @@ function ReasonDialog({
               {result.message}
             </Notice>
           )}
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="console-dialog-footer">
+            <AlertDialogCancel className="console-button console-button-outline">
+              Cancel
+            </AlertDialogCancel>
             <SubmitButton
               tone={tone === 'danger' ? 'danger' : 'primary'}
               pendingLabel={pendingLabel}
@@ -228,7 +230,7 @@ export function RetireBlocked({
           className="console-dialog editor-in-use-dialog"
           finalFocus={() => target.current === null}
         >
-          <AlertDialogHeader>
+          <AlertDialogHeader className="console-dialog-header">
             <AlertDialogTitle>
               {what.charAt(0).toUpperCase() + what.slice(1)} is still in use
             </AlertDialogTitle>
@@ -266,8 +268,10 @@ export function RetireBlocked({
               </li>
             ))}
           </ul>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Close</AlertDialogCancel>
+          <AlertDialogFooter className="console-dialog-footer">
+            <AlertDialogCancel className="console-button console-button-outline">
+              Close
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

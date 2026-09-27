@@ -32,7 +32,7 @@ export function Onboarding({ courseId }: { courseId: string }) {
   return (
     <>
       <Header />
-      <main id="main-content" className="onboarding-page">
+      <main id="main-content" className="onboarding-page" data-step={step}>
         <div className="onboard-art" style={{ background: course.color }}>
           <span className="eyebrow">YOUR NEXT CHAPTER</span>
           {/* A poster title, not a heading: the page's h1 comes first. */}

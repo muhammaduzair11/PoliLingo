@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import {
   formatDay,
+  formatPktDay,
   inviteHeadline,
   roleDuties,
   roleLabel,
@@ -77,7 +78,8 @@ export function InvitationCard({
         </div>
         <div>
           <dt>Link expires</dt>
-          <dd>{formatDay(invitation.expires_at)}</dd>
+          {/* In Pakistan time, as the admin who sent it sees it. */}
+          <dd>{formatPktDay(invitation.expires_at)}</dd>
         </div>
         {invitation.grant_ends_at && (
           <div>

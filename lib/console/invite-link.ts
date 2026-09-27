@@ -268,7 +268,7 @@ export function inviteMessage({
       : scope.role === 'editor'
         ? `to write ${scope.language_name ? `${scope.language_name} ` : ''}lessons on PoliLingo`
         : 'to help run PoliLingo';
-  const until = formatDay(expiresAt);
+  const until = formatPktDay(expiresAt);
   const address = email?.trim() || 'the email address this was sent to';
   return [
     `${hello} You’re invited ${what}.`,

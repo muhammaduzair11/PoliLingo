@@ -115,10 +115,23 @@ export function useRetiredFocus<T extends { id: string }>(list: readonly T[]) {
     const frame = requestAnimationFrame(() => {
       const root = listRef.current;
       const edits = root?.querySelectorAll<HTMLElement>('[data-card-edit]');
+      const add = root?.querySelector<HTMLButtonElement>(
+        '.editor-disclosure > button',
+      );
+      // The last card gone: the add button, or, while its form is open (the
+      // button is hidden then), the form's first field, or else the
+      // section's heading.
       const next =
         edits && edits.length > 0
           ? edits[Math.min(retired.index, edits.length - 1)]
-          : root?.querySelector<HTMLElement>('.editor-disclosure > button');
+          : add && !add.hidden
+            ? add
+            : (root
+                ?.querySelector('.editor-disclosure-panel:not([hidden])')
+                ?.querySelector<HTMLElement>(FIELD) ??
+              root
+                ?.closest('section')
+                ?.querySelector<HTMLElement>('h2[tabindex="-1"]'));
       next?.focus();
       setFocused(retired.id);
     });

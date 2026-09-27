@@ -162,10 +162,12 @@ export function formatCount(n: number): string {
 export function reviewedLine(reviewed: number, min: number): string {
   const n =
     Number.isFinite(reviewed) && reviewed > 0 ? Math.trunc(reviewed) : 0;
-  const noun = n === 1 ? 'reviewed phrase' : 'reviewed phrases';
+  const noun = (count: number) =>
+    count === 1 ? 'reviewed phrase' : 'reviewed phrases';
+  // "1 of 250 reviewed phrases": there, the noun counts the target.
   return min > 0 && n < min
-    ? `${formatCount(n)} of ${formatCount(min)} ${noun}`
-    : `${formatCount(n)} ${noun}`;
+    ? `${formatCount(n)} of ${formatCount(min)} ${noun(min)}`
+    : `${formatCount(n)} ${noun(n)}`;
 }
 
 /** Reviewed phrases as a share of the lower target, between 0 and 1. */

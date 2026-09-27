@@ -911,6 +911,11 @@ select.console-input {
   display: flex;
   gap: 8px;
 }
+/* "Copy link" on one line; the link field gives way instead. */
+.invite-link-row .console-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 .invite-link-input {
   flex: 1 1 auto;
   min-width: 0;
