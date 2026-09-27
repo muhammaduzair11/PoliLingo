@@ -873,7 +873,7 @@
     gap: 16px;
     margin-bottom: 22px;
   }
-  .study-intro > .poli {
+  .study-intro .poli {
     width: 90px;
     height: 120px;
   }
@@ -896,7 +896,7 @@
   .resume-card p {
     font-size: 14px;
   }
-  .resume-card > .poli {
+  .resume-card .poli {
     width: 180px;
     height: 190px;
   }
