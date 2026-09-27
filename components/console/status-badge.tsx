@@ -19,7 +19,7 @@ export const STATUS_LABELS: Record<ContentStatus, string> = {
   live: 'Live',
   gated: 'Gated',
   retired: 'Retired',
-  demo: 'Demo',
+  demo: 'Starter',
   sole_reviewer: 'Needs countersign',
 };
 

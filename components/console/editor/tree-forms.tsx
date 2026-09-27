@@ -289,7 +289,7 @@ export function DemoSunsetForm({
         onOpenChange={setOpen}
       >
         <form action={formAction} className="console-form editor-inline-form">
-          <p className="editor-form-title">Demo lessons in {languageName}</p>
+          <p className="editor-form-title">Starter lessons in {languageName}</p>
           <input type="hidden" name="language" value={language} />
           <div className="console-field">
             <label htmlFor={dateId} className="console-label">

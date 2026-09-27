@@ -13,7 +13,7 @@ import { CountersignButton } from '@/components/console/review/small-actions';
 import { StanceNotice } from '@/components/console/review/stance-notice';
 import { OutcomeProvider } from '@/components/console/review/outcome';
 import { SuggestFix } from '@/components/console/review/suggest-fix';
-import { requireRole } from '@/lib/console/access';
+import { hasRole, requireRole } from '@/lib/console/access';
 import {
   reviewItemPath,
   reviewLessonPath,
@@ -23,6 +23,7 @@ import {
   approvalStance,
   awaitingCountersign,
   badgeFor,
+  ownCurrentApproval,
   type ItemPage,
 } from '@/lib/console/review';
 import { callRpc } from '@/lib/rpc';
@@ -46,6 +47,9 @@ export default async function ReviewItemPage({
   const { id } = await params;
   const gate = await requireRole('staff');
   if (!gate.ok) return gate.view;
+  // The queue is a reviewer's page: an editor or admin reading a phrase
+  // here would follow the breadcrumb to a page that is not open to them.
+  const reviewer = hasRole(gate.context, 'reviewer');
 
   const result = await callRpc<ItemPage>(
     await serverSupabase(),
@@ -72,6 +76,11 @@ export default async function ReviewItemPage({
   const myPendingApproval =
     pendingCountersign !== null &&
     pendingCountersign.reviewer_id === viewer.contributor_id;
+  const myApproval = ownCurrentApproval(
+    page.decisions,
+    viewer,
+    item.review_fingerprint,
+  );
   const stance = approvalStance({
     viewer,
     is_demo: item.is_demo,
@@ -98,8 +107,12 @@ export default async function ReviewItemPage({
   return (
     <div className="review-page">
       <nav className="review-breadcrumb" aria-label="Breadcrumb">
-        <Link href={reviewQueuePath()}>Queue</Link>
-        <span aria-hidden="true">/</span>
+        {reviewer && (
+          <>
+            <Link href={reviewQueuePath()}>Queue</Link>
+            <span aria-hidden="true">/</span>
+          </>
+        )}
         <Link href={reviewLessonPath(lesson.id)}>{lesson.title}</Link>
         <span aria-hidden="true">/</span>
         <span aria-current="page">Phrase {item.position ?? ''}</span>
@@ -204,6 +217,11 @@ export default async function ReviewItemPage({
                     : undefined
                 }
                 approveBlockedTitle="Already approved"
+                approvedRevision={
+                  myApproval && !myPendingApproval
+                    ? (myApproval.target_revision_no ?? item.revision_no)
+                    : null
+                }
                 varietyName={variety.name}
                 seen={seen}
                 lang={lang}

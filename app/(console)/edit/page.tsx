@@ -152,8 +152,8 @@ function LanguageSection({
       {language.demo_period && hasDemo && (
         <div className="editor-demo-note">
           <p>
-            <StatusBadge status="demo" /> Demo lessons are starter content:
-            read-only, never reviewed, and replaced by reviewed lessons.
+            <StatusBadge status="demo" /> Lessons with this badge are read-only,
+            never reviewed, and replaced by reviewed lessons.
             {language.demo_period.live
               ? ` They stay live until ${formatDay(language.demo_period.sunset)}.`
               : ' They are never shown to learners.'}
@@ -171,10 +171,18 @@ function LanguageSection({
 
       {language.courses.length === 0 ? (
         <EmptyState title={`No ${language.name} courses yet`}>
-          <p>
-            Courses come from the curriculum. Ask an admin to add one, then you
-            can write its units and lessons here.
-          </p>
+          {isAdmin ? (
+            // "Ask an admin" is no help to the admin reading it.
+            <p>
+              Courses are added from the curriculum repository for now. Creating
+              courses in the app is next on the roadmap.
+            </p>
+          ) : (
+            <p>
+              Courses come from the curriculum. Ask an admin to add one, then
+              you can write its units and lessons here.
+            </p>
+          )}
         </EmptyState>
       ) : (
         language.courses.map((course) => (

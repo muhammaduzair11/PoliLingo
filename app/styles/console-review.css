@@ -140,6 +140,10 @@
 .review-phrase {
   display: inline-flex;
   flex-direction: column;
+  /* Native text is right-to-left: stretched, it would sit at the far edge,
+     away from its romanisation and meaning. Each line takes its own width
+     so all three share one edge. */
+  align-items: flex-start;
   gap: 1px;
   min-width: 0;
 }

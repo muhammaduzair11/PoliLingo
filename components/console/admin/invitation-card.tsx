@@ -111,7 +111,7 @@ export function InvitationProblem({
       </h1>
       <p className="invite-lead">{refusal.message}</p>
       <p className="invite-next">{refusal.next}</p>
-      {code && <small className="console-notice-code">Code: {code}</small>}
+      {code && <small className="console-notice-code">Reference: {code}</small>}
       <div className="console-actions">
         {action}
         <Link className="console-button console-button-quiet" href="/learn">

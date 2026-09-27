@@ -169,6 +169,8 @@ function progressLabel(reviewed: number, min: number, max: number): string {
   if (reviewed >= max) return 'Target reached';
   if (reviewed >= min)
     return `Past ${formatCount(min)}: on the way to ${formatCount(max)}`;
+  // "250 more to reach 250" reads oddly before anything is reviewed.
+  if (!(reviewed > 0)) return `0 of ${formatCount(min)} reviewed so far`;
   const left = min - reviewed;
   return `${formatCount(left)} more to reach ${formatCount(min)}`;
 }
@@ -299,12 +301,24 @@ const KIND_LABELS: Record<string, string> = {
   rollback: 'Rolled back',
 };
 
+/** Open gates before closed ones, each group in the order it came. */
+function liveFirst<T extends { publish_gate: 'open' | 'blocked' }>(
+  list: readonly T[],
+): T[] {
+  return [...list].sort(
+    (a, b) =>
+      Number(a.publish_gate === 'blocked') -
+      Number(b.publish_gate === 'blocked'),
+  );
+}
+
 export function buildOverview(data: OverviewData): OverviewView {
   const target = {
     min: data.target?.reviewed_target_min ?? 250,
     max: data.target?.reviewed_target_max ?? 400,
   };
-  const languages = (data.languages ?? []).map((l) =>
+  // Languages learners can see first; a hidden one follows, name order kept.
+  const languages = liveFirst(data.languages ?? []).map((l) =>
     languageCard(l, target, Boolean(data.latest_release)),
   );
   const sum = (pick: (l: OverviewLanguage) => number) =>
@@ -323,7 +337,7 @@ export function buildOverview(data: OverviewData): OverviewView {
       : null,
     target,
     languages,
-    varieties: (data.varieties ?? []).map(varietyRow),
+    varieties: liveFirst(data.varieties ?? []).map(varietyRow),
     accounts: a
       ? {
           total: a.total,

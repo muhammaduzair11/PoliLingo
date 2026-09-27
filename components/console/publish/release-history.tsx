@@ -25,10 +25,12 @@ const KIND_BY: Record<ReleaseRow['kind'], string> = {
   rollback: 'an admin',
 };
 
+const SEED_NOTE = 'Starter curriculum from the content repository';
+
 function Contents({ row }: { row: ReleaseRow }) {
   const parts = [
     row.reviewed_lessons ? `${row.reviewed_lessons} reviewed` : '',
-    row.demo_lessons ? `${row.demo_lessons} demo` : '',
+    row.demo_lessons ? `${row.demo_lessons} starter` : '',
     row.kind !== 'rollback' && row.carried_lessons
       ? `${row.carried_lessons} kept as before`
       : '',
@@ -71,7 +73,9 @@ function ReleaseName({ row, live }: { row: ReleaseRow; live: boolean }) {
       )}
       {row.note && (
         <span className="publish-note" title={row.note}>
-          {row.note}
+          {/* The seed's note is commit ids and hashes: plain words here,
+              the full note on hover. */}
+          {row.kind === 'seed' ? SEED_NOTE : row.note}
         </span>
       )}
     </span>

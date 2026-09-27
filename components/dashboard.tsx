@@ -190,7 +190,7 @@ export function Dashboard({ courseId }: { courseId?: string }) {
                           ? 'Complete the previous lesson'
                           : done
                             ? 'Completed · replay anytime'
-                            : `${l.exercises.length} playful exercises`}
+                            : `${l.exercises.length} playful ${l.exercises.length === 1 ? 'exercise' : 'exercises'}`}
                       </p>
                     </div>
                   </div>

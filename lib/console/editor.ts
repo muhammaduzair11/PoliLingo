@@ -401,6 +401,31 @@ export type ReadinessCheck = {
   detail: string;
 };
 
+/**
+ * The lesson's problems as the editor lists them. The database words the
+ * exercise count two ways (blocking "at least one" at none, a warning under
+ * six), but submit_lesson() refuses anything under six, so the editor shows
+ * one blocking line that says six. readiness() counts this same list, so the
+ * checklist and the Checks panel always agree.
+ */
+export function editorProblems(page: {
+  exercises: readonly unknown[];
+  problems: readonly Problem[];
+}): Problem[] {
+  const exercises = page.exercises.length;
+  const problems = page.problems.filter(
+    (p) => p.code !== 'PL422_TOO_FEW_EXERCISES',
+  );
+  if (exercises < MIN_EXERCISES)
+    problems.push({
+      severity: 'blocking',
+      code: 'PL422_TOO_FEW_EXERCISES',
+      message: `A reviewed lesson needs at least ${MIN_EXERCISES} exercises. This one has ${exercises}.`,
+      target_type: 'lesson',
+    });
+  return problems;
+}
+
 export function readiness(page: {
   items: readonly unknown[];
   exercises: readonly unknown[];
@@ -408,8 +433,8 @@ export function readiness(page: {
 }): { ready: boolean; checks: ReadinessCheck[] } {
   const items = page.items.length;
   const exercises = page.exercises.length;
-  const blocking = page.problems.filter(
-    (p) => p.severity === 'blocking' && p.code !== 'PL422_TOO_FEW_EXERCISES',
+  const blocking = editorProblems(page).filter(
+    (p) => p.severity === 'blocking',
   ).length;
   const checks: ReadinessCheck[] = [
     {

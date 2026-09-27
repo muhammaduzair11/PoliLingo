@@ -163,7 +163,11 @@ test('progress runs against the lower target and stops at full', () => {
   assert.equal(targetProgress(-3, 250), 0);
   assert.equal(
     languageCard({ ...PASHTO, reviewed: 0 }, TARGET).progressLabel,
-    '250 more to reach 250',
+    '0 of 250 reviewed so far',
+  );
+  assert.equal(
+    languageCard({ ...PASHTO, reviewed: 1 }, TARGET).progressLabel,
+    '249 more to reach 250',
   );
   assert.equal(
     languageCard({ ...PASHTO, reviewed: 240 }, TARGET).progressLabel,
@@ -284,9 +288,10 @@ test('the whole overview on the seeded fixture', () => {
   assert.deepEqual(view.target, TARGET);
   assert.deepEqual(
     view.languages.map((l) => [l.code, l.reviewed, l.live.total, l.hidden]),
+    // Live languages first: the hidden Hindko comes after Pashto.
     [
-      ['hno', 0, 0, true],
       ['ps', 0, 4, false],
+      ['hno', 0, 0, true],
     ],
   );
   assert.deepEqual(view.totals, {
@@ -295,7 +300,10 @@ test('the whole overview on the seeded fixture', () => {
     waiting: 0,
     live: 4,
   });
-  assert.equal(view.varieties.length, 3);
+  assert.deepEqual(
+    view.varieties.map((v) => v.id),
+    ['ps-var-fixture', 'ps-var-yusufzai', 'hno-var-hazara'],
+  );
   assert.equal(view.accounts.total, 8);
   assert.equal(view.accounts.team, 5);
   assert.equal(view.accounts.activity.length, 7);

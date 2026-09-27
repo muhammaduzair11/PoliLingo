@@ -2,14 +2,16 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { DataTable } from '@/components/console/data-table';
 import { EmptyState } from '@/components/console/empty-state';
+import { NoAccess } from '@/components/console/no-access';
 import { Notice } from '@/components/console/notice';
 import { PageHeader } from '@/components/console/page-header';
 import { Stat, StatGrid } from '@/components/console/stat';
 import { StatusBadge } from '@/components/console/status-badge';
 import { LoadError } from '@/components/console/review/load-error';
 import { PhraseSummary } from '@/components/console/review/phrase';
-import { requireRole } from '@/lib/console/access';
+import { getAccess, requireRole } from '@/lib/console/access';
 import {
+  adminPublishPath,
   learnPath,
   reviewItemPath,
   reviewLessonPath,
@@ -31,7 +33,28 @@ export const metadata: Metadata = { title: 'Review queue' };
 
 export default async function ReviewQueuePage() {
   const gate = await requireRole('reviewer');
-  if (!gate.ok) return gate.view;
+  if (!gate.ok) {
+    // An admin who is not also a reviewer lands here from the nav or a
+    // link. Say why the queue is not theirs rather than "no role here".
+    const access = await getAccess();
+    if (access.state === 'ready' && access.context.is_admin)
+      return (
+        <NoAccess title="Admins don't approve phrases">
+          <p>
+            A native-speaker reviewer does, so nobody checks their own work.
+          </p>
+          <p className="console-actions">
+            <Link
+              className="console-button console-button-primary"
+              href={adminPublishPath()}
+            >
+              See what&apos;s approved in Publish
+            </Link>
+          </p>
+        </NoAccess>
+      );
+    return gate.view;
+  }
   const { context } = gate;
 
   const result = await callRpc<QueuePage>(

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   DEFAULT_NEXT,
   EMAIL_LINK_COOKIE,
+  SIGN_IN_WORDS,
   emailLinkCookie,
   emailLinkMatches,
   emailLinkNonce,
@@ -15,6 +16,7 @@ import {
   isSameOriginPost,
   learnerBack,
   safeNext,
+  signInAudience,
   signInHref,
 } from '../lib/safe-next.ts';
 
@@ -98,6 +100,28 @@ test('"Back to learning" only goes to learner pages', () => {
     ['/learner', DEFAULT_NEXT],
   ])
     assert.equal(learnerBack(input), expected, input);
+});
+
+test('the sign-in words follow where next leads', () => {
+  for (const [input, expected] of [
+    ['/invite/abc_DEF-123', 'invite'],
+    ['/admin', 'workspace'],
+    ['/admin/people', 'workspace'],
+    ['/edit/lesson/ps-lsn-aaaaaa', 'workspace'],
+    ['/review?x=1', 'workspace'],
+    ['/review#top', 'workspace'],
+    ['/learn', 'learner'],
+    ['/lesson/ps-lsn-aaaaaa', 'learner'],
+    ['/account', 'learner'],
+    ['/invite', 'learner'],
+    ['/reviewers', 'learner'],
+    ['/editor', 'learner'],
+    [DEFAULT_NEXT, 'learner'],
+  ])
+    assert.equal(signInAudience(input), expected, input);
+  assert.equal(SIGN_IN_WORDS.invite.title, 'Accept your invitation');
+  assert.equal(SIGN_IN_WORDS.workspace.eyebrow, 'SIGN IN TO THE WORKSPACE');
+  assert.equal(SIGN_IN_WORDS.learner.eyebrow, 'SAVE YOUR PROGRESS');
 });
 
 test('email link types and token hashes: only what the email can carry', () => {

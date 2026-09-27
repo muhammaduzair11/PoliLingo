@@ -97,6 +97,7 @@ export function PeopleView({
               cell: (p) => (
                 <RolesCell
                   person={p}
+                  self={p.id === page.me}
                   minEndDate={minEndDate}
                   revokeRole={revokeRole}
                 />
@@ -217,26 +218,31 @@ function PersonCell({ person, me }: { person: Person; me: string | null }) {
   const contact = person.private;
   return (
     <span className="people-person">
-      <span className="people-name">
+      {/* The contributor id is for support, not for reading: on hover only. */}
+      <span className="people-name" title={person.id}>
         {person.display_name}
         {person.id === me && <span className="people-you">You</span>}
       </span>
       {person.email && <span className="people-email">{person.email}</span>}
-      <span className="people-meta">
-        <code>{person.id}</code>
-        {contact?.region && <span>{contact.region}</span>}
-        {contact?.whatsapp && <span>WhatsApp {contact.whatsapp}</span>}
-      </span>
+      {(contact?.region || contact?.whatsapp) && (
+        <span className="people-meta">
+          {contact.region && <span>{contact.region}</span>}
+          {contact.whatsapp && <span>WhatsApp {contact.whatsapp}</span>}
+        </span>
+      )}
     </span>
   );
 }
 
 function RolesCell({
   person,
+  self,
   minEndDate,
   revokeRole,
 }: {
   person: Person;
+  /** The row is the viewer's own: the dialog speaks to them. */
+  self: boolean;
   minEndDate: string;
   revokeRole: FormAction<{ ends_at: string }>;
 }) {
@@ -264,8 +270,8 @@ function RolesCell({
                   action={revokeRole}
                   triggerLabel={g.ends_at ? 'End sooner' : 'End role'}
                   triggerTone="quiet"
-                  title={`End ${person.display_name}’s ${roleLabel(g.role).toLowerCase()} role${g.ends_at ? ' sooner' : ''}?`}
-                  description={endDescription(g)}
+                  title={`End ${self ? 'your' : `${person.display_name}’s`} ${roleLabel(g.role).toLowerCase()} role${g.ends_at ? ' sooner' : ''}?`}
+                  description={endDescription(g, self)}
                   confirmLabel="End role"
                   cancelLabel="Keep it"
                   pendingLabel="Ending…"
@@ -304,17 +310,21 @@ function RolesCell({
   );
 }
 
-function endDescription(g: Grant): string {
+function endDescription(g: Grant, self: boolean): string {
+  const they = self ? 'You' : 'They';
   const what =
     g.role === 'language_reviewer'
-      ? `They won't be able to review ${scopeLabel(g)} any more.`
+      ? `${they} won't be able to review ${scopeLabel(g)} any more.`
       : g.role === 'editor'
-        ? `They won't be able to edit ${g.language_name ?? 'lessons'} any more.`
-        : 'They lose admin access to the workspace.';
+        ? `${they} won't be able to edit ${g.language_name ?? 'lessons'} any more.`
+        : `${they} lose admin access to the workspace.`;
   const already = g.ends_at
     ? ` It's set to end on ${formatDay(g.ends_at)}; you can bring that forward.`
     : '';
-  return `${what}${already} Everything they did stays in the history, under their name.`;
+  const history = self
+    ? 'Everything you did stays in the history, under your name.'
+    : 'Everything they did stays in the history, under their name.';
+  return `${what}${already} ${history}`;
 }
 
 function InvitationActions({

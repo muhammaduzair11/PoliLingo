@@ -2,7 +2,7 @@ import { DataTable, type Column } from '@/components/console/data-table';
 import { StatusBadge } from '@/components/console/status-badge';
 import type { LessonSummary } from './types';
 
-/** "Demo" for starter lessons, "Reviewed" for the rest. */
+/** "Starter" for starter lessons, "Reviewed" for the rest. */
 export function ClassBadge({
   lessonClass,
 }: {

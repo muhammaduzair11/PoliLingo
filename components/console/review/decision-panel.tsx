@@ -40,6 +40,7 @@ export function DecisionPanel({
   requiredScope,
   approveBlocked,
   approveBlockedTitle = 'Not ready to approve yet',
+  approvedRevision = null,
   varietyName,
   seen,
   lang,
@@ -55,6 +56,12 @@ export function DecisionPanel({
   /** Why it cannot be approved now (not submitted, too few exercises, already approved). */
   approveBlocked?: ReactNode;
   approveBlockedTitle?: string;
+  /**
+   * The revision the viewer already approved, when that approval is the
+   * current decision on the version on screen: Approve is hidden, since a
+   * second click would only record the same decision again.
+   */
+  approvedRevision?: number | null;
   varietyName: string;
   seen?: ItemFields;
   lang: string;
@@ -63,6 +70,8 @@ export function DecisionPanel({
 }) {
   const [stale, setStale] = useState<StaleSnapshot | null>(null);
   const [done, setDone] = useState<ReactNode>(null);
+  // Set the moment an approval lands, before the page's fresh data arrives.
+  const [approvedHere, setApprovedHere] = useState(false);
   const what = targetType === 'item' ? 'phrase' : 'lesson';
 
   const run: DecisionAction = async (previous, formData) => {
@@ -94,6 +103,7 @@ export function DecisionPanel({
 
   const canApprove =
     stance.kind === 'can-approve' || stance.kind === 'sole-author';
+  const alreadyApproved = approvedHere || approvedRevision !== null;
 
   return (
     <div className="review-decisions">
@@ -104,8 +114,14 @@ export function DecisionPanel({
           {approveBlocked}
         </Notice>
       )}
+      {canApprove && !approveBlocked && !done && approvedRevision !== null && (
+        <Notice tone="info" title={`You approved revision ${approvedRevision}`}>
+          There is nothing more to approve on this version. If you spot a
+          problem, you can still request changes or reject it.
+        </Notice>
+      )}
       <div className="review-decision-buttons">
-        {canApprove && !approveBlocked && (
+        {canApprove && !approveBlocked && !alreadyApproved && (
           <ConfirmAction<DecisionData>
             action={run}
             triggerTone="primary"
@@ -119,13 +135,14 @@ export function DecisionPanel({
             confirmLabel="Approve"
             pendingLabel="Approving…"
             fields={fields('approve')}
-            onSuccess={(data) =>
+            onSuccess={(data) => {
+              setApprovedHere(true);
               setDone(
                 data.countersign_required
                   ? 'Approved. Because you wrote part of it, an admin will countersign before learners see it.'
                   : `Approved. Thank you for checking this ${what}.`,
-              )
-            }
+              );
+            }}
           >
             {stance.kind === 'sole-author' && (
               <Notice tone="info" title="You wrote part of this">
@@ -168,9 +185,10 @@ export function DecisionPanel({
           confirmLabel="Send request"
           pendingLabel="Sending…"
           fields={fields('request_changes')}
-          onSuccess={() =>
-            setDone(`Sent. The editor will see your note on this ${what}.`)
-          }
+          onSuccess={() => {
+            setApprovedHere(false);
+            setDone(`Sent. The editor will see your note on this ${what}.`);
+          }}
         >
           <div className="console-field review-dialog-field">
             <label
@@ -200,7 +218,10 @@ export function DecisionPanel({
           confirmLabel="Reject"
           pendingLabel="Rejecting…"
           fields={fields('reject')}
-          onSuccess={() => setDone(`Rejected. The editor will see why.`)}
+          onSuccess={() => {
+            setApprovedHere(false);
+            setDone(`Rejected. The editor will see why.`);
+          }}
         >
           <div className="console-field review-dialog-field">
             <label

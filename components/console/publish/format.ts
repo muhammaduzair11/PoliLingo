@@ -1,13 +1,10 @@
 /**
  * Dates and counts for the publish screen. Release names are dated in UTC
- * (content@YYYY.MM.N), so their times are shown in UTC too.
+ * (content@YYYY.MM.N), so their times are shown in UTC too. The day is the
+ * console's one day format (formatDay), as on the overview.
  */
-const DATE = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  timeZone: 'UTC',
-});
+import { formatDay } from '@/lib/console/invite-link';
+
 const TIME = new Intl.DateTimeFormat('en-GB', {
   hour: 'numeric',
   minute: '2-digit',
@@ -24,14 +21,14 @@ function parse(value: string | null | undefined): Date | null {
 /** "26 Sep 2026" */
 export function formatDate(value: string | null | undefined): string {
   const date = parse(value);
-  return date ? DATE.format(date) : '';
+  return date ? formatDay(date) : '';
 }
 
 /** "26 Sep 2026, 2:05 pm UTC" */
 export function formatDateTime(value: string | null | undefined): string {
   const date = parse(value);
   return date
-    ? `${DATE.format(date)}, ${TIME.format(date).toLowerCase()} UTC`
+    ? `${formatDay(date)}, ${TIME.format(date).toLowerCase()} UTC`
     : '';
 }
 

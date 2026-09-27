@@ -26,7 +26,7 @@ export function Notice({
     >
       {title && <p className="console-notice-title">{title}</p>}
       {children && <div className="console-notice-body">{children}</div>}
-      {code && <small className="console-notice-code">Code: {code}</small>}
+      {code && <small className="console-notice-code">Reference: {code}</small>}
     </div>
   );
 }

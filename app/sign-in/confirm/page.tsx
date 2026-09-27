@@ -7,12 +7,14 @@ import { ConfirmSignIn } from '@/components/account/confirm-sign-in';
 import { Card } from '@/components/account/sign-in-flow';
 import {
   EMAIL_LINK_COOKIE,
+  SIGN_IN_WORDS,
   emailLinkMatches,
   emailLinkNonce,
   emailLinkToken,
   emailLinkType,
   learnerBack,
   safeNext,
+  signInAudience,
   signInHref,
 } from '@/lib/safe-next';
 
@@ -40,6 +42,7 @@ export default async function ConfirmSignInPage({
   const params = await searchParams;
   const next = safeNext(first(params.next));
   const back = learnerBack(next);
+  const { eyebrow } = SIGN_IN_WORDS[signInAudience(next)];
   const tokenHash = emailLinkToken(first(params.token_hash));
   const type = emailLinkType(first(params.type));
   const nonce = emailLinkNonce(first(params.n));
@@ -62,7 +65,7 @@ export default async function ConfirmSignInPage({
         />
       ) : tokenHash && type ? (
         <Card>
-          <p className="eyebrow purple">SAVE YOUR PROGRESS</p>
+          <p className="eyebrow purple">{eyebrow}</p>
           <h1 className="signin-title">
             Open this link where you asked for it
           </h1>
@@ -83,7 +86,7 @@ export default async function ConfirmSignInPage({
         </Card>
       ) : (
         <Card>
-          <p className="eyebrow purple">SAVE YOUR PROGRESS</p>
+          <p className="eyebrow purple">{eyebrow}</p>
           <h1 className="signin-title">This sign-in link isn’t complete</h1>
           <p className="signin-lead">
             Part of the link may have been cut off. Start again and we’ll send

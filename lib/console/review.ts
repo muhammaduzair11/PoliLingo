@@ -9,6 +9,7 @@
  * page_review_*); this only chooses what to show.
  */
 import { normaliseNative } from '../script-check.ts';
+import { EXERCISE_KIND_LABELS as EDITOR_KIND_LABELS } from './editor.ts';
 
 // ---------------------------------------------------------------------------
 // Shapes the page reads return (supabase/migrations/20260928001300_review.sql)
@@ -419,13 +420,9 @@ export const SUGGESTION_STATUS_LABELS: Readonly<
   superseded: 'Replaced by another fix',
 };
 
-export const EXERCISE_KIND_LABELS: Readonly<Record<string, string>> = {
-  meaning: 'Pick the meaning',
-  translation: 'Pick the phrase',
-  match: 'Match pairs',
-  assemble: 'Build the phrase',
-  context: 'Choose for the situation',
-};
+/** The editor's names for the exercise kinds, so both screens say the same. */
+export const EXERCISE_KIND_LABELS: Readonly<Record<string, string>> =
+  EDITOR_KIND_LABELS;
 
 // ---------------------------------------------------------------------------
 // The queue
@@ -774,6 +771,28 @@ export function awaitingCountersign(
         d.decision === 'approve' &&
         d.sole_reviewer &&
         d.countersign === null,
+    ) ?? null
+  );
+}
+
+/**
+ * The viewer's own approval of the version on screen, while it is still the
+ * current decision. Approving again would only record the same decision
+ * twice, so the page says so and leaves the other decisions open.
+ */
+export function ownCurrentApproval(
+  decisions: readonly DecisionRow[],
+  viewer: { contributor_id: string | null },
+  fingerprint: string,
+): DecisionRow | null {
+  if (!viewer.contributor_id) return null;
+  return (
+    decisions.find(
+      (d) =>
+        d.current &&
+        d.decision === 'approve' &&
+        d.reviewer_id === viewer.contributor_id &&
+        d.seen_fingerprint === fingerprint,
     ) ?? null
   );
 }
