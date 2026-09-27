@@ -185,7 +185,7 @@ export async function rollbackRelease(
     if (result.code === 'PL409_NOT_PUBLISHABLE')
       return actionRefusal(
         result.code,
-        `${name} can't come back as it was: since then, some of its lessons were retired, held back by a publish gate, or replaced as starter content. Publish a fix instead.`,
+        `That release can’t come back as it was: since then, some of its lessons were retired, set to Hold back, or replaced as starter content. Publish a fix instead.`,
       );
     if (STALE_PAGE.has(result.code)) revalidatePath(adminPublishPath());
     return result;
@@ -204,7 +204,7 @@ export async function countersignDecision(
   const decisionId = text(formData, 'decision_id');
   const comment = text(formData, 'comment');
   if (!UUID.test(decisionId))
-    return refusal('PL422_BAD_INPUT', "Something in the form isn't right.");
+    return refusal('PL422_BAD_INPUT', 'Something in the form isn’t right.');
   if (comment.length > 2000)
     return actionRefusal(
       'PL422_LENGTH',
@@ -220,7 +220,7 @@ export async function countersignDecision(
     if (MISSING_FUNCTION.has(result.error.code))
       return actionRefusal(
         'NOT_AVAILABLE',
-        "Countersigning isn't switched on in this workspace yet. Nothing was changed.",
+        'Countersigning isn’t switched on in this workspace yet. Nothing was changed.',
       );
     return {
       ok: false,

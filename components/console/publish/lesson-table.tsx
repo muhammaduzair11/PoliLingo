@@ -1,5 +1,13 @@
 import { DataTable, type Column } from '@/components/console/data-table';
-import { StatusBadge } from '@/components/console/status-badge';
+import {
+  StatusBadge,
+  type ContentStatus,
+} from '@/components/console/status-badge';
+import {
+  heldState,
+  reasonSentence,
+  type HeldState,
+} from '@/lib/console/release-diff';
 import type { LessonSummary } from './types';
 
 /** "Starter" for starter lessons, "Reviewed" for the rest. */
@@ -14,21 +22,30 @@ export function ClassBadge({
   return <StatusBadge status="draft" label="Not ready" />;
 }
 
+const HELD_BADGES: Record<HeldState, { status: ContentStatus; label: string }> =
+  {
+    retired: { status: 'retired', label: 'Retired' },
+    held_back: { status: 'gated', label: 'Held back' },
+    starter: { status: 'demo', label: 'Starter' },
+    not_finished: { status: 'draft', label: 'Not finished' },
+    changes_requested: {
+      status: 'changes_requested',
+      label: 'Changes asked for',
+    },
+    in_review: { status: 'in_review', label: 'In review' },
+    countersign: { status: 'sole_reviewer', label: 'Needs countersign' },
+    not_ready: { status: 'draft', label: 'Not ready' },
+  };
+
 /**
  * For a lesson left out of the next release: the main reason in one badge
- * (the Why column says the rest).
+ * (the Why column says the rest). "In review" only for a lesson that was
+ * sent for review; one still being written is "Not finished"
+ * (lib/console/release-diff.ts heldState).
  */
 export function HeldBadge({ row }: { row: LessonSummary }) {
-  const codes = new Set(row.reasons.map((reason) => reason.code));
-  if (codes.has('retired')) return <StatusBadge status="retired" />;
-  if (codes.has('gated')) return <StatusBadge status="gated" />;
-  if (row.class === 'demo' || codes.has('demo_exit'))
-    return <StatusBadge status="demo" />;
-  if (codes.has('lesson_not_approved') || codes.has('items_not_approved'))
-    return <StatusBadge status="in_review" label="Needs review" />;
-  if (codes.has('awaiting_countersign'))
-    return <StatusBadge status="sole_reviewer" />;
-  return <StatusBadge status="draft" label="Not ready" />;
+  const badge = HELD_BADGES[heldState(row)];
+  return <StatusBadge status={badge.status} label={badge.label} />;
 }
 
 function LessonCell({ row }: { row: LessonSummary }) {
@@ -59,7 +76,7 @@ function Reasons({ row, fallback }: { row: LessonSummary; fallback?: string }) {
   return (
     <ul className="publish-reasons">
       {row.reasons.map((reason, i) => (
-        <li key={`${reason.code}-${i}`}>{reason.message}</li>
+        <li key={`${reason.code}-${i}`}>{reasonSentence(reason)}</li>
       ))}
     </ul>
   );

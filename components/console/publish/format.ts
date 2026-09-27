@@ -1,35 +1,29 @@
 /**
- * Dates and counts for the publish screen. Release names are dated in UTC
- * (content@YYYY.MM.N), so their times are shown in UTC too. The day is the
+ * Dates and counts for the publish screen. Times are shown in Pakistan time
+ * (PKT, UTC+5), where the team works, and say so; release names stay dated
+ * in UTC (content@YYYY.MM.N), as the database makes them. The day is the
  * console's one day format (formatDay), as on the overview.
  */
-import { formatDay } from '@/lib/console/invite-link';
+import {
+  formatPktDateTime,
+  formatPktDay,
+  formatPktTime,
+} from '@/lib/console/invite-link';
 
-const TIME = new Intl.DateTimeFormat('en-GB', {
-  hour: 'numeric',
-  minute: '2-digit',
-  hour12: true,
-  timeZone: 'UTC',
-});
-
-function parse(value: string | null | undefined): Date | null {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-/** "26 Sep 2026" */
+/** "26 Sep 2026", the day in Pakistan. */
 export function formatDate(value: string | null | undefined): string {
-  const date = parse(value);
-  return date ? formatDay(date) : '';
+  return formatPktDay(value);
 }
 
-/** "26 Sep 2026, 2:05 pm UTC" */
+/** "7:05 pm PKT" */
+export function formatTime(value: string | null | undefined): string {
+  const time = formatPktTime(value);
+  return time ? `${time} PKT` : '';
+}
+
+/** "26 Sep 2026, 7:05 pm PKT" */
 export function formatDateTime(value: string | null | undefined): string {
-  const date = parse(value);
-  return date
-    ? `${formatDay(date)}, ${TIME.format(date).toLowerCase()} UTC`
-    : '';
+  return formatPktDateTime(value);
 }
 
 /** "1 lesson", "3 lessons" */
