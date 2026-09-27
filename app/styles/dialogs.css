@@ -40,14 +40,33 @@
   background: var(--purple);
   color: white;
 }
+/* A lesson whose earlier lesson is not finished yet. */
 .locked-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
   text-align: center;
-  padding: 60px 30px;
+}
+.locked-message .poli {
+  width: 160px;
+  height: 160px;
+}
+.locked-icon {
+  color: var(--purple);
+  margin-top: 8px;
 }
 .locked-message h1 {
-  margin: 15px 0;
+  font-size: clamp(30px, 5vw, 44px);
+  line-height: 1.1;
+  margin: 12px 0;
+  text-wrap: balance;
 }
 .locked-message p {
-  margin: 15px 0 25px;
-  color: #8b759b;
+  margin: 0 0 24px;
+  font-size: 16px;
+  color: var(--text-muted, #6b5a7b);
 }
