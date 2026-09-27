@@ -294,6 +294,23 @@ export function grantWindowLabel(grant: GrantWindow): string {
   }
 }
 
+/**
+ * The invite form's languages, those learners can see first and those
+ * behind a closed publish gate last, each group keeping its order. The form
+ * starts on the first, so a new reviewer is offered a live language rather
+ * than whichever hidden one sorts first by name. With no gates known (the
+ * read failed), the order is left as it was.
+ */
+export function liveLanguagesFirst<T extends { code: string }>(
+  languages: readonly T[],
+  open: ReadonlySet<string> | null,
+): T[] {
+  if (!open) return [...languages];
+  return [...languages].sort(
+    (a, b) => Number(!open.has(a.code)) - Number(!open.has(b.code)),
+  );
+}
+
 /** YYYY-MM-DD of the UTC day after `now`: the earliest end date to offer. */
 export function tomorrowUtc(now: Date): string {
   const next = new Date(

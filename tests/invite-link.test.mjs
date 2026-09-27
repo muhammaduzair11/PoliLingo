@@ -16,6 +16,7 @@ import {
   isInviteRole,
   isInviteToken,
   latestEndDate,
+  liveLanguagesFirst,
   roleDuties,
   roleLabel,
   scopeLabel,
@@ -256,6 +257,31 @@ test('a role can end from tomorrow (UTC), at the start of the chosen day', () =>
     '2026-09-29T00:00:00Z',
   ])
     assert.equal(endOfRoleTimestamp(bad, now), null, String(bad));
+});
+
+test('the invite form offers live languages first, hidden ones last', () => {
+  const languages = [
+    { code: 'hno', name: 'Hindko' },
+    { code: 'ps', name: 'Pashto' },
+    { code: 'ur', name: 'Urdu' },
+  ];
+  const codes = (list) => list.map((l) => l.code);
+  assert.deepEqual(
+    codes(liveLanguagesFirst(languages, new Set(['ps', 'ur']))),
+    ['ps', 'ur', 'hno'],
+  );
+  assert.deepEqual(codes(liveLanguagesFirst(languages, new Set())), [
+    'hno',
+    'ps',
+    'ur',
+  ]);
+  // Gates unknown: the order is left alone, and the input is not changed.
+  assert.deepEqual(codes(liveLanguagesFirst(languages, null)), [
+    'hno',
+    'ps',
+    'ur',
+  ]);
+  assert.equal(languages[0].code, 'hno');
 });
 
 test('expiry choices stay inside what create_invitation accepts', () => {

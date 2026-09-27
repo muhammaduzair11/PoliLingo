@@ -11,7 +11,7 @@ import { PhraseSummary } from '@/components/console/review/phrase';
 import { CountersignButton } from '@/components/console/review/small-actions';
 import { OutcomeProvider } from '@/components/console/review/outcome';
 import { StanceNotice } from '@/components/console/review/stance-notice';
-import { requireRole } from '@/lib/console/access';
+import { hasRole, requireRole } from '@/lib/console/access';
 import {
   reviewItemPath,
   reviewLessonPath,
@@ -22,6 +22,7 @@ import {
   approvalStance,
   awaitingCountersign,
   badgeFor,
+  ownCurrentApproval,
   type LessonPage,
 } from '@/lib/console/review';
 import { callRpc } from '@/lib/rpc';
@@ -45,6 +46,9 @@ export default async function ReviewLessonPage({
   const { id } = await params;
   const gate = await requireRole('staff');
   if (!gate.ok) return gate.view;
+  // The queue is a reviewer's page: an editor or admin reading a lesson
+  // here would follow the breadcrumb to a page that is not open to them.
+  const reviewer = hasRole(gate.context, 'reviewer');
 
   const result = await callRpc<LessonPage>(
     await serverSupabase(),
@@ -72,11 +76,23 @@ export default async function ReviewLessonPage({
   const myPendingApproval =
     pendingCountersign !== null &&
     pendingCountersign.reviewer_id === viewer.contributor_id;
+  const myApproval = ownCurrentApproval(
+    page.decisions,
+    viewer,
+    lesson.review_fingerprint,
+  );
   const stance = approvalStance({
     viewer,
     is_demo: lesson.is_demo,
     retired: lesson.retired,
   });
+  // Nothing to decide here (a starter or retired lesson, or someone who does
+  // not review this variety): the decision card would be a bare heading, so
+  // it is left out and the page drops to one column.
+  const readOnly =
+    stance.kind === 'demo' ||
+    stance.kind === 'retired' ||
+    stance.kind === 'outside';
   const blocking = page.problems.filter((p) => p.severity === 'blocking');
   const warnings = page.problems.filter(
     (p) => p.severity === 'warning' && p.code !== 'PL422_TOO_FEW_EXERCISES',
@@ -112,11 +128,13 @@ export default async function ReviewLessonPage({
 
   return (
     <div className="review-page">
-      <nav className="review-breadcrumb" aria-label="Breadcrumb">
-        <Link href={reviewQueuePath()}>Queue</Link>
-        <span aria-hidden="true">/</span>
-        <span aria-current="page">{lesson.title}</span>
-      </nav>
+      {reviewer && (
+        <nav className="review-breadcrumb" aria-label="Breadcrumb">
+          <Link href={reviewQueuePath()}>Queue</Link>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">{lesson.title}</span>
+        </nav>
+      )}
       <PageHeader
         eyebrow={variety.name}
         title={lesson.title}
@@ -186,7 +204,9 @@ export default async function ReviewLessonPage({
           </Notice>
         )}
 
-        <div className="review-layout">
+        <div
+          className={`review-layout${readOnly ? ' review-layout-single' : ''}`}
+        >
           <div className="review-main">
             <section className="review-card" aria-labelledby="lesson-about">
               <h2 id="lesson-about" className="review-section-title">
@@ -278,7 +298,9 @@ export default async function ReviewLessonPage({
                         {exercise.options.length > 0 && (
                           <div className="review-exercise-answer">
                             <span className="review-exercise-label">
-                              Wrong choices
+                              {exercise.kind === 'match'
+                                ? 'Other pairs'
+                                : 'Wrong choices'}
                             </span>
                             <ul className="review-choices">
                               {exercise.options.map((optionId) => {
@@ -315,37 +337,48 @@ export default async function ReviewLessonPage({
             </section>
           </div>
 
-          <aside className="review-side" aria-labelledby="lesson-review-title">
-            <section className="review-card review-actions-card">
-              <h2 id="lesson-review-title" className="review-section-title">
-                Your review of the lesson
-              </h2>
-              {(stance.kind === 'can-approve' ||
-                stance.kind === 'sole-author') && (
-                <p className="console-hint">
-                  Each phrase is approved on its own page. Here you approve the
-                  lesson as a whole: the order, the title and every exercise.
-                </p>
-              )}
-              <DecisionPanel
-                key={lesson.review_fingerprint}
-                targetType="lesson"
-                targetId={lesson.id}
-                fingerprint={lesson.review_fingerprint}
-                stance={stance}
-                approveBlocked={approveBlocked}
-                approveBlockedTitle={
-                  submitted && myPendingApproval
-                    ? 'Already approved'
-                    : undefined
-                }
-                varietyName={variety.name}
-                lang={lang}
-                dir={dir}
-                action={recordDecision}
-              />
-            </section>
-          </aside>
+          {!readOnly && (
+            <aside
+              className="review-side"
+              aria-labelledby="lesson-review-title"
+            >
+              <section className="review-card review-actions-card">
+                <h2 id="lesson-review-title" className="review-section-title">
+                  Your review of the lesson
+                </h2>
+                {(stance.kind === 'can-approve' ||
+                  stance.kind === 'sole-author') && (
+                  <p className="console-hint">
+                    Each phrase is approved on its own page. Here you approve
+                    the lesson as a whole: the order, the title and every
+                    exercise.
+                  </p>
+                )}
+                <DecisionPanel
+                  key={lesson.review_fingerprint}
+                  targetType="lesson"
+                  targetId={lesson.id}
+                  fingerprint={lesson.review_fingerprint}
+                  stance={stance}
+                  approveBlocked={approveBlocked}
+                  approveBlockedTitle={
+                    submitted && myPendingApproval
+                      ? 'Already approved'
+                      : undefined
+                  }
+                  approvedRevision={
+                    myApproval && !myPendingApproval
+                      ? (myApproval.target_revision_no ?? lesson.revision_no)
+                      : null
+                  }
+                  varietyName={variety.name}
+                  lang={lang}
+                  dir={dir}
+                  action={recordDecision}
+                />
+              </section>
+            </aside>
+          )}
         </div>
 
         <ReviewHistory

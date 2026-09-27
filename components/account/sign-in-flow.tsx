@@ -35,10 +35,12 @@ import {
   suggestedBrowser,
 } from '@/lib/in-app-browser';
 import {
+  SIGN_IN_WORDS,
   emailLinkCookie,
   emailLinkRedirect,
   newEmailLinkNonce,
   readEmailLinkCookie,
+  signInAudience,
 } from '@/lib/safe-next';
 import { browserSupabase } from '@/lib/supabase/browser';
 
@@ -194,6 +196,7 @@ export function SignInFlow({
   if (step.kind === 'age')
     return (
       <AgeStep
+        eyebrow={`${SIGN_IN_WORDS[signInAudience(next)].eyebrow} · 1 OF 2`}
         notice={notice}
         back={back}
         headingRef={heading}
@@ -370,6 +373,9 @@ function ChooseStep({
   const inApp = inAppBrowser(userAgent);
   const [busy, setBusy] = useState<'google' | 'email' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Someone joining the team or heading for the workspace is not here to
+  // save lesson progress, so they get their own words.
+  const words = SIGN_IN_WORDS[signInAudience(next)];
 
   async function google() {
     const supabase = browserSupabase();
@@ -426,14 +432,11 @@ function ChooseStep({
 
   return (
     <Card>
-      <p className="eyebrow purple">SAVE YOUR PROGRESS · 2 OF 2</p>
+      <p className="eyebrow purple">{words.eyebrow} · 2 OF 2</p>
       <h1 className="signin-title" tabIndex={-1} ref={headingRef}>
-        Keep your progress on every device
+        {words.title}
       </h1>
-      <p className="signin-lead">
-        No password to remember. Your progress on this device stays here either
-        way.
-      </p>
+      <p className="signin-lead">{words.lead}</p>
       {inApp ? (
         <InAppHelp app={IN_APP_NAMES[inApp]} userAgent={userAgent} />
       ) : (

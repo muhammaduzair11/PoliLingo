@@ -280,7 +280,7 @@ function AccountsSection({ accounts: a }: { accounts: AccountsView }) {
         <Stat
           label="Accounts"
           value={formatCount(a.total)}
-          hint={`${formatCount(a.adults)} adults`}
+          hint={`${formatCount(a.adults)} ${a.adults === 1 ? 'adult' : 'adults'}`}
         />
         <Stat
           label="Saved progress this week"
@@ -290,7 +290,7 @@ function AccountsSection({ accounts: a }: { accounts: AccountsView }) {
         <Stat
           label="Finished a lesson"
           value={formatCount(a.learnersWithCompletion)}
-          hint={`${formatCount(a.completions)} lessons finished in all`}
+          hint={`${formatCount(a.completions)} ${a.completions === 1 ? 'lesson' : 'lessons'} finished in all`}
         />
         <Stat label="Team members" value={formatCount(a.team)} />
       </StatGrid>

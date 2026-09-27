@@ -3,6 +3,7 @@ import { useId, useState, type ChangeEvent, type ReactNode } from 'react';
 import {
   checkNative,
   checkRomanisation,
+  issueLines,
   normaliseNative,
   type ScriptIssue,
 } from '@/lib/script-check';
@@ -89,12 +90,12 @@ export function ScriptField({
         </p>
       )}
       <ul id={`${id}-issues`} className="script-issues" aria-live="polite">
-        {issues.map((issue) => (
+        {issueLines(language, issues).map((line) => (
           <li
-            key={`${issue.code}-${issue.position ?? ''}`}
-            className={`script-issue script-issue-${issue.severity}`}
+            key={line.key}
+            className={`script-issue script-issue-${line.severity}`}
           >
-            {issue.message}
+            {line.message}
           </li>
         ))}
       </ul>

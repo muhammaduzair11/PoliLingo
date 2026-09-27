@@ -13,7 +13,7 @@ import { CountersignButton } from '@/components/console/review/small-actions';
 import { StanceNotice } from '@/components/console/review/stance-notice';
 import { OutcomeProvider } from '@/components/console/review/outcome';
 import { SuggestFix } from '@/components/console/review/suggest-fix';
-import { requireRole } from '@/lib/console/access';
+import { hasRole, requireRole } from '@/lib/console/access';
 import {
   reviewItemPath,
   reviewLessonPath,
@@ -23,6 +23,7 @@ import {
   approvalStance,
   awaitingCountersign,
   badgeFor,
+  ownCurrentApproval,
   type ItemPage,
 } from '@/lib/console/review';
 import { callRpc } from '@/lib/rpc';
@@ -46,6 +47,9 @@ export default async function ReviewItemPage({
   const { id } = await params;
   const gate = await requireRole('staff');
   if (!gate.ok) return gate.view;
+  // The queue is a reviewer's page: an editor or admin reading a phrase
+  // here would follow the breadcrumb to a page that is not open to them.
+  const reviewer = hasRole(gate.context, 'reviewer');
 
   const result = await callRpc<ItemPage>(
     await serverSupabase(),
@@ -72,11 +76,24 @@ export default async function ReviewItemPage({
   const myPendingApproval =
     pendingCountersign !== null &&
     pendingCountersign.reviewer_id === viewer.contributor_id;
+  const myApproval = ownCurrentApproval(
+    page.decisions,
+    viewer,
+    item.review_fingerprint,
+  );
   const stance = approvalStance({
     viewer,
     is_demo: item.is_demo,
     retired: item.retired,
   });
+  // Nothing to decide here (a starter or retired phrase, or someone who does
+  // not review this variety): the review card would be a bare heading, so it
+  // is left out. Suggesting a fix needs review rights too (can_suggest), and
+  // the history below still lists any open suggestions.
+  const readOnly =
+    stance.kind === 'demo' ||
+    stance.kind === 'retired' ||
+    stance.kind === 'outside';
   const badge = badgeFor({
     review_status: item.review_status,
     submitted: lesson.submitted_at !== null,
@@ -94,12 +111,18 @@ export default async function ReviewItemPage({
   const current = page.decisions.find((d) => d.current) ?? null;
   const openSuggestions = page.suggestions.filter((s) => s.status === 'open');
   const others = page.siblings.filter((s) => s.id !== item.id);
+  // A read-only phrase alone in its lesson has nothing for the right column.
+  const side = !readOnly || others.length > 0;
 
   return (
     <div className="review-page">
       <nav className="review-breadcrumb" aria-label="Breadcrumb">
-        <Link href={reviewQueuePath()}>Queue</Link>
-        <span aria-hidden="true">/</span>
+        {reviewer && (
+          <>
+            <Link href={reviewQueuePath()}>Queue</Link>
+            <span aria-hidden="true">/</span>
+          </>
+        )}
         <Link href={reviewLessonPath(lesson.id)}>{lesson.title}</Link>
         <span aria-hidden="true">/</span>
         <span aria-current="page">Phrase {item.position ?? ''}</span>
@@ -164,7 +187,7 @@ export default async function ReviewItemPage({
             </Notice>
           )}
 
-        <div className="review-layout">
+        <div className={`review-layout${side ? '' : ' review-layout-single'}`}>
           <div className="review-main">
             <LearnerPreview
               native={item.native}
@@ -179,112 +202,134 @@ export default async function ReviewItemPage({
             <ItemFields item={item} lang={lang} dir={dir} />
           </div>
 
-          <aside className="review-side" aria-labelledby="review-actions-title">
-            <section className="review-card review-actions-card">
-              <h2 id="review-actions-title" className="review-section-title">
-                Your review
-              </h2>
-              {stance.kind === 'can-approve' ||
-              stance.kind === 'sole-author' ? (
-                <p className="console-hint">
-                  Read it aloud as a {variety.name} speaker would. Approve only
-                  what you would teach your own family.
-                </p>
-              ) : null}
-              <DecisionPanel
-                key={item.review_fingerprint}
-                targetType="item"
-                targetId={item.id}
-                fingerprint={item.review_fingerprint}
-                stance={stance}
-                requiredScope={page.required_scope}
-                approveBlocked={
-                  myPendingApproval
-                    ? 'You approved this phrase. It is waiting for an admin to countersign, so there is nothing more to approve.'
-                    : undefined
-                }
-                approveBlockedTitle="Already approved"
-                varietyName={variety.name}
-                seen={seen}
-                lang={lang}
-                dir={dir}
-                action={recordDecision}
-              />
-              {viewer.can_suggest && (
-                <SuggestFix
-                  key={`suggest-${item.review_fingerprint}`}
-                  itemId={item.id}
-                  fingerprint={item.review_fingerprint}
-                  current={seen}
-                  lang={lang}
-                  dir={dir}
-                  action={suggestFix}
-                />
+          {side && (
+            <aside
+              className="review-side"
+              aria-labelledby={
+                readOnly ? 'review-siblings-title' : 'review-actions-title'
+              }
+            >
+              {!readOnly && (
+                <section className="review-card review-actions-card">
+                  <h2
+                    id="review-actions-title"
+                    className="review-section-title"
+                  >
+                    Your review
+                  </h2>
+                  {stance.kind === 'can-approve' ||
+                  stance.kind === 'sole-author' ? (
+                    <p className="console-hint">
+                      Read it aloud as a {variety.name} speaker would. Approve
+                      only what you would teach your own family.
+                    </p>
+                  ) : null}
+                  <DecisionPanel
+                    key={item.review_fingerprint}
+                    targetType="item"
+                    targetId={item.id}
+                    fingerprint={item.review_fingerprint}
+                    stance={stance}
+                    requiredScope={page.required_scope}
+                    approveBlocked={
+                      myPendingApproval
+                        ? 'You approved this phrase. It is waiting for an admin to countersign, so there is nothing more to approve.'
+                        : undefined
+                    }
+                    approveBlockedTitle="Already approved"
+                    approvedRevision={
+                      myApproval && !myPendingApproval
+                        ? (myApproval.target_revision_no ?? item.revision_no)
+                        : null
+                    }
+                    varietyName={variety.name}
+                    seen={seen}
+                    lang={lang}
+                    dir={dir}
+                    action={recordDecision}
+                  />
+                  {viewer.can_suggest && (
+                    <SuggestFix
+                      key={`suggest-${item.review_fingerprint}`}
+                      itemId={item.id}
+                      fingerprint={item.review_fingerprint}
+                      current={seen}
+                      lang={lang}
+                      dir={dir}
+                      action={suggestFix}
+                    />
+                  )}
+                  {openSuggestions.length > 0 && (
+                    <p className="console-hint">
+                      {openSuggestions.length} suggested fix
+                      {openSuggestions.length === 1 ? ' is' : 'es are'} waiting
+                      for an editor. See the history below.
+                    </p>
+                  )}
+                </section>
               )}
-              {openSuggestions.length > 0 && (
-                <p className="console-hint">
-                  {openSuggestions.length} suggested fix
-                  {openSuggestions.length === 1 ? ' is' : 'es are'} waiting for
-                  an editor. See the history below.
-                </p>
-              )}
-            </section>
 
-            {others.length > 0 && (
-              <section
-                className="review-card"
-                aria-labelledby="review-siblings-title"
-              >
-                <h2 id="review-siblings-title" className="review-section-title">
-                  Also in this lesson
-                </h2>
-                <ol className="review-siblings">
-                  {page.siblings.map((s) => (
-                    <li
-                      key={s.id}
-                      className={
-                        s.id === item.id ? 'review-sibling-current' : undefined
-                      }
-                    >
-                      {s.id === item.id ? (
-                        <span
-                          aria-current="true"
-                          className="review-sibling-link"
-                        >
-                          <PhraseSummary
-                            native={s.native}
-                            romanisation={s.romanisation}
-                            meaning={s.meaning}
-                            lang={lang}
-                            dir={dir}
-                          />
-                        </span>
-                      ) : (
-                        <Link
-                          href={reviewItemPath(s.id)}
-                          className="review-sibling-link"
-                        >
-                          <PhraseSummary
-                            native={s.native}
-                            romanisation={s.romanisation}
-                            meaning={s.meaning}
-                            lang={lang}
-                            dir={dir}
-                          />
-                        </Link>
-                      )}
-                      <StatusBadge
-                        status={badgeFor({
-                          review_status: s.review_status,
-                          submitted: lesson.submitted_at !== null,
-                        })}
-                      />
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
-          </aside>
+              {others.length > 0 && (
+                <section
+                  className="review-card"
+                  aria-labelledby="review-siblings-title"
+                >
+                  <h2
+                    id="review-siblings-title"
+                    className="review-section-title"
+                  >
+                    Also in this lesson
+                  </h2>
+                  <ol className="review-siblings">
+                    {page.siblings.map((s) => (
+                      <li
+                        key={s.id}
+                        className={
+                          s.id === item.id
+                            ? 'review-sibling-current'
+                            : undefined
+                        }
+                      >
+                        {s.id === item.id ? (
+                          <span
+                            aria-current="true"
+                            className="review-sibling-link"
+                          >
+                            <PhraseSummary
+                              native={s.native}
+                              romanisation={s.romanisation}
+                              meaning={s.meaning}
+                              lang={lang}
+                              dir={dir}
+                            />
+                          </span>
+                        ) : (
+                          <Link
+                            href={reviewItemPath(s.id)}
+                            className="review-sibling-link"
+                          >
+                            <PhraseSummary
+                              native={s.native}
+                              romanisation={s.romanisation}
+                              meaning={s.meaning}
+                              lang={lang}
+                              dir={dir}
+                            />
+                          </Link>
+                        )}
+                        <StatusBadge
+                          status={badgeFor({
+                            review_status: s.review_status,
+                            submitted: lesson.submitted_at !== null,
+                          })}
+                        />
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              )}
+            </aside>
+          )}
         </div>
 
         <ReviewHistory

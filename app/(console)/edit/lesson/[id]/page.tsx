@@ -22,6 +22,7 @@ import {
 import { requireRole } from '@/lib/console/access';
 import {
   MAX_ITEMS,
+  editorProblems,
   lessonLocked,
   lessonStatus,
   provenanceDefaults,
@@ -106,9 +107,9 @@ export default async function EditLessonRoute({
       {locked === 'demo' && (
         <Notice tone="info" title="A starter lesson">
           <p>
-            Demo lessons are starter content, so this one is read-only: its
-            phrases are never changed or reviewed. Reviewed lessons replace it.
-            To teach these phrases properly, write them in a lesson of your own.
+            Starter lessons are read-only, so this one&apos;s phrases are never
+            changed or reviewed. Reviewed lessons replace it. To teach these
+            phrases properly, write them in a lesson of your own.
           </p>
         </Notice>
       )}
@@ -216,7 +217,7 @@ export default async function EditLessonRoute({
             varietyName={variety}
             locked={locked !== null}
           />
-          {!locked && <ProblemList problems={page.problems} />}
+          {!locked && <ProblemList problems={editorProblems(page)} />}
           <HistoryList
             revisions={page.revisions.recent}
             total={page.revisions.count}

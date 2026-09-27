@@ -10,6 +10,7 @@ import {
   checkPhrase,
   checkRomanisation,
   isStorable,
+  issueLines,
   normaliseNative,
   orthographyLanguages,
   textFingerprint,
@@ -223,4 +224,63 @@ test('warnings alone still let an item be stored', () => {
   assert.equal(isStorable([]), true);
   assert.equal(isStorable(checkNative('xx', 'abc')), true);
   assert.equal(isStorable(checkNative('ps', 'abc')), false);
+});
+
+test('the field groups repeats of one kind into one line', () => {
+  const lines = (language, text) =>
+    issueLines(language, checkNative(language, text)).map((l) => [
+      l.severity,
+      l.message,
+    ]);
+  // Latin letters: one line for all of them, the warning folded in.
+  assert.deepEqual(lines('ps', 'hello'), [
+    [
+      'error',
+      "Latin letters h, e, l, o aren't Pashto. Did the romanisation end up here?",
+    ],
+  ]);
+  assert.deepEqual(lines('ps', 'سa'), [
+    [
+      'error',
+      "The Latin letter a isn't Pashto. Did the romanisation end up here?",
+    ],
+  ]);
+  // Without a character list the warning is all there is, as it was.
+  assert.deepEqual(
+    lines('xx', 'abc').map(([severity]) => severity),
+    ['warning'],
+  );
+  // Characters missing from the list: one line, "ask an admin" once.
+  const [missing, ...rest] = lines('ur', 'کیا?@');
+  assert.deepEqual(rest, []);
+  assert.match(missing[1], /"\?" \(U\+003F\) and "@" \(U\+0040\) aren't/);
+  assert.equal(missing[1].match(/ask an admin/g).length, 1);
+  // A character with a replacement keeps its own line and its fix.
+  assert.deepEqual(lines('ur', 'كتاب'), [
+    ['error', checkNative('ur', 'كتاب')[0].message],
+  ]);
+  assert.deepEqual(lines('ur', '“سلام”'), [
+    [
+      'error',
+      'There are curly quotes (“ ”) at positions 1 and 6. Use straight quotes, or none.',
+    ],
+  ]);
+  assert.match(
+    lines('ps', 'سل ۳ ٣')[0][1],
+    /digits \(۳ ٣\) at positions 4 and 6/,
+  );
+  assert.match(
+    lines('ps', 'س‏ ل')[0][1],
+    /right-to-left mark U\+200F and no-break space U\+00A0\) at positions 2 and 3/,
+  );
+  // A single issue keeps its own message; clean text has no lines.
+  assert.deepEqual(lines('ur', 'کیا?'), [
+    ['error', checkNative('ur', 'کیا?')[0].message],
+  ]);
+  assert.deepEqual(lines('ps', 'ستړي مه شې'), []);
+  // Romanisation problems are one of each kind already.
+  assert.deepEqual(
+    issueLines('ps', checkRomanisation('سلام')).map((l) => l.message),
+    checkRomanisation('سلام').map((i) => i.message),
+  );
 });

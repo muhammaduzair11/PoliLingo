@@ -246,6 +246,109 @@ export function checkPhrase(
   return [...checkNative(language, native), ...checkRomanisation(romanisation)];
 }
 
+/** One line under a field: one problem, or several of the same kind. */
+export type IssueLine = {
+  key: string;
+  severity: ScriptIssue['severity'];
+  message: string;
+};
+
+/** "1", "1 and 6", "1, 4 and 6" */
+function andList(parts: readonly string[]): string {
+  if (parts.length <= 1) return parts[0] ?? '';
+  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+}
+
+/** The issue's character as a code point, or null. */
+const codepointOf = (issue: ScriptIssue) =>
+  issue.char === null ? null : (issue.char.codePointAt(0) ?? null);
+
+/** "“ (U+201C)" style labels: the character and its code point. */
+const charLabel = (issue: ScriptIssue) =>
+  `"${issue.char}" (${codepointLabel(codepointOf(issue) ?? 0)})`;
+
+/**
+ * The issues as a field shows them. The checks above report each character
+ * on its own, which is what the database compares, but "hello" typed into
+ * the Pashto field would then read as five near-identical lines. Here the
+ * repeats of one kind become one line: Latin letters (with the warning that
+ * says what probably happened), characters missing from the list (the "ask
+ * an admin" clause once), curly quotes, Arabic-Indic digits and invisible
+ * characters. A character with a suggested replacement keeps its own line,
+ * and a kind with a single issue keeps its own message.
+ */
+export function issueLines(
+  language: string,
+  issues: readonly ScriptIssue[],
+): IssueLine[] {
+  const orthography = ORTHOGRAPHIES.get(language);
+  const name = orthography?.spec.name ?? language;
+  const kindOf = (issue: ScriptIssue): string => {
+    const cp = codepointOf(issue);
+    if (issue.code === 'LATIN_IN_NATIVE') return 'latin';
+    if (issue.code !== 'PL422_CHAR_NOT_ALLOWED' || cp === null)
+      return issue.code;
+    if (isLatinLetter(cp)) return 'latin';
+    return orthography?.spec.hints.some((h) => h.from === cp)
+      ? `hint-${issue.position}`
+      : issue.code;
+  };
+  const groups = new Map<string, ScriptIssue[]>();
+  for (const issue of issues) {
+    const kind = kindOf(issue);
+    groups.set(kind, [...(groups.get(kind) ?? []), issue]);
+  }
+
+  return [...groups].map(([key, group]): IssueLine => {
+    const severity = group.some((i) => i.severity === 'error')
+      ? 'error'
+      : 'warning';
+    const line = (message: string): IssueLine => ({ key, severity, message });
+    const chars = group.map((i) => i.char ?? '').join(' ');
+    const at = andList(group.map((i) => String(i.position)));
+
+    if (key === 'latin') {
+      // The warning always comes; the letters themselves are errors only
+      // when the language has a character list to check them against.
+      const letters = group
+        .filter((i) => i.code === 'PL422_CHAR_NOT_ALLOWED')
+        .map((i) => i.char ?? '');
+      if (letters.length === 0) return line(group[0].message);
+      return line(
+        letters.length === 1
+          ? `The Latin letter ${letters[0]} isn't ${name}. Did the romanisation end up here?`
+          : `Latin letters ${letters.join(', ')} aren't ${name}. Did the romanisation end up here?`,
+      );
+    }
+    if (group.length === 1) return line(group[0].message);
+    switch (key) {
+      case 'PL422_CHAR_NOT_ALLOWED':
+        return line(
+          `${andList(group.map(charLabel))} aren't in the ${name} character list. If they really belong in ${name}, ask an admin to add them to the character list.`,
+        );
+      case 'PL422_SMART_QUOTE':
+        return line(
+          `There are curly quotes (${chars}) at positions ${at}. Use straight quotes, or none.`,
+        );
+      case 'PL422_ARABIC_DIGIT':
+        return line(
+          `There are Arabic-Indic digits (${chars}) at positions ${at}. Use 0-9, or spell the numbers out.`,
+        );
+      case 'PL422_INVISIBLE_CHAR': {
+        const names = group.map((i) => {
+          const cp = codepointOf(i) ?? 0;
+          return `${INVISIBLE_CHARS.get(cp) ?? 'character'} ${codepointLabel(cp)}`;
+        });
+        return line(
+          `There are invisible characters (${andList(names)}) at positions ${at}. They usually come along when text is copied from a website or Word. Delete them, or retype those spots.`,
+        );
+      }
+      default:
+        return line(group.map((i) => i.message).join(' '));
+    }
+  });
+}
+
 /** True when nothing would stop the database storing it (warnings allowed). */
 export function isStorable(issues: ScriptIssue[]): boolean {
   return issues.every((i) => i.severity !== 'error');

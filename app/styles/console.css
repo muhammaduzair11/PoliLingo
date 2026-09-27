@@ -313,10 +313,10 @@
 .console-notice-body p {
   margin: 0;
 }
+/* A support reference under the sentence, quiet: not code to read. */
 .console-notice-code {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted-foreground);
-  font-family: ui-monospace, 'Cascadia Mono', Menlo, monospace;
 }
 .console-notice-info {
   border-left-color: var(--ring);
@@ -676,6 +676,9 @@ textarea.console-input {
     margin: 0 -16px;
     padding: 8px 16px;
     overflow-x: auto;
+    /* The nav scrolls the current tab into view: keep the same gutter as
+       the padding, so the last tab does not end flush with the screen. */
+    scroll-padding-inline: 16px;
     background: var(--background);
     border-bottom: 1px solid var(--border);
     scrollbar-width: none;

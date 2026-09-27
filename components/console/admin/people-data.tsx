@@ -1,5 +1,6 @@
 import type { ActionResult } from '@/lib/console/action-result';
-import { tomorrowUtc } from '@/lib/console/invite-link';
+import { liveLanguagesFirst, tomorrowUtc } from '@/lib/console/invite-link';
+import type { OverviewData } from '@/lib/console/overview';
 import { adminPeoplePath } from '@/lib/console/paths';
 import { callRpc } from '@/lib/rpc';
 import { serverSupabase } from '@/lib/supabase/server';
@@ -38,10 +39,13 @@ export async function PeopleData({
   revokeRole: FormAction<{ ends_at: string }>;
   revokeInvitation: FormAction<unknown>;
 }) {
-  const result = await callRpc<PeoplePage>(
-    await serverSupabase(),
-    'page_admin_people',
-  );
+  const supabase = await serverSupabase();
+  // The overview read is only for the publish gates, so the invite form can
+  // start on a language learners see. If it fails, the form keeps name order.
+  const [result, overview] = await Promise.all([
+    callRpc<PeoplePage>(supabase, 'page_admin_people'),
+    callRpc<OverviewData>(supabase, 'page_admin_overview'),
+  ]);
   if (!result.ok)
     return (
       <>
@@ -54,6 +58,13 @@ export async function PeopleData({
       </>
     );
   const minEndDate = tomorrowUtc(new Date(result.data.now));
+  const openLanguages = overview.ok
+    ? new Set(
+        (overview.data.languages ?? [])
+          .filter((l) => l.publish_gate === 'open')
+          .map((l) => l.code),
+      )
+    : null;
   return (
     <>
       <PageHeader
@@ -63,7 +74,7 @@ export async function PeopleData({
         actions={
           <InviteDialog
             action={createInvitation}
-            languages={result.data.languages}
+            languages={liveLanguagesFirst(result.data.languages, openLanguages)}
             minEndDate={minEndDate}
           />
         }

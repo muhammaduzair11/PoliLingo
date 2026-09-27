@@ -8,6 +8,7 @@ import {
   charLength,
   clean,
   countStatuses,
+  editorProblems,
   isPastOrToday,
   itemStatus,
   lessonStatus,
@@ -200,7 +201,8 @@ test('readiness mirrors what submit_lesson asks for', () => {
     [
       ['items', false],
       ['exercises', false],
-      ['problems', true],
+      // Too few exercises is also a line in the Checks panel.
+      ['problems', false],
     ],
   );
   const ready = readiness({
@@ -216,12 +218,72 @@ test('readiness mirrors what submit_lesson asks for', () => {
     exercises: [1, 2, 3, 4, 5, 6],
     problems: [
       { severity: 'blocking', code: 'PL422_BAD_OPTION', message: 'x' },
-      // Counted by the exercises check instead.
+      // Six exercises are enough, whatever the stored problem said.
       { severity: 'blocking', code: 'PL422_TOO_FEW_EXERCISES', message: 'x' },
     ],
   });
   assert.equal(blocked.ready, false);
   assert.equal(blocked.checks[2].detail, '1 problem to fix.');
+});
+
+test('the Checks panel and the checklist agree on exercises: six, blocking', () => {
+  const noExercises = {
+    items: [1, 2, 3],
+    exercises: [],
+    problems: [
+      {
+        severity: 'blocking',
+        code: 'PL422_TOO_FEW_EXERCISES',
+        message: 'This lesson needs at least one exercise.',
+        target_type: 'lesson',
+        target_id: 'ps-lsn-000001',
+      },
+    ],
+  };
+  assert.deepEqual(
+    editorProblems(noExercises).map((p) => [p.severity, p.message]),
+    [
+      [
+        'blocking',
+        'A reviewed lesson needs at least 6 exercises. This one has 0.',
+      ],
+    ],
+  );
+  const none = readiness(noExercises);
+  assert.equal(none.checks[1].ok, false);
+  assert.equal(none.checks[2].detail, '1 problem to fix.');
+
+  // Under six the database only warns, but submitting is refused.
+  const three = {
+    items: [1, 2, 3],
+    exercises: [1, 2, 3],
+    problems: [
+      { severity: 'blocking', code: 'PL422_BAD_OPTION', message: 'x' },
+      {
+        severity: 'warning',
+        code: 'PL422_TOO_FEW_EXERCISES',
+        message:
+          'A reviewed lesson needs at least 6 exercises. This one has 3.',
+      },
+    ],
+  };
+  assert.deepEqual(
+    editorProblems(three).map((p) => [p.code, p.severity]),
+    [
+      ['PL422_BAD_OPTION', 'blocking'],
+      ['PL422_TOO_FEW_EXERCISES', 'blocking'],
+    ],
+  );
+  assert.equal(readiness(three).checks[2].detail, '2 problems to fix.');
+
+  // Enough exercises: the line goes, and other problems stay as they are.
+  const six = {
+    items: [1],
+    exercises: [1, 2, 3, 4, 5, 6],
+    problems: [{ severity: 'warning', code: 'PL409_X', message: 'y' }],
+  };
+  assert.deepEqual(editorProblems(six), six.problems);
+  assert.equal(readiness(six).checks[2].detail, 'Nothing blocking.');
 });
 
 test('lengths count characters, as the database does', () => {

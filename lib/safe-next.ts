@@ -174,6 +174,44 @@ export function isSameOriginPost({
   }
 }
 
+export type SignInAudience = 'invite' | 'workspace' | 'learner';
+
+/**
+ * Who the sign-in pages are talking to, from `next` (already through
+ * safeNext): someone opening an invitation, a team member on the way to the
+ * workspace, or a learner saving progress. It only chooses the words.
+ */
+export function signInAudience(next: string): SignInAudience {
+  if (next.startsWith('/invite/')) return 'invite';
+  if (/^\/(?:admin|edit|review)(?:[/?#]|$)/.test(next)) return 'workspace';
+  return 'learner';
+}
+
+/**
+ * The sign-in pages' eyebrow (before the step count), and step 2's heading
+ * and the line under it.
+ */
+export const SIGN_IN_WORDS: Readonly<
+  Record<SignInAudience, { eyebrow: string; title: string; lead: string }>
+> = {
+  invite: {
+    eyebrow: 'JOIN THE POLILINGO TEAM',
+    title: 'Accept your invitation',
+    // The invitation only opens for the address it was sent to.
+    lead: 'No password to remember. Use the email address this invitation was sent to.',
+  },
+  workspace: {
+    eyebrow: 'SIGN IN TO THE WORKSPACE',
+    title: 'Sign in to the workspace',
+    lead: 'No password to remember. Use the email address your workspace role is linked to.',
+  },
+  learner: {
+    eyebrow: 'SAVE YOUR PROGRESS',
+    title: 'Keep your progress on every device',
+    lead: 'No password to remember. Your progress on this device stays here either way.',
+  },
+};
+
 /**
  * Where "Back to learning" goes from the sign-in pages: `next` when it is a
  * learner page, else the learning map. It never lands on a workspace page.
