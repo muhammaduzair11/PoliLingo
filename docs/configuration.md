@@ -49,7 +49,7 @@ project (decided 2026-09-26).
 | Environment               | Where                                 | Database                              |
 | ------------------------- | ------------------------------------- | ------------------------------------- |
 | **Local**                 | `npm run dev` with `npm run db:start` | the Supabase CLI stack in Docker      |
-| **Production**            | `main` → `poli-lingo.vercel.app`      | `polilingo` (Singapore)               |
+| **Production**            | `main` → `polilingo.me`               | `polilingo` (Singapore)               |
 | **Preview of `platform`** | the `platform` branch's preview URL   | `polilingo`, the same project         |
 | **Every other preview**   | each pull request's preview           | none: the variables are not set there |
 

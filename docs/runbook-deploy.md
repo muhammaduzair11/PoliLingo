@@ -9,7 +9,7 @@ Keep this short enough to follow while something is broken.
 The app and the database are deployed separately.
 
 ```
-merge a pull request into main  →  Vercel builds  →  poli-lingo.vercel.app updates
+merge a pull request into main  →  Vercel builds  →  polilingo.me updates
 a new file in supabase/migrations  →  you run `npx supabase db push`  →  the database updates
 ```
 
@@ -91,8 +91,8 @@ schema (its `snapshot.yml`, secret `SUPABASE_DB_URL`).
 
 Supabase dashboard → **Authentication**:
 
-- **URL Configuration.** Site URL `https://poli-lingo.vercel.app`. Redirect URLs:
-  `https://poli-lingo.vercel.app/**`, the `platform` branch's preview domain
+- **URL Configuration.** Site URL `https://polilingo.me`. Redirect URLs:
+  `https://polilingo.me/**`, `https://poli-lingo.vercel.app/**`, the `platform` branch's preview domain
   (`https://poli-lingo-git-platform-muhammad-uzairs-projects-a3d4bb4e.vercel.app/**`) and `http://localhost:3000/**`.
   A redirect that is not listed falls back to the Site URL, and the email link then loses
   where the person was going.
@@ -117,6 +117,10 @@ Supabase dashboard → **Authentication**:
   other preview gets neither, so it never talks to the database. No secret or service-role
   key, ever. Both are compiled into the build, so redeploy after changing them.
 - **Settings → Functions → Function Region:** Singapore (`sin1`), next to the database.
+- **Settings → Domains:** `polilingo.me` serves Production; `www.polilingo.me` redirects to it
+  (308); `poli-lingo.vercel.app` keeps working. The DNS is at Namecheap (Advanced DNS):
+  `A @ 216.198.79.1` and `CNAME www → <the value Vercel shows for www>`. Leave the Resend
+  records (`send`, `rsend`, `resend._domainkey`, `_dmarc`) alone: they are for email.
 
 ### 6. The first admin
 
@@ -231,7 +235,7 @@ everyone is back on the app's own content.
 1. <https://vercel.com/dashboard> → the PoliLingo project → **Deployments**
 2. Find the last deployment that was good. Check the commit message and timestamp.
 3. **⋯** → **Promote to Production**
-4. Confirm, then reload <https://poli-lingo.vercel.app> in a private window.
+4. Confirm, then reload <https://polilingo.me> in a private window.
 
 This does not touch git or the database. Production now serves the older build while `main`
 still has the broken commit — so **do step two below, or the next merge re-deploys the

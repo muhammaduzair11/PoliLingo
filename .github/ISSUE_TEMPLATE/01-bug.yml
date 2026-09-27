@@ -32,7 +32,7 @@ body:
       label: Steps to reproduce
       description: Numbered, starting from a fresh page load.
       placeholder: |
-        1. Open https://poli-lingo.vercel.app in a private window
+        1. Open https://polilingo.me in a private window
         2. Choose Pashto and complete the greetings lesson
         3. Return to the learning map and open greetings again
         4. Complete it a second time
