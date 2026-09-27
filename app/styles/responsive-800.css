@@ -5,7 +5,7 @@
   }
   .site-header nav {
     gap: 20px;
-    font-size: 12px;
+    font-size: 14px;
   }
   .site-header nav a:nth-child(2) {
     display: none;
@@ -22,11 +22,7 @@
     font-size: 60px;
   }
   .hero-copy .eyebrow {
-    font-size: 8px;
     letter-spacing: 0.08em;
-  }
-  .hero-copy > p {
-    font-size: 13px;
   }
   .hero .button {
     font-size: 14px;
@@ -34,7 +30,7 @@
     gap: 13px;
   }
   .hero-footnote {
-    font-size: 10px;
+    font-size: 12px;
     gap: 10px;
     flex-wrap: wrap;
   }
@@ -60,7 +56,7 @@
   .poli-sticker {
     bottom: 20px;
     left: -15px;
-    font-size: 9px;
+    font-size: 12px;
     padding: 10px;
   }
   .little-flower {
@@ -71,7 +67,7 @@
   .poli-caption {
     bottom: -35px;
     right: 0;
-    font-size: 11px;
+    font-size: 12px;
   }
   .star-one {
     font-size: 44px;
@@ -87,7 +83,6 @@
   }
   .hero-bottom {
     margin: 0 30px;
-    font-size: 8px;
   }
   .section-wrap {
     padding-left: 28px;
@@ -104,12 +99,8 @@
   .section-heading h2 {
     font-size: 36px;
   }
-  .section-heading .eyebrow {
-    font-size: 9px;
-  }
   .section-heading > p {
-    font-size: 12px;
-    max-width: 235px;
+    max-width: 310px;
     padding-top: 21px;
   }
   .language-grid {
@@ -125,9 +116,6 @@
   .language-card-top .native {
     font-size: 22px;
   }
-  .course-number {
-    font-size: 8px;
-  }
   .language-card-bottom {
     align-items: flex-start;
   }
@@ -135,9 +123,7 @@
     font-size: 25px;
   }
   .language-card p {
-    font-size: 10px;
-    max-width: 120px;
-    min-height: 34px;
+    min-height: 42px;
   }
   .round-arrow {
     min-width: 31px;
@@ -147,8 +133,8 @@
     width: 19px;
   }
   .language-card-meta {
-    font-size: 7px;
     gap: 8px;
+    letter-spacing: 0.05em;
   }
   .how-section {
     padding-top: 70px;
@@ -157,12 +143,6 @@
   }
   .how-intro h2 {
     font-size: 41px;
-  }
-  .how-intro > p {
-    font-size: 13px;
-  }
-  .how-intro .eyebrow {
-    font-size: 9px;
   }
   .steps article {
     gap: 14px;
@@ -175,12 +155,6 @@
   .steps h3 {
     font-size: 18px;
   }
-  .steps p {
-    font-size: 12px;
-  }
-  .step-label {
-    font-size: 8px;
-  }
   .sample-section {
     margin-left: 28px;
     margin-right: 28px;
@@ -192,37 +166,75 @@
   .sample-copy h2 {
     font-size: 35px;
   }
-  .sample-copy > p {
-    font-size: 12px;
-  }
   .pill {
-    font-size: 8px;
-    padding: 7px;
+    padding: 7px 10px;
   }
-  .sample-options {
-    gap: 6px;
-  }
-  .sample-option {
-    font-size: 10px;
-  }
-  .sample-option .native {
-    font-size: 22px;
-  }
+  /* The try-it card stands level, and its choices become full-width rows:
+     a ring at the start, the phrase on one line at the end, its Roman
+     spelling under it. */
   .sample-card {
-    padding: 17px;
+    padding: 20px;
+    transform: none;
   }
   .sample-top span:last-child {
     display: none;
   }
   .sample-card h3 {
-    font-size: 18px;
+    font-size: 20px;
+    margin: 20px 0 16px;
   }
-  .sample-response {
-    font-size: 10px;
+  .sample-options {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sample-option {
+    flex: none;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    min-height: 64px;
+    padding: 7px 16px 7px 14px;
+  }
+  .sample-option:hover {
+    transform: none;
+  }
+  .sample-mark,
+  .sample-mark:empty {
+    position: static;
+    display: flex;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid #ddd2e8;
+    background: #fff;
+  }
+  .sample-mark svg {
+    width: 15px;
+    height: 15px;
+  }
+  .sample-option.correct .sample-mark {
+    border-color: #429d64;
+    color: #21633a;
+  }
+  .sample-option.incorrect .sample-mark {
+    border-color: #dc9563;
+    color: #9a4e1c;
+  }
+  .sample-option.reveal .sample-mark {
+    border-color: #429d64;
+  }
+  .sample-words {
+    align-items: flex-end;
+    text-align: end;
+  }
+  .sample-option .native {
+    font-size: 24px;
+    line-height: 1.6;
   }
   .handwritten {
-    font-size: 14px;
-    margin-left: 0;
+    font-size: 16px;
   }
   .meet-inner {
     gap: 25px;
@@ -232,11 +244,8 @@
   .meet-copy h2 {
     font-size: 43px;
   }
-  .meet-copy p {
-    font-size: 13px;
-  }
   .meet-copy .button {
-    font-size: 13px;
+    font-size: 14px;
     padding: 13px 17px;
     gap: 12px;
   }
@@ -249,7 +258,7 @@
     top: 45px;
   }
   .speech-bubble {
-    font-size: 11px;
+    font-size: 12px;
     padding: 11px;
     left: -5px;
   }
@@ -273,29 +282,17 @@
   .onboard-art {
     padding: 25px;
   }
-  .onboard-art h2 {
+  .onboard-course {
     font-size: 46px;
   }
   .onboard-world {
     height: 260px;
   }
-  .onboard-note {
-    font-size: 11px;
-  }
   .onboard-content h1 {
     font-size: 43px;
   }
-  .onboard-content .lead {
-    font-size: 14px;
-  }
-  .course-facts p {
-    font-size: 11px;
-  }
   .course-facts strong {
-    font-size: 13px;
-  }
-  .onboard-content > .eyebrow {
-    font-size: 8px;
+    font-size: 15px;
   }
   .dashboard-aside {
     display: grid;
@@ -310,9 +307,6 @@
   .dashboard-heading h1 {
     font-size: 28px;
   }
-  .dashboard-heading p {
-    font-size: 12px;
-  }
   .stats-pills > span {
     padding: 10px;
     font-size: 14px;
@@ -323,9 +317,6 @@
   .path-area {
     max-width: 540px;
   }
-  .map-poli {
-    left: 30px;
-  }
   .map-banner h2 {
     font-size: 28px;
   }
@@ -335,9 +326,6 @@
   }
   .stop-label h3 {
     font-size: 16px;
-  }
-  .stop-label p {
-    font-size: 12px;
   }
   .dashboard {
     padding-top: 30px;

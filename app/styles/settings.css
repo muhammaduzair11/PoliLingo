@@ -4,15 +4,16 @@
   padding-bottom: 70px;
 }
 .settings-page > .text-link {
-  font-size: 13px;
-  margin-bottom: 30px;
+  font-size: var(--text-small);
+  min-height: 44px;
+  margin-bottom: 18px;
 }
 .settings-page h1 {
   font-size: 44px;
   margin: 13px 0;
 }
 .settings-page > .lead {
-  font-size: 15px;
+  font-size: var(--text-body);
   margin-bottom: 30px;
 }
 .settings-card {
@@ -29,16 +30,30 @@
   padding: 24px 0;
   border-bottom: 1px solid #eee7f3;
 }
-.setting-row > div {
-  flex: 1;
+/* A row with a switch is its label: the whole row is the tap target. */
+.setting-toggle {
+  cursor: pointer;
+  min-height: 44px;
 }
-.setting-row h3 {
+.setting-toggle:hover .setting-title {
+  color: var(--purple);
+}
+.setting-text {
+  flex: 1;
+  min-width: 0;
+}
+.setting-title {
+  display: block;
   font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
   margin-bottom: 5px;
 }
-.setting-row p {
-  font-size: 12px;
-  color: #8b779a;
+.setting-description {
+  display: block;
+  font-size: var(--text-small);
+  line-height: 1.55;
+  color: var(--text-muted);
   max-width: 460px;
 }
 .setting-icon {
@@ -46,6 +61,7 @@
   justify-content: center;
   align-items: center;
   width: 39px;
+  min-width: 39px;
   height: 39px;
   background: #f1e9fc;
   color: var(--purple);
@@ -58,13 +74,20 @@
   min-width: 40px;
   height: 24px;
 }
+/* The switch's own hit area reaches 44px tall, beyond its drawn track. */
+.setting-row [data-slot='switch']::after {
+  inset: -12px -12px;
+}
 .daily-setting {
   padding: 24px 0;
 }
+.daily-setting h3 {
+  font-size: 16px;
+}
 .daily-setting > p {
-  font-size: 12px;
-  color: #8b779a;
-  margin: 5px 0 16px;
+  font-size: var(--text-small);
+  color: var(--text-muted);
+  margin: 5px 0 12px;
 }
 .inline-goals {
   display: flex;
@@ -74,7 +97,7 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
 }
 .sources-card {
@@ -86,9 +109,12 @@
   margin-bottom: 15px;
 }
 .sources-card p {
-  font-size: 13px;
-  color: #806c91;
+  font-size: var(--text-small);
+  color: var(--text-muted);
   margin-bottom: 13px;
+}
+.sources-card p strong {
+  color: var(--ink);
 }
 /* A citation that is a URL is linked in the credits line. */
 .sources-card p a {
@@ -99,20 +125,51 @@
 }
 .reset-card {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 25px;
+  gap: 16px 25px;
   padding: 20px 0;
 }
 .reset-card > div:first-child {
-  flex: 1;
+  flex: 1 1 320px;
 }
 .reset-card p {
-  font-size: 12px;
-  color: #8b779a;
+  font-size: var(--text-small);
+  color: var(--text-muted);
   margin-top: 8px;
 }
+.reset-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
 .reset-card .button {
-  font-size: 13px;
-  min-height: 43px;
+  font-size: 14px;
+  min-height: 44px;
   white-space: nowrap;
+}
+/* Export, import and reset report right under their buttons. */
+.settings-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-basis: 100%;
+  font-size: var(--text-small);
+  line-height: 1.5;
+}
+.settings-notice-ok,
+.settings-notice-problem {
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+.settings-notice-ok {
+  background: #e4f5e7;
+  color: #1f5c36;
+}
+.settings-notice-problem {
+  background: #fdf0f3;
+  color: #8f2a3f;
+}
+.settings-notice svg {
+  margin-top: 2px;
 }

@@ -27,12 +27,6 @@
   .hero-bottom {
     margin: 0 40px;
   }
-  .hero-copy .eyebrow {
-    font-size: 9px;
-  }
-  .hero-copy > p {
-    font-size: 15px;
-  }
   .poli-sticker {
     left: -6px;
     bottom: 51px;
@@ -46,14 +40,8 @@
   .world-frame {
     height: 185px;
   }
-  .language-card p {
-    font-size: 11px;
-  }
   .language-card h3 {
     font-size: 29px;
-  }
-  .language-card-meta {
-    font-size: 8px;
   }
   .how-section {
     gap: 55px;
@@ -72,9 +60,6 @@
   }
   .sample-card h3 {
     font-size: 19px;
-  }
-  .sample-top {
-    font-size: 8px;
   }
   .meet-copy h2 {
     font-size: 52px;
@@ -112,22 +97,14 @@
     padding-right: 30px;
   }
   .map-poli {
-    width: 95px;
-    left: 5px;
-    top: 29px;
+    width: 88px;
   }
   .map-poli img {
-    width: 100px;
-    height: 110px;
-  }
-  .map-poli > span {
-    font-size: 8px;
+    width: 88px;
+    height: 96px;
   }
   .stop-label h3 {
-    font-size: 14px;
-  }
-  .stop-label p {
-    font-size: 10px;
+    font-size: 16px;
   }
   .map-banner {
     padding: 24px;

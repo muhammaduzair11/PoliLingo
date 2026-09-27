@@ -14,30 +14,33 @@
   margin-top: 13px;
 }
 .section-heading > p {
-  font-size: 14px;
-  color: #786a83;
-  max-width: 340px;
+  font-size: var(--text-body);
+  color: var(--text-muted);
+  max-width: 380px;
   padding-bottom: 3px;
 }
 .mobile-break {
   display: none;
 }
-/* Laid out for three languages. --cards is how many the content release
-   holds (components/home.tsx). With fewer, each card keeps the width it has
-   in a row of three and the row is centred, so no empty slot shows. */
+/* One column per language the content release holds (--cards, from
+   components/home.tsx). The row starts at the heading's left edge; each card
+   is capped in width, so two languages do not stretch into billboards. */
 .language-grid {
   --grid-gap: 22px;
+  --card-max: 440px;
   display: grid;
-  grid-template-columns: repeat(var(--cards, 3), 1fr);
+  grid-template-columns: repeat(var(--cards, 3), minmax(0, 1fr));
   gap: var(--grid-gap);
   max-width: calc(
-    var(--cards, 3) * (100% - 2 * var(--grid-gap)) / 3 + (var(--cards, 3) - 1) *
-      var(--grid-gap)
+    var(--cards, 3) * var(--card-max) + (var(--cards, 3) - 1) * var(--grid-gap)
   );
-  margin-inline: auto;
 }
+/* The card's parts sit in named areas, so the same markup can stand tall
+   (a row of cards) or lie wide (a single language, and phones). */
 .language-card {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'top' 'art' 'bottom' 'meta';
   background: var(--course-color);
   border-radius: 24px;
   border: 1px solid #26183b0e;
@@ -57,15 +60,16 @@
   transform: translateY(-9px) rotate(1deg);
 }
 .language-card-top {
+  grid-area: top;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 .course-number {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.1em;
-  opacity: 0.6;
+  color: var(--text-muted);
 }
 .native {
   font-family: 'Noto Naskh Arabic', serif;
@@ -77,6 +81,7 @@
   font-size: 25px;
 }
 .world-frame {
+  grid-area: art;
   height: 215px;
   position: relative;
   margin: -4px -10px 0;
@@ -97,6 +102,7 @@
   font-size: 25px;
 }
 .language-card-bottom {
+  grid-area: bottom;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -108,7 +114,8 @@
   letter-spacing: -0.04em;
 }
 .language-card p {
-  font-size: 12px;
+  font-size: var(--text-small);
+  line-height: 1.5;
   margin-top: 3px;
 }
 .round-arrow {
@@ -130,14 +137,49 @@
   transform: rotate(45deg);
 }
 .language-card-meta {
+  grid-area: meta;
   border-top: 1px solid #26183b1a;
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   margin-top: 22px;
   padding-top: 13px;
-  font-size: 9px;
-  letter-spacing: 0.09em;
-  opacity: 0.7;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+/* A single language lies wide: its world on the left, its words beside it. */
+.language-grid-single {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 980px;
+}
+.language-grid-single .language-card {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas: 'art top' 'art bottom' 'art meta';
+  column-gap: 36px;
+  padding: 26px 32px 22px;
+}
+.language-grid-single .world-frame {
+  height: 300px;
+  margin: 0;
+}
+.language-grid-single .language-card-bottom {
+  align-items: flex-end;
+}
+.language-grid-single .language-card h3 {
+  font-size: 44px;
+}
+/* The band is tilted, so its corners would reach past the page edge and
+   widen a phone's layout; the wrapper trims them. */
+.marquee-wrap {
+  overflow-x: clip;
+  padding: 10px 0;
+}
+/* Only phones need it here: wider screens have the header's button. */
+.marquee-wrap .marquee-motion {
+  display: none;
 }
 .marquee {
   overflow: hidden;
@@ -179,8 +221,8 @@
   margin: 16px 0 23px;
 }
 .how-intro > p {
-  color: #786a83;
-  font-size: 15px;
+  color: var(--text-muted);
+  font-size: var(--text-body);
   margin-bottom: 25px;
 }
 .steps {
@@ -224,9 +266,9 @@
   background: #cbedd5;
 }
 .step-label {
-  color: #80758b;
-  font-size: 10px;
-  letter-spacing: 0.13em;
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 0.12em;
   font-weight: 600;
 }
 .steps h3 {
@@ -235,8 +277,8 @@
   margin: 5px 0 7px;
 }
 .steps p {
-  font-size: 14px;
-  color: #786a83;
+  font-size: var(--text-body);
+  color: var(--text-muted);
   line-height: 1.65;
 }
 .sample-section {
@@ -256,7 +298,7 @@
   border: 1px solid #d7c4f0;
   padding: 8px 11px;
   border-radius: 20px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--purple);
@@ -266,16 +308,26 @@
   margin: 24px 0 19px;
 }
 .sample-copy > p {
-  color: #776287;
-  font-size: 14px;
+  color: var(--text-muted);
+  font-size: var(--text-body);
+}
+/* The card and its handwritten nudge, which sits at the card's top-left
+   corner and points down at the choices. */
+.sample-stage {
+  position: relative;
+  align-self: center;
+  min-width: 0;
 }
 .handwritten {
-  display: block;
-  font-size: 17px;
+  position: absolute;
+  left: 8px;
+  bottom: calc(100% + 8px);
+  white-space: nowrap;
+  font-size: 18px;
   color: var(--purple);
   font-style: italic;
-  transform: rotate(-7deg);
-  margin: 30px 0 0 20px;
+  transform: rotate(-4deg);
+  transform-origin: left bottom;
 }
 .sample-card {
   background: white;
@@ -283,16 +335,16 @@
   padding: 26px;
   box-shadow: 0 8px 0 #cbb8e04d;
   border: 1px solid #e3d7f2;
-  align-self: center;
   transform: rotate(2deg);
 }
 .sample-top {
   display: flex;
   justify-content: space-between;
-  font-size: 9px;
+  gap: 12px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   font-weight: 600;
-  color: #8b7a99;
+  color: var(--text-muted);
 }
 .sample-top > span:last-child {
   display: flex;
@@ -320,8 +372,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 12px;
-  color: #766287;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.sample-words {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+.sample-roman {
+  line-height: 1.35;
 }
 .sample-option:hover {
   background: #f6f0ff;
@@ -331,11 +392,22 @@
 .sample-option .native {
   font-size: 25px;
   color: var(--ink);
+  white-space: nowrap;
 }
-.sample-option > svg {
+/* The tile's state: on wide cards a badge on its corner once picked; on
+   phones a ring at the start of the row (responsive-800.css). */
+.sample-mark {
   position: absolute;
-  right: -4px;
-  top: -6px;
+  right: -6px;
+  top: -8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sample-mark:empty {
+  display: none;
+}
+.sample-mark svg {
   background: white;
   border-radius: 50%;
 }
@@ -347,21 +419,35 @@
 .sample-option.incorrect {
   background: #fff0e4;
   border-color: #dc9563;
+  color: #7a4420;
+}
+/* After a wrong pick the right answer is outlined in green and pulses
+   twice; with motion paused only the outline shows. */
+.sample-option.reveal {
+  border-color: #429d64;
+  box-shadow:
+    0 0 0 3px #429d6440,
+    0 3px 0 #cfe9d7;
+  animation: sample-reveal 1.1s ease-in-out 2;
 }
 .sample-response {
   display: flex;
   align-items: center;
   gap: 8px;
   min-height: 56px;
-  font-size: 12px;
-  color: #776287;
+  font-size: var(--text-small);
+  line-height: 1.45;
+  color: var(--text-muted);
   margin-top: 15px;
+}
+.sample-response strong {
+  color: var(--ink);
 }
 .sample-card > .button {
   width: 100%;
-  font-size: 13px;
-  min-height: 42px;
-  padding: 11px;
+  font-size: 15px;
+  min-height: 48px;
+  padding: 12px;
 }
 .meet-section {
   background: #6533be;
@@ -416,7 +502,7 @@
   font-size: 65px;
 }
 .meet-copy .eyebrow {
-  font-size: 10px;
+  font-size: 12px;
   color: #e0d0f6;
 }
 .meet-copy h2 {
@@ -427,9 +513,9 @@
   color: var(--yellow);
 }
 .meet-copy p {
-  font-size: 15px;
+  font-size: var(--text-body);
   color: #e6d9f7;
-  max-width: 380px;
+  max-width: 420px;
   margin-bottom: 28px;
 }
 .closing {
@@ -458,7 +544,7 @@
   transform: rotate(-4deg);
 }
 .closing > p {
-  font-size: 12px;
-  color: #82758d;
+  font-size: var(--text-small);
+  color: var(--text-muted);
   margin-top: 20px;
 }

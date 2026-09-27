@@ -35,11 +35,24 @@
   align-items: center;
   gap: 8px;
 }
+.site-header .brand {
+  min-height: 44px;
+}
+/* "My adventure" on the map it opens: marked as the current page, not a
+   link back to itself. */
+.site-header nav .nav-current {
+  color: var(--purple);
+  font-weight: 600;
+}
 /* The CTA keeps its words on one line at every width, and the nav gives way
-   first. On the narrowest phones only its arrow shows (responsive-580.css). */
+   first. Phones swap in a shorter label (responsive-580.css); there is never
+   an arrow on its own. */
 .header-cta {
   white-space: nowrap;
   flex-shrink: 0;
+}
+.header-cta-short {
+  display: none;
 }
 .home-header .button-ink {
   box-shadow: 0 3px 0 #c5bbce;

@@ -2,8 +2,17 @@
   box-sizing: border-box;
 }
 html {
-  scroll-behavior: smooth;
   scroll-padding-top: 100px;
+  /* Tilted decorations (the marquee, stickers) must never widen the page
+     on a phone. clip, unlike hidden, keeps position: sticky working. */
+  overflow-x: clip;
+}
+/* In-page jumps (#languages, #course-map) glide only once the site header
+   has set data-scroll-behavior (components/site-chrome.tsx). Next.js reads
+   the same attribute to turn smoothing off while it changes pages; with
+   smoothing always on, finishing onboarding landed on the map's footer. */
+html[data-scroll-behavior='smooth'] {
+  scroll-behavior: smooth;
 }
 body {
   margin: 0;
@@ -72,8 +81,18 @@ h2 {
   letter-spacing: -0.055em;
   line-height: 1.04;
 }
+/* Negative tracking narrows the spaces too, so tight headings read as one
+   word ("First,whenwereyouborn?"). A little word spacing gives the gaps
+   back, and balanced wrapping keeps a lone word off the last line. */
+h1,
+h2,
+h3 {
+  word-spacing: 0.08em;
+  text-wrap: balance;
+}
 p {
   line-height: 1.65;
+  text-wrap: pretty;
 }
 svg {
   flex-shrink: 0;

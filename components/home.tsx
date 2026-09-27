@@ -18,16 +18,17 @@ import { courses, selectedCourse } from '@/lib/content';
 import { landingTeaser, exclaimed } from '@/lib/teaser';
 import { countWord, plural } from '@/lib/words';
 import { Art, Poli } from './art';
-import { Header, Footer } from './site-chrome';
+import { Header, Footer, MotionToggle } from './site-chrome';
 export function Home() {
   const { state } = useLearning();
   // Only a course the learner can see: a stored Hindko choice from the MVP
-  // shows no "Welcome back" link, and the language cards below are the way in.
+  // leads nowhere, and the language cards below are the way in.
   const remembered = selectedCourse(state.selected);
   // The "try it" card asks a question from the release, so it never names a
   // language the release does not hold. With none to ask, it is left out.
   const teaser = landingTeaser(courses);
   const [sample, setSample] = useState<string | null>(null);
+  const missed = !!teaser && sample !== null && sample !== teaser.answer.id;
   const { play } = useLearning();
   return (
     <>
@@ -55,9 +56,19 @@ export function Home() {
                 <br />
                 Learn Pakistan’s languages, one small win at a time.
               </p>
-              <a href="#languages" className="button button-yellow">
-                Find your first words <ArrowUpRight size={22} />
-              </a>
+              {/* A returning learner's first choice is to carry on. */}
+              {remembered ? (
+                <Link
+                  href={`/learn/${remembered.id}`}
+                  className="button button-yellow"
+                >
+                  Continue {remembered.name} <ArrowRight size={22} />
+                </Link>
+              ) : (
+                <a href="#languages" className="button button-yellow">
+                  Find your first words <ArrowUpRight size={22} />
+                </a>
+              )}
               <div className="hero-footnote">
                 <span>
                   <Check size={15} /> Start free
@@ -76,13 +87,12 @@ export function Home() {
                     <ArrowUpRight size={14} />
                   </Link>
                 ))}
+                {remembered && (
+                  <a href="#languages" className="hero-more">
+                    Find your first words
+                  </a>
+                )}
               </nav>
-              {remembered && (
-                <Link className="return-link" href={`/learn/${remembered.id}`}>
-                  Welcome back! Continue {remembered.name}{' '}
-                  <ArrowRight size={16} />
-                </Link>
-              )}
             </div>
             <div
               className="hero-art"
@@ -152,7 +162,7 @@ export function Home() {
             </p>
           </div>
           <div
-            className="language-grid"
+            className={`language-grid ${courses.length === 1 ? 'language-grid-single' : ''}`}
             style={{ '--cards': courses.length } as CSSProperties}
           >
             {courses.map((course, i) => (
@@ -200,15 +210,20 @@ export function Home() {
             ))}
           </div>
         </section>
-        <div className="marquee" aria-hidden="true">
-          <div>
-            {[0, 1, 2, 3].map((i) => (
-              <span key={i}>
-                FIND YOUR WORDS <span>✳</span> FIND YOUR PEOPLE <span>✳</span> A
-                LITTLE MORE YOU <span>✳</span>
-              </span>
-            ))}
+        <div className="marquee-wrap">
+          <div className="marquee" aria-hidden="true">
+            <div>
+              {[0, 1, 2, 3].map((i) => (
+                <span key={i}>
+                  FIND YOUR WORDS <span>✳</span> FIND YOUR PEOPLE <span>✳</span>{' '}
+                  A LITTLE MORE YOU <span>✳</span>
+                </span>
+              ))}
+            </div>
           </div>
+          {/* Phones have no motion button in the header: it is here, beside
+              the thing that moves (and in the footer). */}
+          <MotionToggle className="marquee-motion" />
         </div>
         <section id="how-it-works" className="section-wrap how-section">
           <div className="how-intro">
@@ -288,71 +303,90 @@ export function Home() {
                 <br />
                 Try this little bit of {teaser.course.name}.
               </p>
-              <span className="handwritten">Go on. Take a guess. ↗</span>
             </div>
-            <div className="sample-card">
-              <div className="sample-top">
-                <span>
-                  {teaser.course.name.toUpperCase()} ·{' '}
-                  {teaser.lesson.title.toUpperCase()}
-                </span>
-                <span>
-                  <Star size={15} /> FIRST WORD
-                </span>
-              </div>
-              <h3>{teaser.prompt}</h3>
-              <div className="sample-options">
-                {teaser.options.map((p) => {
-                  const right = p.id === teaser.answer.id;
-                  return (
-                    <button
-                      key={p.id}
-                      className={`sample-option ${sample === p.id ? (right ? 'correct' : 'incorrect') : ''}`}
-                      onClick={() => {
-                        setSample(p.id);
-                        play(right);
-                      }}
-                      aria-pressed={sample === p.id}
-                    >
-                      <span
-                        className="native"
-                        lang={teaser.course.lang}
-                        dir={teaser.course.dir}
+            <div className="sample-stage">
+              <span className="handwritten">
+                Go on. Take a guess. <span aria-hidden="true">↘</span>
+              </span>
+              <div className="sample-card">
+                <div className="sample-top">
+                  <span>
+                    {teaser.course.name.toUpperCase()} ·{' '}
+                    {teaser.lesson.title.toUpperCase()}
+                  </span>
+                  <span>
+                    <Star size={15} /> FIRST WORD
+                  </span>
+                </div>
+                <h3>{teaser.prompt}</h3>
+                <div className="sample-options">
+                  {teaser.options.map((p) => {
+                    const right = p.id === teaser.answer.id;
+                    const picked = sample === p.id;
+                    // After a wrong pick, the right answer is marked too, so
+                    // the next tap is an easy win.
+                    const reveal = right && missed;
+                    return (
+                      <button
+                        key={p.id}
+                        className={`sample-option ${picked ? (right ? 'correct' : 'incorrect') : ''} ${reveal ? 'reveal' : ''}`}
+                        onClick={() => {
+                          setSample(p.id);
+                          play(right);
+                        }}
+                        aria-pressed={picked}
                       >
-                        {p.native}
+                        <span className="sample-mark" aria-hidden="true">
+                          {picked &&
+                            (right ? (
+                              <Check size={17} />
+                            ) : (
+                              <RotateCcw size={17} />
+                            ))}
+                        </span>
+                        <span className="sample-words">
+                          <span
+                            className="native"
+                            lang={teaser.course.lang}
+                            dir={teaser.course.dir}
+                          >
+                            {p.native}
+                          </span>
+                          <span className="sample-roman">{p.roman}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <output className="sample-response">
+                  {sample === null ? (
+                    <>
+                      <Heart size={17} /> No pressure. That’s how we learn.
+                    </>
+                  ) : sample === teaser.answer.id ? (
+                    <>
+                      <Check size={18} /> {exclaimed(teaser.answer.roman)} Look
+                      at you, making connections.
+                    </>
+                  ) : (
+                    <>
+                      <Heart size={17} />
+                      <span>
+                        A good try! Tap <strong>{teaser.answer.roman}</strong>{' '}
+                        to lock it in.
                       </span>
-                      <span>{p.roman}</span>
-                      {sample === p.id &&
-                        (right ? <Check size={17} /> : <RotateCcw size={17} />)}
-                    </button>
-                  );
-                })}
-              </div>
-              <output className="sample-response">
-                {sample === null ? (
-                  <>
-                    <Heart size={17} /> No pressure. That’s how we learn.
-                  </>
-                ) : sample === teaser.answer.id ? (
-                  <>
-                    <Check size={18} /> {exclaimed(teaser.answer.roman)} Look at
-                    you, making connections.
-                  </>
-                ) : (
-                  <>
-                    <Heart size={17} /> A good try! {teaser.answer.roman} means
-                    “{teaser.answer.meaning}”. Try it.
-                  </>
+                    </>
+                  )}
+                </output>
+                {sample === teaser.answer.id && (
+                  <Link
+                    href={`/onboarding/${teaser.course.id}`}
+                    className="button button-purple"
+                  >
+                    Keep that feeling going <ArrowRight size={18} />
+                  </Link>
                 )}
-              </output>
-              {sample === teaser.answer.id && (
-                <Link
-                  href={`/onboarding/${teaser.course.id}`}
-                  className="button button-purple"
-                >
-                  Keep that feeling going <ArrowRight size={18} />
-                </Link>
-              )}
+              </div>
             </div>
           </section>
         )}
@@ -398,8 +432,7 @@ export function Home() {
           </span>
           <h2>
             There’s a whole world
-            <br />
-            in a little <span>hello.</span>
+            <br className="desktop-break" /> in a little <span>hello.</span>
           </h2>
           <a href="#languages" className="button button-purple">
             Find your language <ArrowUpRight size={21} />
