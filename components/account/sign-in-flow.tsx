@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
   type SubmitEvent,
   type ReactNode,
+  type Ref,
   type RefObject,
 } from 'react';
 import { ArrowLeft, ArrowRight, Copy, Mail } from 'lucide-react';
@@ -23,8 +24,10 @@ import {
   ageBandCookie,
   ageBandFor,
   birthProblem,
+  birthProblemField,
   readBirth,
   type AgeBand,
+  type BirthProblem,
 } from '@/lib/age-gate';
 import { describeDbError } from '@/lib/db-errors';
 import {
@@ -41,13 +44,24 @@ import {
   newEmailLinkNonce,
   readEmailLinkCookie,
   signInAudience,
+  stepEyebrow,
+  withSignedIn,
+  type BackLink,
 } from '@/lib/safe-next';
 import { browserSupabase } from '@/lib/supabase/browser';
+import { PoliSays, type PoliPose } from './poli-says';
 
 type Step =
   | { kind: 'age' }
   | { kind: 'under-13' }
-  | { kind: 'choose'; band: AgeBand }
+  | {
+      kind: 'choose';
+      band: AgeBand;
+      /** The band came from an answer given earlier (the 30-minute cookie). */
+      remembered: boolean;
+      /** The address typed before "Use a different email". */
+      email?: string;
+    }
   | { kind: 'code'; band: AgeBand; email: string };
 
 const MONTHS = [
@@ -66,6 +80,10 @@ const MONTHS = [
 ];
 
 const RESEND_SECONDS = 60;
+
+/** Signed in, but the age band did not save: "Try again" repeats that part. */
+const FINISH_FAILED =
+  'You’re signed in, but we couldn’t finish setting up. Try again.';
 
 /** A sentence for a Supabase Auth refusal. Never the raw text. */
 function authMessage(error: unknown): string {
@@ -104,6 +122,18 @@ function useUserAgent(): string {
   );
 }
 
+/**
+ * False in the server HTML and during hydration, true once React runs the
+ * page. Until then a form cannot be handled here, so its button waits.
+ */
+function useHydrated(): boolean {
+  return useSyncExternalStore(
+    noSubscribe,
+    () => true,
+    () => false,
+  );
+}
+
 /** Moves focus to a step's heading when the step changes, for screen readers. */
 function useFocusOnChange(key: string) {
   const ref = useRef<HTMLHeadingElement>(null);
@@ -139,7 +169,7 @@ function emailRedirect(next: string): string {
     nonce,
     window.location.protocol === 'https:',
   );
-  return emailLinkRedirect(window.location.origin, next, nonce);
+  return emailLinkRedirect(window.location.origin, withSignedIn(next), nonce);
 }
 
 /**
@@ -148,58 +178,78 @@ function emailRedirect(next: string): string {
  * 6-digit email code. After the code, the profile gets the declared band
  * and the page does a full navigation to `next`, so the app boots again
  * with the session.
+ *
+ * An answer given in the last 30 minutes (the band cookie, set by this
+ * flow) is not asked again: the flow opens on step 2, with a way back to
+ * the age question for someone else on the same device.
  */
 export function SignInFlow({
   next,
   back,
   configured,
   notice,
+  rememberedBand = null,
 }: {
   /** Where to go after signing in: already checked by safeNext(). */
   next: string;
-  /** "Keep learning" goes here. */
-  back: string;
+  /** The way back, named for where it goes. */
+  back: BackLink;
   configured: boolean;
   /** A sentence from the callback, e.g. an expired link. */
   notice?: string | null;
+  /** The band from the cookie, when it is still there. */
+  rememberedBand?: AgeBand | null;
 }) {
-  const [step, setStep] = useState<Step>({ kind: 'age' });
+  const [step, setStep] = useState<Step>(() =>
+    rememberedBand
+      ? { kind: 'choose', band: rememberedBand, remembered: true }
+      : { kind: 'age' },
+  );
   const heading = useFocusOnChange(step.kind);
+  const audience = signInAudience(next);
+  const words = SIGN_IN_WORDS[audience];
 
   if (!configured)
     return (
-      <Card>
-        <p className="eyebrow purple">SAVE YOUR PROGRESS</p>
+      <Card pose="rest" says="Your progress is safe on this device.">
+        <p className="eyebrow purple">{words.eyebrow}</p>
         <h1 className="signin-title">Accounts aren’t switched on here</h1>
         <p className="signin-lead">
           This copy of PoliLingo can’t sign anyone in yet. Everything else
           works, and your progress stays on this device.
         </p>
-        <Link className="button button-purple full-width" href={back}>
-          Keep learning <ArrowRight size={19} />
+        <Link className="button button-purple full-width" href={back.href}>
+          {back.label} <ArrowRight size={19} />
         </Link>
       </Card>
     );
 
   if (step.kind === 'under-13')
     return (
-      <Card>
-        <h1 className="signin-title" tabIndex={-1} ref={heading}>
-          You can keep learning without an account
-        </h1>
-        <Link className="button button-purple full-width" href={back}>
-          Back to learning <ArrowRight size={19} />
+      <UnderThirteen headingRef={heading}>
+        <Link className="button button-purple full-width" href={back.href}>
+          {back.label} <ArrowRight size={19} />
         </Link>
-      </Card>
+      </UnderThirteen>
     );
 
   if (step.kind === 'age')
     return (
       <AgeStep
-        eyebrow={`${SIGN_IN_WORDS[signInAudience(next)].eyebrow} · 1 OF 2`}
+        eyebrow={stepEyebrow(words.eyebrow, 1)}
+        lead={words.ageLead}
+        says={words.hello}
         notice={notice}
-        back={back}
         headingRef={heading}
+        foot={
+          // Team members need an account, so only a learner hears this.
+          audience === 'learner' ? (
+            <p className="signin-foot">
+              You never need an account to learn.{' '}
+              <Link href={back.href}>{back.label}</Link>
+            </p>
+          ) : null
+        }
         onDone={(band) => {
           if (band === 'under-13') {
             // Nothing is kept: not even a band from an earlier try.
@@ -211,7 +261,7 @@ export function SignInFlow({
             band,
             window.location.protocol === 'https:',
           );
-          setStep({ kind: 'choose', band });
+          setStep({ kind: 'choose', band, remembered: false });
         }}
       />
     );
@@ -221,6 +271,14 @@ export function SignInFlow({
       <ChooseStep
         next={next}
         headingRef={heading}
+        remembered={step.remembered}
+        defaultEmail={step.email}
+        notice={step.remembered ? notice : null}
+        onChangeAge={() => {
+          // Someone else may be at this device: forget the earlier answer.
+          clearBandCookie();
+          setStep({ kind: 'age' });
+        }}
         onCodeSent={(email) =>
           setStep({ kind: 'code', band: step.band, email })
         }
@@ -232,13 +290,62 @@ export function SignInFlow({
       email={step.email}
       band={step.band}
       next={next}
-      onChangeEmail={() => setStep({ kind: 'choose', band: step.band })}
+      onChangeEmail={() =>
+        setStep({
+          kind: 'choose',
+          band: step.band,
+          remembered: false,
+          email: step.email,
+        })
+      }
     />
   );
 }
 
-export function Card({ children }: { children: ReactNode }) {
-  return <section className="signin-card">{children}</section>;
+/**
+ * A sign-in card: Poli and a line in a speech bubble on top when `says` is
+ * given, then the card's own content.
+ */
+export function Card({
+  children,
+  pose = 'welcome',
+  says,
+}: {
+  children: ReactNode;
+  pose?: PoliPose;
+  says?: ReactNode;
+}) {
+  return (
+    <section className="signin-card">
+      {says && <PoliSays pose={pose}>{says}</PoliSays>}
+      {children}
+    </section>
+  );
+}
+
+/**
+ * Under 13: nothing was saved, and learning goes on without an account.
+ * `children` is the one way on.
+ */
+export function UnderThirteen({
+  headingRef,
+  lead = 'Accounts are for people 13 and over. Your lessons, XP and streak are still saved on this device.',
+  children,
+}: {
+  headingRef?: Ref<HTMLHeadingElement>;
+  lead?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Card pose="welcome" says="Let’s keep learning together!">
+      <p className="eyebrow purple">NO ACCOUNT NEEDED</p>
+      <h1 className="signin-title" tabIndex={-1} ref={headingRef}>
+        You can keep learning without an account
+      </h1>
+      <p className="signin-lead">{lead}</p>
+      {children}
+    </Card>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -247,66 +354,85 @@ export function Card({ children }: { children: ReactNode }) {
 
 /**
  * The birth month and year form. Also used by /account for someone signed
- * in without a profile, with its own eyebrow and without the way out.
+ * in without a profile, with its own words and without the way out.
+ *
+ * The form posts (never a GET), so even a submit before the page has
+ * hydrated could not put a birth date in the address; and its button waits,
+ * labelled "Loading…", until the page can handle it here.
  */
 export function AgeStep({
+  eyebrow,
+  title = 'First, when were you born?',
+  lead,
+  says,
+  pose = 'welcome',
   notice,
-  back,
+  foot = null,
   headingRef,
   onDone,
-  eyebrow = 'SAVE YOUR PROGRESS · 1 OF 2',
   busy = false,
 }: {
+  eyebrow: string;
+  title?: string;
+  lead: ReactNode;
+  /** Poli's line above the card. */
+  says: ReactNode;
+  pose?: PoliPose;
   notice?: string | null;
-  /** "Keep learning without one" goes here; none when null. */
-  back: string | null;
+  /** Under the form, e.g. the way back; nothing when null. */
+  foot?: ReactNode;
   headingRef?: RefObject<HTMLHeadingElement | null>;
   onDone: (band: AgeBand | 'under-13') => void;
-  eyebrow?: string;
   busy?: boolean;
 }) {
   const id = useId();
-  const [error, setError] = useState<string | null>(null);
+  const hydrated = useHydrated();
+  const month = useRef<HTMLSelectElement>(null);
+  const year = useRef<HTMLInputElement>(null);
+  const [problem, setProblem] = useState<BirthProblem | null>(null);
+  const monthWrong = problem === 'incomplete' || problem === 'no-month';
+  const yearWrong = problem !== null && problem !== 'no-month';
+
   function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     const form = new FormData(event.currentTarget);
-    const { month, year } = readBirth(
-      field(form, 'month'),
-      field(form, 'year'),
-    );
+    const birth = readBirth(field(form, 'month'), field(form, 'year'));
     const today = new Date();
-    const problem = birthProblem(year, month, today);
-    if (problem) {
-      setError(BIRTH_PROBLEM_MESSAGES[problem]);
+    const found = birthProblem(birth.year, birth.month, today);
+    if (found) {
+      setProblem(found);
+      // Straight to the field to fix; the message is read from its description.
+      (birthProblemField(found) === 'month' ? month : year).current?.focus();
       return;
     }
-    setError(null);
-    onDone(ageBandFor(year, month, today));
+    setProblem(null);
+    onDone(ageBandFor(birth.year, birth.month, today));
   }
+
+  const describedBy = problem ? `${id}-error` : undefined;
   return (
-    <Card>
+    <Card pose={pose} says={says}>
       <p className="eyebrow purple">{eyebrow}</p>
       <h1 className="signin-title" tabIndex={-1} ref={headingRef}>
-        First, when were you born?
+        {title}
       </h1>
-      <p className="signin-lead">
-        Accounts are for people 13 and over. We keep your age band, never your
-        birthday.
-      </p>
+      <p className="signin-lead">{lead}</p>
       {notice && <output className="signin-notice">{notice}</output>}
-      <form className="signin-form" onSubmit={submit} noValidate>
+      <form className="signin-form" method="post" onSubmit={submit} noValidate>
         <fieldset className="signin-birth">
           <legend className="signin-label">Your birth month and year</legend>
           <div className="signin-birth-fields">
             <label className="signin-field">
               <span>Month</span>
               <select
+                ref={month}
                 name="month"
                 className="signin-input"
                 autoComplete="bday-month"
                 defaultValue=""
-                aria-invalid={error ? true : undefined}
-                aria-describedby={error ? `${id}-error` : undefined}
+                aria-invalid={monthWrong || undefined}
+                aria-describedby={monthWrong ? describedBy : undefined}
               >
                 <option value="" disabled>
                   Choose…
@@ -321,36 +447,41 @@ export function AgeStep({
             <label className="signin-field">
               <span>Year</span>
               <input
+                ref={year}
                 name="year"
                 className="signin-input"
                 inputMode="numeric"
+                pattern="[0-9]*"
                 autoComplete="bday-year"
                 placeholder="e.g. 2001"
-                maxLength={4}
-                aria-invalid={error ? true : undefined}
-                aria-describedby={error ? `${id}-error` : undefined}
+                onInput={(event) => {
+                  // Four digits at most, and only digits: a stray letter or
+                  // a pasted space never reaches the check. (No maxLength:
+                  // it would cut " 1995" to " 199" before this runs.)
+                  const input = event.currentTarget;
+                  const digits = input.value.replace(/\D+/g, '').slice(0, 4);
+                  if (digits !== input.value) input.value = digits;
+                }}
+                aria-invalid={yearWrong || undefined}
+                aria-describedby={yearWrong ? describedBy : undefined}
               />
             </label>
           </div>
         </fieldset>
         <p id={`${id}-error`} className="signin-error" role="alert">
-          {error}
+          {problem ? BIRTH_PROBLEM_MESSAGES[problem] : null}
         </p>
         <button
           type="submit"
           className="button button-purple full-width"
-          disabled={busy}
-          aria-busy={busy || undefined}
+          disabled={busy || !hydrated}
+          aria-busy={busy || !hydrated || undefined}
         >
-          {busy ? 'Saving…' : 'Continue'} <ArrowRight size={19} />
+          {!hydrated ? 'Loading…' : busy ? 'Saving…' : 'Continue'}{' '}
+          <ArrowRight size={19} aria-hidden="true" />
         </button>
       </form>
-      {back && (
-        <p className="signin-foot">
-          You never need an account to learn.{' '}
-          <Link href={back}>Keep learning without one</Link>
-        </p>
-      )}
+      {foot}
     </Card>
   );
 }
@@ -362,10 +493,19 @@ export function AgeStep({
 function ChooseStep({
   next,
   headingRef,
+  remembered,
+  defaultEmail,
+  notice,
+  onChangeAge,
   onCodeSent,
 }: {
   next: string;
   headingRef: RefObject<HTMLHeadingElement | null>;
+  /** Opened here from an earlier answer, without asking the age now. */
+  remembered: boolean;
+  defaultEmail?: string;
+  notice?: string | null;
+  onChangeAge: () => void;
   onCodeSent: (email: string) => void;
 }) {
   const id = useId();
@@ -386,7 +526,7 @@ function ChooseStep({
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(withSignedIn(next))}`,
         },
       });
       // On success the browser is already leaving for Google.
@@ -431,12 +571,13 @@ function ChooseStep({
   }
 
   return (
-    <Card>
-      <p className="eyebrow purple">{words.eyebrow} · 2 OF 2</p>
+    <Card pose="encourage" says="Nearly there. Just your email now.">
+      <p className="eyebrow purple">{stepEyebrow(words.eyebrow, 2)}</p>
       <h1 className="signin-title" tabIndex={-1} ref={headingRef}>
         {words.title}
       </h1>
       <p className="signin-lead">{words.lead}</p>
+      {notice && <output className="signin-notice">{notice}</output>}
       {inApp ? (
         <InAppHelp app={IN_APP_NAMES[inApp]} userAgent={userAgent} />
       ) : (
@@ -456,7 +597,7 @@ function ChooseStep({
           </p>
         </>
       )}
-      <form className="signin-form" onSubmit={email} noValidate>
+      <form className="signin-form" method="post" onSubmit={email} noValidate>
         <label className="signin-field" htmlFor={`${id}-email`}>
           <span className="signin-label">Your email</span>
         </label>
@@ -469,6 +610,7 @@ function ChooseStep({
           inputMode="email"
           spellCheck={false}
           placeholder="name@example.com"
+          defaultValue={defaultEmail}
           required
           aria-invalid={error ? true : undefined}
           aria-describedby={`${id}-email-hint${error ? ` ${id}-error` : ''}`}
@@ -485,13 +627,25 @@ function ChooseStep({
           disabled={busy !== null}
           aria-busy={busy === 'email' || undefined}
         >
-          <Mail size={18} />
+          <Mail size={18} aria-hidden="true" />
           {busy === 'email' ? 'Sending your code…' : 'Email me a code'}
         </button>
       </form>
       <p className="signin-small">
-        By signing in you agree to the <Link href="/terms">terms</Link>. Read
-        what we keep in the <Link href="/privacy">privacy notice</Link>.
+        By signing in you agree to the <Link href="/terms">terms</Link> and the{' '}
+        <Link href="/privacy">privacy notice</Link>.
+      </p>
+      <p className="signin-change">
+        {remembered && <span>Not you, or wrong age?</span>}
+        <button
+          type="button"
+          className="signin-text-button"
+          onClick={onChangeAge}
+          disabled={busy !== null}
+        >
+          {!remembered && <ArrowLeft size={15} aria-hidden="true" />}
+          Change birth year
+        </button>
       </p>
     </Card>
   );
@@ -534,7 +688,7 @@ function InAppHelp({ app, userAgent }: { app: string; userAgent: string }) {
           className="button button-small button-outline"
           onClick={copy}
         >
-          <Copy size={16} /> Copy link
+          <Copy size={16} aria-hidden="true" /> Copy link
         </button>
       </div>
       <output className="signin-hint">{copied}</output>
@@ -591,6 +745,7 @@ function CodeStep({
   const id = useId();
   const [code, setCode] = useState('');
   const otp = useRef<HTMLInputElement>(null);
+  const submitButton = useRef<HTMLButtonElement>(null);
   // Straight to the code field: its label and the line above it are read out.
   useEffect(() => {
     otp.current?.focus();
@@ -602,12 +757,24 @@ function CodeStep({
   const [sentAt, setSentAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
   const wait = Math.max(0, RESEND_SECONDS - Math.floor((now - sentAt) / 1000));
+  const words = SIGN_IN_WORDS[signInAudience(next)];
 
   useEffect(() => {
     if (wait <= 0) return;
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [wait]);
+
+  // After a refusal, the keyboard goes back to what fixes it: the code
+  // field, or "Try again" once signed in. The field is enabled again only
+  // after this render, so the focus waits a frame.
+  useEffect(() => {
+    if (!error || busy !== null) return;
+    const frame = requestAnimationFrame(() =>
+      (signedIn ? submitButton : otp).current?.focus(),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [error, busy, signedIn]);
 
   /** Saves the declared band, then leaves for `next` with a full navigation. */
   async function finish() {
@@ -620,15 +787,15 @@ function CodeStep({
         p_age_band: band,
       });
       if (error) throw error;
-    } catch (error) {
+    } catch {
       // Signed in, but the band is not saved: "Try again" repeats this step.
-      setError(describeDbError(error).message);
+      setError(FINISH_FAILED);
       setBusy(null);
       return;
     }
     clearBandCookie();
     setStatus('You’re signed in. Taking you back…');
-    window.location.assign(next);
+    window.location.assign(withSignedIn(next));
   }
 
   async function verify(value = code) {
@@ -687,8 +854,8 @@ function CodeStep({
   }
 
   return (
-    <Card>
-      <p className="eyebrow purple">CHECK YOUR EMAIL</p>
+    <Card pose="rest" says="Check your email. I’ll wait.">
+      <p className="eyebrow purple">{stepEyebrow(words.eyebrow, 3)}</p>
       <h1 className="signin-title">Type the code we sent you</h1>
       <p className="signin-lead" id={`${id}-sent`}>
         We emailed a 6-digit code to{' '}
@@ -697,6 +864,7 @@ function CodeStep({
       </p>
       <form
         className="signin-form"
+        method="post"
         onSubmit={(event) => {
           event.preventDefault();
           if (signedIn) void finish();
@@ -729,7 +897,7 @@ function CodeStep({
                 key={index}
                 index={index}
                 className="signin-otp-slot"
-                aria-invalid={error ? true : undefined}
+                aria-invalid={error && !signedIn ? true : undefined}
               />
             ))}
           </InputOTPGroup>
@@ -739,6 +907,7 @@ function CodeStep({
         </p>
         <output className="signin-hint">{status}</output>
         <button
+          ref={submitButton}
           type="submit"
           className="button button-purple full-width"
           disabled={busy !== null || (!signedIn && code.length !== 6)}
@@ -756,7 +925,7 @@ function CodeStep({
       <div className="signin-code-help">
         <button
           type="button"
-          className="signin-text-button"
+          className={`signin-text-button ${wait > 0 ? 'signin-countdown' : ''}`}
           onClick={resend}
           disabled={busy !== null || wait > 0 || signedIn}
         >
@@ -768,7 +937,7 @@ function CodeStep({
           onClick={onChangeEmail}
           disabled={busy !== null || signedIn}
         >
-          <ArrowLeft size={15} /> Use a different email
+          <ArrowLeft size={15} aria-hidden="true" /> Use a different email
         </button>
       </div>
     </Card>

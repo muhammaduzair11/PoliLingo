@@ -1,9 +1,11 @@
 'use client';
 /* oxlint-disable react/react-compiler -- A mount effect subscribes to Supabase auth and publishes to the external account store. No React Compiler is configured. */
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { setAccount } from '@/lib/account-store';
+import { setAccount, useAccount } from '@/lib/account-store';
+import { SIGNED_IN_PARAM } from '@/lib/safe-next';
 import { browserSupabase } from '@/lib/supabase/browser';
+import { SessionToast, takeFlag } from '../account-boot';
 import { SyncAgent } from './sync-agent';
 
 /**
@@ -50,5 +52,31 @@ export default function AccountRuntime() {
       subscription.unsubscribe();
     };
   }, []);
-  return <SyncAgent />;
+  return (
+    <>
+      <SyncAgent />
+      <SignedInToast />
+    </>
+  );
+}
+
+/**
+ * "Signed in as …" on the page a sign-in lands on (?signed_in=1, added by
+ * the sign-in flow: lib/safe-next.ts withSignedIn). The flag leaves the
+ * address bar at once; the notice waits for the session's email.
+ */
+function SignedInToast() {
+  const account = useAccount();
+  const [flagged, setFlagged] = useState(false);
+  const close = useCallback(() => setFlagged(false), []);
+  useEffect(() => {
+    if (takeFlag(SIGNED_IN_PARAM)) setFlagged(true);
+  }, []);
+  const message =
+    flagged && account.status === 'signed-in'
+      ? account.email
+        ? `Signed in as ${account.email}. Your progress is saving.`
+        : 'Signed in. Your progress is saving.'
+      : null;
+  return <SessionToast onClose={close}>{message}</SessionToast>;
 }

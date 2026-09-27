@@ -61,7 +61,15 @@ export function ageBandFor(
   return '18+';
 }
 
-export type BirthProblem = 'incomplete' | 'future' | 'too-long-ago';
+export type BirthProblem =
+  /** Neither a month nor a four-digit year. */
+  | 'incomplete'
+  /** A year, but no month. */
+  | 'no-month'
+  /** A month, but the year is blank or not four digits ("98"). */
+  | 'short-year'
+  | 'future'
+  | 'too-long-ago';
 
 /** Why a birth month and year cannot be used, or null when they can. */
 export function birthProblem(
@@ -69,15 +77,11 @@ export function birthProblem(
   month: number,
   today: Date,
 ): BirthProblem | null {
-  if (
-    !Number.isInteger(year) ||
-    !Number.isInteger(month) ||
-    month < 1 ||
-    month > 12 ||
-    year < 1000 ||
-    year > 9999
-  )
-    return 'incomplete';
+  const monthOk = Number.isInteger(month) && month >= 1 && month <= 12;
+  const yearOk = Number.isInteger(year) && year >= 1000 && year <= 9999;
+  if (!monthOk && !yearOk) return 'incomplete';
+  if (!monthOk) return 'no-month';
+  if (!yearOk) return 'short-year';
   const ty = today.getFullYear();
   const tm = today.getMonth() + 1;
   if (year > ty || (year === ty && month > tm)) return 'future';
@@ -88,9 +92,16 @@ export function birthProblem(
 /** What to say about a problem, in the form's own words. */
 export const BIRTH_PROBLEM_MESSAGES: Readonly<Record<BirthProblem, string>> = {
   incomplete: 'Choose the month and type the year you were born, like 1998.',
+  'no-month': 'Choose your birth month.',
+  'short-year': 'Type all four digits of the year, like 1998.',
   future: 'That date hasn’t happened yet. Check the year.',
   'too-long-ago': 'That year looks a little too long ago. Check it.',
 };
+
+/** The field to fix first for a problem: the form focuses it. */
+export function birthProblemField(problem: BirthProblem): 'month' | 'year' {
+  return problem === 'incomplete' || problem === 'no-month' ? 'month' : 'year';
+}
 
 /** Reads a form's month and year fields as numbers (NaN when blank or odd). */
 export function readBirth(

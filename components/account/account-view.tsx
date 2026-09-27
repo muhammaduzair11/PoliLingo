@@ -6,15 +6,19 @@ import {
   Cloud,
   Download,
   LogOut,
+  RefreshCw,
   ShieldCheck,
   Trash2,
   UserRound,
 } from 'lucide-react';
 import { ConfirmAction } from '@/components/console/confirm-action';
 import { Notice } from '@/components/console/notice';
+import { useLearning } from '@/components/learning-provider';
 import type { ActionResult } from '@/lib/console/action-result';
-import { setAccount, useAccount } from '@/lib/account-store';
-import { localDate } from '@/lib/progress';
+import { useAccount } from '@/lib/account-store';
+import { localDate, streak } from '@/lib/progress';
+import { PAUSE_KEY } from '@/lib/sync';
+import { plural } from '@/lib/words';
 import { SYNC_SENTENCE, SYNC_SHORT, sinceWords } from './sync-words';
 
 export type AccountRole = { key: string; label: string };
@@ -40,21 +44,27 @@ type Props = {
 const BAND_LABELS = { '13-17': '13 to 17', '18+': '18 or over' } as const;
 
 /**
- * /account for a signed-in person with a profile (docs/platform.md 4.8):
- * who they are, how saving is going, a copy of their data, signing out and
- * deleting the account. Local progress is never touched by any of it.
+ * /account for a signed-in person with a profile (docs/platform.md 4.8),
+ * progress first and the destructive part last: what is kept safe, who
+ * they are (and signing out), how saving is going, a copy of their data,
+ * and deleting the account. Local progress is never touched by any of it.
+ * Deleting ends on /sign-in/goodbye (app/account/actions.ts).
  */
 export function AccountView(props: Props) {
-  const [deleted, setDeleted] = useState(false);
-  if (deleted) return <Farewell />;
+  const account = useAccount();
+  const paused = account.status === 'signed-in' && account.sync === 'paused';
   return (
     <div className="account-page section-wrap">
       <p className="eyebrow purple">YOUR ACCOUNT</p>
       <h1>Your progress, kept safe.</h1>
       <p className="lead">
-        Signed in as <strong>{props.email ?? 'you'}</strong>. Everything you
-        learn here is saved to your account and stays on this device too.
+        Signed in as <strong>{props.email ?? 'you'}</strong>.{' '}
+        {paused
+          ? 'Saving to your account is paused in this tab.'
+          : 'Everything you learn saves to your account and stays on this device too.'}
       </p>
+
+      <ProgressStats />
 
       {props.continueTo && (
         <Notice tone="success" title="You’re all set">
@@ -79,20 +89,19 @@ export function AccountView(props: Props) {
             <dt>Age band</dt>
             <dd>{BAND_LABELS[props.ageBand]}</dd>
           </div>
-          <div>
-            <dt>Roles</dt>
-            <dd>
-              {props.roles.length === 0 ? (
-                'Learner'
-              ) : (
+          {/* A learner has no workspace role, so there is nothing to list. */}
+          {props.roles.length > 0 && (
+            <div>
+              <dt>Roles</dt>
+              <dd>
                 <ul className="account-roles">
                   {props.roles.map((role) => (
                     <li key={role.key}>{role.label}</li>
                   ))}
                 </ul>
-              )}
-            </dd>
-          </div>
+              </dd>
+            </div>
+          )}
         </dl>
         {props.workspaceHref && (
           <Link
@@ -102,6 +111,13 @@ export function AccountView(props: Props) {
             Open the workspace <ArrowRight size={16} />
           </Link>
         )}
+        <div className="account-row account-sign-out">
+          <p>
+            Signing out keeps your progress on this device. Sign in again any
+            time to carry on saving.
+          </p>
+          <SignOutButton action={props.signOutHere} />
+        </div>
       </section>
 
       <SyncCard />
@@ -117,13 +133,6 @@ export function AccountView(props: Props) {
           </p>
           <DownloadButton action={props.exportMyData} />
         </div>
-        <div className="account-row">
-          <p>
-            Signing out keeps your progress on this device. Sign in again any
-            time to carry on saving.
-          </p>
-          <SignOutButton action={props.signOutHere} />
-        </div>
       </section>
 
       <section
@@ -138,20 +147,17 @@ export function AccountView(props: Props) {
             This removes your account and everything saved to it, for good. The
             progress on this device stays.
           </p>
+          {/* An outline trigger: solid red is kept for the dialog's own button. */}
           <ConfirmAction
             action={props.deleteMyAccount}
             triggerLabel="Delete my account"
-            triggerTone="danger"
+            triggerTone="outline"
             tone="danger"
             title="Delete your account?"
             description="This can’t be undone. Here’s exactly what happens."
             confirmLabel="Delete my account"
             cancelLabel="Keep my account"
             pendingLabel="Deleting…"
-            onSuccess={() => {
-              setAccount({ status: 'anonymous' });
-              setDeleted(true);
-            }}
           >
             <div className="account-delete-list">
               <p className="account-delete-heading">Deleted for good</p>
@@ -186,6 +192,45 @@ export function AccountView(props: Props) {
   );
 }
 
+/**
+ * What this device holds, the thing the account keeps safe: lessons, XP
+ * and the streak, from the same progress the rest of the app reads. A dash
+ * until progress has loaded, so a zero never flashes.
+ */
+function ProgressStats() {
+  const { state, ready } = useLearning();
+  const lessons = Object.keys(state.completed).length;
+  const stats = [
+    {
+      key: 'lessons',
+      value: lessons,
+      label: `${plural(lessons, 'lesson')} done`,
+    },
+    { key: 'xp', value: state.xp, label: 'XP earned' },
+    { key: 'streak', value: streak(state.activity), label: 'day streak' },
+  ];
+  return (
+    <ul className="account-stats" aria-label="Your progress">
+      {stats.map((stat) => (
+        <li key={stat.key} className={`account-stat account-stat-${stat.key}`}>
+          <strong>{ready ? stat.value.toLocaleString('en') : '–'}</strong>
+          <span>{stat.label}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Ends "Not now" for this tab: the switch dialog asks again after the reload. */
+function askAgain() {
+  try {
+    sessionStorage.removeItem(PAUSE_KEY);
+  } catch {
+    // Without sessionStorage the pause only ever lasted until a reload.
+  }
+  window.location.reload();
+}
+
 /** How saving to the account is going, live from the account store. */
 function SyncCard() {
   const account = useAccount();
@@ -199,20 +244,33 @@ function SyncCard() {
       <h2 id="account-sync" className="account-card-title">
         <Cloud aria-hidden="true" /> Saving
       </h2>
-      <output className="account-sync">
-        <span
-          className={`account-chip-dot account-chip-dot-${known ? account.sync : 'idle'}`}
-          aria-hidden="true"
-        />
-        <span>
-          <strong>{known ? SYNC_SHORT[account.sync] : 'Checking…'}</strong>
-          {since ? ` · ${since}` : ''}
-          <br />
-          {known
-            ? SYNC_SENTENCE[account.sync]
-            : 'Your progress is safe on this device.'}
-        </span>
-      </output>
+      <div className="account-row">
+        <output className="account-sync">
+          <span
+            className={`account-chip-dot account-chip-dot-${known ? account.sync : 'idle'}`}
+            aria-hidden="true"
+          />
+          <span>
+            <strong>{known ? SYNC_SHORT[account.sync] : 'Checking…'}</strong>
+            {since ? ` · ${since}` : ''}
+            <br />
+            {known
+              ? SYNC_SENTENCE[account.sync]
+              : 'Your progress is safe on this device.'}
+          </span>
+        </output>
+        {known && account.sync === 'paused' && (
+          <div className="account-action">
+            <button
+              type="button"
+              className="button button-small button-outline"
+              onClick={askAgain}
+            >
+              <RefreshCw size={16} aria-hidden="true" /> Ask me again
+            </button>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
@@ -255,7 +313,8 @@ function DownloadButton({
           })
         }
       >
-        <Download size={16} /> {pending ? 'Preparing…' : 'Download my data'}
+        <Download size={16} aria-hidden="true" />{' '}
+        {pending ? 'Preparing…' : 'Download my data'}
       </button>
       <div aria-live="polite">
         {result && (
@@ -301,44 +360,21 @@ function SignOutButton({
           startTransition(async () => {
             setError(null);
             const result = await action();
-            // A full page load, so the app starts again without the session.
-            if (result.ok) window.location.assign('/');
+            // A full page load, so the app starts again without the session;
+            // the home page says it signed out (components/account-boot.tsx).
+            if (result.ok) window.location.assign('/?signed_out=1');
             else setError({ text: result.message, code: result.code });
           })
         }
       >
-        <LogOut size={16} /> {pending ? 'Signing out…' : 'Sign out'}
+        <LogOut size={16} aria-hidden="true" />{' '}
+        {pending ? 'Signing out…' : 'Sign out'}
       </button>
       {error && (
         <Notice tone="error" code={error.code}>
           {error.text}
         </Notice>
       )}
-    </div>
-  );
-}
-
-function Farewell() {
-  return (
-    <div className="account-page section-wrap">
-      <section className="account-card account-farewell" aria-live="polite">
-        <p className="eyebrow purple">ACCOUNT DELETED</p>
-        <h1 tabIndex={-1} ref={(node) => node?.focus()}>
-          Your account is gone.
-        </h1>
-        <p>
-          Everything saved to it has been deleted. Your progress on this device
-          is still here, and you can keep learning without an account.
-        </p>
-        {/* A full page load, so nothing of the old session stays in memory. */}
-        <button
-          type="button"
-          className="button button-purple"
-          onClick={() => window.location.assign('/learn')}
-        >
-          Keep learning <ArrowRight size={19} />
-        </button>
-      </section>
     </div>
   );
 }
