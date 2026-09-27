@@ -129,25 +129,19 @@ const FIXTURE = {
   },
 };
 
-test('the honest line shows the reviewed count next to the target', () => {
-  assert.equal(
-    reviewedLine(0, 250, 400),
-    'Reviewed items: 0 — target 250–400 per language',
-  );
-  assert.equal(
-    reviewedLine(1234, 250, 400),
-    'Reviewed items: 1,234 — target 250–400 per language',
-  );
+test('the honest line shows the reviewed count against the target', () => {
+  assert.equal(reviewedLine(0, 250), '0 of 250 reviewed phrases');
+  assert.equal(reviewedLine(1, 250), '1 of 250 reviewed phrase');
+  assert.equal(reviewedLine(5, 250), '5 of 250 reviewed phrases');
+  assert.equal(reviewedLine(1234, 250), '1,234 reviewed phrases');
+  assert.equal(reviewedLine(Number.NaN, 250), '0 of 250 reviewed phrases');
   assert.equal(formatCount(Number.NaN), '0');
 });
 
 test('starter phrases never count as reviewed', () => {
   const card = languageCard(PASHTO, TARGET);
   assert.equal(card.reviewed, 2);
-  assert.equal(
-    card.reviewedLine,
-    'Reviewed items: 2 — target 250–400 per language',
-  );
+  assert.equal(card.reviewedLine, '2 of 250 reviewed phrases');
   assert.deepEqual(card.live, { total: 4, reviewed: 0, demo: 4 });
   assert.equal(
     card.demoNote,
@@ -161,25 +155,26 @@ test('progress runs against the lower target and stops at full', () => {
   assert.equal(targetProgress(900, 250), 1);
   assert.equal(targetProgress(10, 0), 0);
   assert.equal(targetProgress(-3, 250), 0);
+  // The whole target always shows beside the count.
   assert.equal(
     languageCard({ ...PASHTO, reviewed: 0 }, TARGET).progressLabel,
-    '0 of 250 reviewed so far',
+    'Target 250–400 per language',
   );
   assert.equal(
     languageCard({ ...PASHTO, reviewed: 1 }, TARGET).progressLabel,
-    '249 more to reach 250',
+    'Target 250–400 per language · 249 more to reach 250',
   );
   assert.equal(
     languageCard({ ...PASHTO, reviewed: 240 }, TARGET).progressLabel,
-    '10 more to reach 250',
+    'Target 250–400 per language · 10 more to reach 250',
   );
   assert.equal(
     languageCard({ ...PASHTO, reviewed: 300 }, TARGET).progressLabel,
-    'Past 250: on the way to 400',
+    'Target 250–400 per language: past 250, on the way to 400',
   );
   assert.equal(
     languageCard({ ...PASHTO, reviewed: 400 }, TARGET).progressLabel,
-    'Target reached',
+    'Target 250–400 per language: reached',
   );
 });
 
@@ -195,8 +190,20 @@ test('the pipeline runs from writing to live, in order', () => {
       ['live', 0],
     ],
   );
-  assert.equal(steps[3].label, 'Approved, waiting to publish');
+  // Approved phrases wait for their whole lesson: the overview can't see
+  // whether that lesson is ready, so it promises no release.
+  assert.equal(steps[3].label, 'Approved, not live yet');
+  assert.equal(
+    steps[3].hint,
+    'Goes live when its whole lesson is approved and published',
+  );
   assert.ok(steps.every((s) => s.label && s.hint));
+  assert.ok(
+    steps.every(
+      (s) => !/ready for the next release/i.test(`${s.label} ${s.hint}`),
+    ),
+  );
+  assert.ok(steps.every((s) => !/items/i.test(`${s.label} ${s.hint}`)));
 });
 
 test('a language behind a closed gate is marked hidden, with no demo note when it has none', () => {
@@ -280,11 +287,24 @@ test('the whole overview on the seeded fixture', () => {
   const view = buildOverview(FIXTURE);
   assert.deepEqual(view.release, {
     name: 'content@2026.09.1',
+    // The day in Pakistan time (10:00 UTC is 3 pm PKT, the same day).
     publishedLabel: '27 Sep 2026',
+    publishedAt: '2026-09-27T10:00:00Z',
     lessons: 2,
     items: 4,
     kindLabel: 'First release',
   });
+  // Late evening UTC is already the next day in Pakistan.
+  assert.equal(
+    buildOverview({
+      ...FIXTURE,
+      latest_release: {
+        ...FIXTURE.latest_release,
+        published_at: '2026-09-27T21:00:00Z',
+      },
+    }).release.publishedLabel,
+    '28 Sep 2026',
+  );
   assert.deepEqual(view.target, TARGET);
   assert.deepEqual(
     view.languages.map((l) => [l.code, l.reviewed, l.live.total, l.hidden]),

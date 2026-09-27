@@ -5,10 +5,16 @@ import assert from 'node:assert/strict';
 import {
   EXPIRY_CHOICES,
   consoleHomeFor,
+  consoleHomeLabel,
   endOfRoleTimestamp,
   endRoleRefusal,
   formatDay,
+  formatPktDateTime,
+  formatPktDay,
+  formatPktTime,
   grantWindowLabel,
+  inviteDeepLink,
+  inviteFromQuery,
   inviteHeadline,
   inviteMessage,
   inviteRefusal,
@@ -115,7 +121,7 @@ test('the message greets by first name, names the scope, the link and the expiry
   });
   assert.match(
     plain,
-    /^Salaam! You're invited to write lessons on PoliLingo\./,
+    /^Salaam! You’re invited to write lessons on PoliLingo\./,
   );
   assert.match(plain, /sign in with the email address this was sent to/);
   assert.match(
@@ -143,19 +149,19 @@ test('roles and scopes read as words', () => {
 test('the invitation headline says what the person is invited to do', () => {
   assert.equal(
     inviteHeadline(REVIEWER),
-    "You're invited to review Northern Pashto (Peshawar / Yusufzai)",
+    'You’re invited to review Northern Pashto (Peshawar / Yusufzai)',
   );
   assert.equal(
     inviteHeadline({ role: 'editor', language_name: 'Pashto' }),
-    "You're invited to write Pashto lessons",
+    'You’re invited to write Pashto lessons',
   );
   assert.equal(
     inviteHeadline({ role: 'editor' }),
-    "You're invited to write lessons for PoliLingo",
+    'You’re invited to write lessons for PoliLingo',
   );
   assert.equal(
     inviteHeadline({ role: 'admin' }),
-    "You're invited to help run PoliLingo",
+    'You’re invited to help run PoliLingo',
   );
   for (const scope of [REVIEWER, { role: 'editor' }, { role: 'admin' }])
     assert.equal(roleDuties(scope).length, 3);
@@ -165,6 +171,12 @@ test('each role lands in its own part of the workspace', () => {
   assert.equal(consoleHomeFor('language_reviewer'), '/review');
   assert.equal(consoleHomeFor('editor'), '/edit');
   assert.equal(consoleHomeFor('admin'), '/admin');
+  assert.equal(
+    consoleHomeLabel('language_reviewer'),
+    'Go to your review queue',
+  );
+  assert.equal(consoleHomeLabel('editor'), 'Go to your lessons');
+  assert.equal(consoleHomeLabel('admin'), 'Go to the overview');
 });
 
 test('every refusal the invitation page can meet has a title, a reason and a next step', () => {
@@ -326,4 +338,65 @@ test("the End role dialog's own sentences for a last admin and a later date", ()
     null,
   );
   assert.equal(endRoleRefusal({ code: 'PL409_ALREADY_ENDED' }), null);
+});
+
+test('times people read are in Pakistan time (UTC+5), and say so', () => {
+  assert.equal(formatPktDay('2026-09-27T15:53:00Z'), '27 Sep 2026');
+  // 7:30 pm UTC is already the next day in Pakistan.
+  assert.equal(formatPktDay('2026-09-27T19:30:00Z'), '28 Sep 2026');
+  assert.equal(formatPktTime('2026-09-27T15:53:00Z'), '8:53 pm');
+  assert.equal(formatPktTime('2026-09-27T19:05:00Z'), '12:05 am');
+  assert.equal(formatPktTime('2026-09-27T07:00:00Z'), '12:00 pm');
+  assert.equal(
+    formatPktDateTime('2026-09-27T15:53:00Z'),
+    '27 Sep 2026, 8:53 pm PKT',
+  );
+  assert.equal(formatPktDateTime(null), '');
+  assert.equal(formatPktDay('not a date'), '');
+});
+
+test('an invite link can open the dialog on a role and a variety', () => {
+  assert.equal(
+    inviteDeepLink('language_reviewer', 'ps-var-fixture'),
+    '/admin/people?invite=reviewer&variety=ps-var-fixture',
+  );
+  assert.equal(inviteDeepLink('admin'), '/admin/people?invite=admin');
+  assert.equal(
+    inviteDeepLink('editor', 'ps-var-fixture'),
+    '/admin/people?invite=editor',
+  );
+  assert.deepEqual(
+    inviteFromQuery({ invite: 'reviewer', variety: 'ps-var-fixture' }),
+    { role: 'language_reviewer', variety: 'ps-var-fixture' },
+  );
+  assert.deepEqual(inviteFromQuery({ invite: ['admin'] }), {
+    role: 'admin',
+    variety: null,
+  });
+  assert.deepEqual(inviteFromQuery({ invite: 'editor', variety: 'x' }), {
+    role: 'editor',
+    variety: null,
+  });
+  assert.equal(inviteFromQuery({ invite: 'owner' }), null);
+  assert.equal(inviteFromQuery({ invite: 'toString' }), null);
+  assert.equal(inviteFromQuery({}), null);
+  assert.deepEqual(
+    inviteFromQuery({ invite: 'reviewer', variety: '<script>' }),
+    { role: 'language_reviewer', variety: null },
+  );
+});
+
+test('invitation copy uses typographic apostrophes', () => {
+  for (const code of [
+    'PL404_INVITATION_NOT_FOUND',
+    'PL410_INVITATION_USED',
+    'PL403_UNDER_18',
+    'PL409_ROLE_CONFLICT',
+  ]) {
+    const refusal = inviteRefusal(code);
+    for (const part of Object.values(refusal ?? {}))
+      assert.doesNotMatch(part, /'/, `${code}: ${part}`);
+  }
+  for (const scope of [REVIEWER, { role: 'editor' }, { role: 'admin' }])
+    assert.doesNotMatch(inviteHeadline(scope), /'/);
 });

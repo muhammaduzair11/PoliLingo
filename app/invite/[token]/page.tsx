@@ -14,7 +14,7 @@ import {
 } from '@/components/console/admin/invitation-card';
 import { Notice } from '@/components/console/notice';
 import { ConsoleShell } from '@/components/console/shell';
-import { getAccess } from '@/lib/console/access';
+import { getAccess, workspaceHome } from '@/lib/console/access';
 import {
   consoleHomeFor,
   inviteRefusal,
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
 };
 
 const GENERIC: InviteRefusal = {
-  title: "We couldn't open this invitation",
+  title: 'We couldn’t open this invitation',
   message: 'Something went wrong on our side. Nothing was changed.',
   next: 'Try again in a minute. If it keeps happening, ask the person who invited you.',
 };
@@ -69,9 +69,7 @@ export default async function InvitePage({
     return (
       <Frame>
         <section className="invite-card">
-          <h1 className="invite-title">
-            Invitations can&apos;t be opened here
-          </h1>
+          <h1 className="invite-title">Invitations can’t be opened here</h1>
           <Notice tone="warning" code="NOT_CONFIGURED">
             This copy of PoliLingo has no database settings. Open the link on
             the PoliLingo site instead.
@@ -91,6 +89,8 @@ export default async function InvitePage({
     );
 
   const { context } = access;
+  // Someone already on the team always has a way into their workspace.
+  const home = workspaceHome(context)?.href ?? null;
   const frame = (children: ReactNode) => (
     <Frame
       account={{
@@ -122,25 +122,21 @@ export default async function InvitePage({
             <RetryLink token={token} />
           )
         }
+        home={home}
       />,
     );
 
   const invitation = peek.data;
-  const home = consoleHomeFor(invitation.role);
 
   if (invitation.status === 'used' && invitation.accepted_by_you)
     return frame(
       <InvitationProblem
         refusal={{
-          title: "You've already joined",
+          title: 'You’ve already joined',
           message: 'You accepted this invitation, so your workspace is ready.',
           next: 'Carry on where you left off.',
         }}
-        action={
-          <Link className="console-button console-button-primary" href={home}>
-            Open the workspace
-          </Link>
-        }
+        home={home ?? consoleHomeFor(invitation.role)}
       />,
     );
   if (invitation.status !== 'open') {
@@ -151,24 +147,37 @@ export default async function InvitePage({
           ? 'PL410_INVITATION_EXPIRED'
           : 'PL410_INVITATION_USED';
     return frame(
-      <InvitationProblem refusal={inviteRefusal(code) ?? GENERIC} />,
+      <InvitationProblem
+        refusal={inviteRefusal(code) ?? GENERIC}
+        home={home}
+      />,
     );
   }
 
   // The same order as accept_invitation: the address first, then the age.
+  // The warning and the way out come first, above the card, so a phone
+  // shows them without scrolling past what can't be accepted.
   if (!invitation.email_matches) {
     const wrong = inviteRefusal('PL403_WRONG_EMAIL') ?? GENERIC;
     return frame(
-      <InvitationCard invitation={invitation}>
-        <Notice tone="warning" title={wrong.title}>
-          <p>
-            You&apos;re signed in as <strong>{context.email}</strong>, but this
-            invitation is for <strong>{invitation.email_masked}</strong>.
-          </p>
-          <p>{wrong.next}</p>
-        </Notice>
-        <SwitchAccount action={switchAccount} token={token} />
-      </InvitationCard>,
+      <div className="invite-stack">
+        <section className="invite-switch" aria-label="Wrong account">
+          <Notice tone="warning" title={wrong.title}>
+            <p>
+              You’re signed in as{' '}
+              <strong className="invite-address">{context.email}</strong>, but
+              this invitation is for{' '}
+              <strong className="invite-address">
+                {invitation.email_masked}
+              </strong>
+              .
+            </p>
+            <p>{wrong.next}</p>
+          </Notice>
+          <SwitchAccount action={switchAccount} token={token} />
+        </section>
+        <InvitationCard invitation={invitation} />
+      </div>,
     );
   }
 
@@ -189,6 +198,7 @@ export default async function InvitePage({
     return frame(
       <InvitationProblem
         refusal={inviteRefusal('PL403_UNDER_18') ?? GENERIC}
+        home={home}
       />,
     );
 
@@ -200,7 +210,7 @@ export default async function InvitePage({
         role={invitation.role}
       />
       <p className="console-hint invite-small">
-        Accepting adds this role to the account you&apos;re signed in with,{' '}
+        Accepting adds this role to the account you’re signed in with,{' '}
         {context.email}. You can leave the team at any time.
       </p>
     </InvitationCard>,

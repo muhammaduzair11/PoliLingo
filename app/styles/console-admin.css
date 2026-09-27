@@ -82,15 +82,22 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  max-width: 100%;
   font-weight: 700;
   color: var(--ink);
+}
+.people-email,
+.people-email-text {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .people-email {
   font-size: 13px;
   color: var(--muted-foreground);
-  /* break-word, not anywhere: a table column keeps room for the whole
-     address and only breaks it when there is truly no space. */
-  overflow-wrap: break-word;
 }
 .people-meta {
   display: flex;
@@ -156,15 +163,24 @@
 .overview-release p {
   margin: 0;
 }
-.overview-release-name code {
-  font-family: ui-monospace, 'Cascadia Mono', Menlo, monospace;
-  font-size: 22px;
-  font-weight: 700;
+.overview-release-headline {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.25;
   letter-spacing: -0.02em;
+  text-wrap: balance;
 }
-.overview-release .console-hint {
-  margin-top: 4px;
+.overview-release-size {
+  white-space: nowrap;
+}
+.overview-release-id {
+  margin-top: 6px !important;
+  font-size: 13px;
   color: #eadfff;
+}
+.overview-release-id code {
+  font-family: ui-monospace, 'Cascadia Mono', Menlo, monospace;
+  font-size: 13px;
 }
 .overview-release .console-button-outline {
   background: #fff;
@@ -184,6 +200,7 @@
   gap: 16px;
 }
 .overview-language {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -245,26 +262,38 @@
   margin-top: -4px;
 }
 
-/* The pipeline: five steps in a row, a column on phones */
+/* The pipeline: one list, a row per step (the number, then what it means).
+   Five tiles side by side left two words a line in any card narrower than
+   about 1000px, which is every card on a laptop. */
 .overview-pipeline {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   margin: 4px 0 0;
   padding: 0;
   list-style: none;
-  counter-reset: step;
 }
 .overview-step {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
   min-width: 0;
-  padding: 10px 10px 12px;
   border-radius: 12px;
   background: #faf7fd;
   border: 1px solid #efe9f4;
+}
+.overview-step-row {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  min-height: 52px;
+  padding: 8px 14px;
+  border-radius: inherit;
+  color: inherit;
+}
+.overview-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
 }
 .overview-step-value {
   font-size: 24px;
@@ -274,14 +303,36 @@
   color: var(--ink);
 }
 .overview-step-label {
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.3;
 }
 .overview-step-hint {
-  font-size: 11.5px;
-  line-height: 1.35;
+  font-size: 13px;
+  line-height: 1.4;
   color: var(--muted-foreground);
+}
+/* The approved step links to Publish, where held-back lessons say why. */
+.overview-step-link:hover .overview-step-label,
+.overview-step-link:focus-visible .overview-step-label {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.overview-step-link .overview-step-label::after {
+  content: ' →';
+  color: var(--purple);
+}
+.overview-step-link:focus-visible {
+  outline: 3px solid #8853e955;
+}
+/* A wide card has room for the label and its hint on one line. */
+@container (min-width: 560px) {
+  .overview-step-text {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 10px;
+  }
 }
 .overview-step-in_review {
   background: #eef2ff;
@@ -307,8 +358,12 @@
 .overview-step-live .overview-step-hint {
   color: #eadfff;
 }
+/* Nothing at a step: a lighter weight, in a colour that still reads. */
+.overview-step-empty .overview-step-value {
+  font-weight: 600;
+}
 .overview-step-empty:not(.overview-step-live) .overview-step-value {
-  color: #b4a9c0;
+  color: var(--muted-foreground);
 }
 
 .overview-facts {
@@ -374,6 +429,14 @@
 }
 .overview-coverage-note a {
   white-space: nowrap;
+}
+/* A full tap target under 800px (it sits in a sentence on desktop). */
+@media (max-width: 800px) {
+  .overview-invite-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 
 /* Seven days of activity */
@@ -477,7 +540,56 @@
 }
 .people-status-ended {
   background: #f1eff3;
-  color: #6f6680;
+  color: #635b70;
+}
+/* Beside the name on phones, where the Status column is folded away. */
+.people-status-inline {
+  display: none;
+}
+/* Fixed columns, so emails cut off with an ellipsis instead of widening
+   the table, and End role sits in the same place on every row. */
+.people-table .data-table {
+  table-layout: fixed;
+}
+.people-table th:nth-child(1) {
+  width: 30%;
+}
+.people-table th:nth-child(2) {
+  width: 44%;
+}
+.people-table th:nth-child(3),
+.people-table th:nth-child(4) {
+  width: 13%;
+  white-space: normal;
+}
+.people-table td:nth-child(3) .people-status {
+  white-space: normal;
+}
+.people-former {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.people-former > summary {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--purple);
+}
+.people-former > summary:focus-visible {
+  outline: 3px solid #8853e955;
+  border-radius: 6px;
+}
+.people-heading:focus {
+  outline: none;
+}
+.people-heading:focus-visible {
+  outline: 3px solid #8853e955;
+  border-radius: 6px;
 }
 .people-roles {
   display: flex;
@@ -493,11 +605,12 @@
   padding: 0;
   list-style: none;
 }
+/* The role, then its action in a column of its own: End role lines up
+   down the table however long the role's name is. */
 .people-grant {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 4px 12px;
   padding: 6px 6px 6px 12px;
   border-radius: 12px;
@@ -533,7 +646,19 @@
   font-size: 13px;
 }
 .people-grant .console-notice {
-  flex-basis: 100%;
+  grid-column: 1 / -1;
+}
+/* In place of End role on the only open-ended admin role. */
+.people-only-admin {
+  max-width: 12em;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: right;
+  color: var(--purple);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .people-past summary {
   cursor: pointer;
@@ -558,23 +683,82 @@
 /* Invite dialog ----------------------------------------------------------- */
 
 [data-slot='dialog-content'].invite-dialog {
+  display: flex;
+  flex-direction: column;
   width: calc(100% - 32px);
   max-width: 560px !important;
   max-height: calc(100dvh - 32px);
-  overflow-y: auto;
-  padding: 26px !important;
+  overflow: hidden;
+  padding: 0 !important;
+  gap: 0 !important;
   border-radius: 1.5rem !important;
   font-family: 'Outfit', sans-serif;
   font-size: 15px;
   color: var(--ink);
   background: #fff;
 }
+.invite-form,
+.invite-ready {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+}
+.invite-dialog-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 24px;
+  border-bottom: 1px solid #efe9f4;
+}
+.invite-dialog-close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.invite-dialog-close:hover {
+  background: var(--muted);
+}
+.invite-dialog-close:focus-visible {
+  outline: 3px solid #8853e955;
+}
+.invite-dialog-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  padding: 16px 24px 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.invite-dialog-foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 24px;
+  border-top: 1px solid #efe9f4;
+  background: #fff;
+}
 .invite-dialog-title {
-  font-size: 23px !important;
+  margin: 0;
+  font-size: 22px !important;
   font-weight: 700 !important;
   line-height: 1.2 !important;
   letter-spacing: -0.03em;
-  padding-right: 32px;
+  text-wrap: balance;
 }
 .invite-dialog-description {
   font-size: 14px !important;
@@ -583,10 +767,13 @@
 .invite-roles {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 .invite-role {
   align-items: flex-start;
-  padding: 12px;
+  gap: 8px;
+  min-height: 64px;
+  padding: 10px 12px;
 }
 .invite-role input {
   margin-top: 3px;
@@ -594,13 +781,76 @@
 .invite-role-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
+  line-height: 1.3;
 }
 .invite-role-text small {
   font-size: 12px;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.3;
   color: var(--muted-foreground);
+}
+.invite-role-note {
+  display: none;
+}
+.invite-field-error {
+  color: #b63751;
+  font-weight: 600;
+}
+/* How long the link works and when the role ends, folded: the defaults
+   (7 days, no end date) suit nearly every invitation. */
+.invite-more {
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.invite-more[open] {
+  padding-bottom: 14px;
+}
+.invite-more > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+}
+.invite-more > summary:focus-visible {
+  outline: 3px solid #8853e955;
+  border-radius: 6px;
+}
+/* A flex summary loses its marker: draw a chevron instead. */
+.invite-more > summary::after,
+.people-former > summary::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  margin: 0 4px 3px auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+.people-former > summary::after {
+  margin-left: 10px;
+}
+.invite-more[open] > summary::after,
+.people-former[open] > summary::after {
+  margin-bottom: -3px;
+  transform: rotate(-135deg);
+}
+.invite-more > summary::-webkit-details-marker,
+.people-former > summary::-webkit-details-marker {
+  display: none;
+}
+.invite-more-now {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.invite-more .invite-scope {
+  margin-top: 6px;
 }
 .invite-scope {
   display: grid;
@@ -619,19 +869,43 @@ select.console-input {
 }
 
 /* The link, once made */
-.invite-ready {
+.invite-ready-heading {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 .invite-ready-mark {
   display: grid;
+  flex: none;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--mint);
   color: #1d5a31;
+}
+.invite-ready-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.invite-ready-email {
+  overflow: hidden;
+  font-weight: 700;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.invite-share {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.invite-rules-email {
+  overflow-wrap: anywhere;
 }
 .invite-link-row {
   display: flex;
@@ -701,6 +975,21 @@ select.console-input {
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.invite-card .invite-lead,
+.invite-card .invite-next {
+  text-wrap: pretty;
+}
+/* Signed in with the wrong address: the warning and the way out come
+   before the invitation itself. */
+.invite-switch {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.invite-address {
+  overflow-wrap: anywhere;
 }
 .invite-card .console-eyebrow {
   margin: 0;
@@ -782,6 +1071,26 @@ select.console-input {
   max-width: 540px;
 }
 
+/* Suggested fixes (/admin/suggestions) ----------------------------------- */
+
+/* The reviewer's note, labelled as theirs. */
+.suggestion-note {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+.suggestion-note figcaption {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.suggestion-note .review-quote {
+  margin: 0;
+}
+
 /* Wider than a phone: the headline numbers sit in one row ---------------- */
 
 @media (min-width: 581px) {
@@ -791,11 +1100,18 @@ select.console-input {
   }
 }
 
+/* A narrower note where the Roles column is narrow. */
+@media (max-width: 1100px) {
+  .people-only-admin {
+    max-width: 9.5em;
+  }
+}
+
 /* Under 800px ------------------------------------------------------------- */
 
 @media (max-width: 800px) {
-  .overview-pipeline {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  .overview-release-headline {
+    font-size: 21px;
   }
 }
 
@@ -814,28 +1130,13 @@ select.console-input {
   .overview-language {
     padding: 18px;
   }
-  .overview-pipeline {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .overview-step {
-    display: grid;
-    grid-template-columns: 56px minmax(0, 1fr);
-    grid-template-areas:
-      'value label'
-      'value hint';
-    align-items: center;
+  .overview-step-row {
+    grid-template-columns: 2.75rem minmax(0, 1fr);
     column-gap: 10px;
     padding: 8px 12px;
   }
   .overview-step-value {
-    grid-area: value;
     font-size: 22px;
-  }
-  .overview-step-label {
-    grid-area: label;
-  }
-  .overview-step-hint {
-    grid-area: hint;
   }
   .overview-facts dd {
     text-align: left;
@@ -847,10 +1148,15 @@ select.console-input {
     gap: 4px;
   }
   .people-grant {
-    padding: 8px 10px;
+    padding: 4px 4px 4px 10px;
   }
   .people-grant .console-button {
-    flex: 1 1 auto;
+    min-height: 44px;
+  }
+  .people-only-admin {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
   }
   .data-table td .people-roles,
   .data-table td .people-person {
@@ -860,17 +1166,86 @@ select.console-input {
   .data-table td .people-person {
     flex: 1 1 auto;
   }
-  [data-slot='dialog-content'].invite-dialog {
-    padding: 20px !important;
+  /* Team cards: the name with its status, the email, the roles. The cells
+     need no Person / Roles labels. */
+  .people-table .data-table tr {
+    padding: 8px 0;
   }
-  .invite-roles,
+  .people-table .data-table td {
+    display: block;
+    padding: 4px 14px;
+    text-align: left;
+  }
+  .people-table .data-table td::before {
+    display: none;
+  }
+  /* Status and Last signed in stay folded away (the pill is by the name). */
+  .people-table .data-table td.data-table-optional {
+    display: none;
+  }
+  .people-status-inline {
+    display: inline-flex;
+  }
+  .people-table .people-name {
+    gap: 6px 8px;
+  }
+  /* Three figures in one compact row. */
+  .people-page .console-stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .people-page .console-stat {
+    padding: 10px 12px;
+  }
+  .people-page .console-stat-label,
+  .people-page .console-stat-hint {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+  .people-page .console-stat-value {
+    font-size: 22px;
+  }
+  [data-slot='dialog-content'].invite-dialog {
+    width: calc(100% - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+  .invite-dialog-head {
+    padding: 8px 8px 8px 18px;
+  }
+  .invite-dialog-title {
+    font-size: 20px !important;
+  }
+  .invite-dialog-body {
+    padding: 14px 18px 18px;
+  }
+  .invite-dialog-foot {
+    padding: 10px 18px;
+  }
+  .invite-dialog-foot .console-button {
+    flex: 1 1 auto;
+  }
+  /* The three roles in one row, names only; the chosen one's hint under. */
+  .invite-role {
+    align-items: center;
+    min-height: 48px;
+    padding: 8px 10px;
+  }
+  .invite-role-hint {
+    display: none;
+  }
+  .invite-role-note {
+    display: block;
+    grid-column: 1 / -1;
+  }
   .invite-scope {
     grid-template-columns: minmax(0, 1fr);
   }
   .invite-link-row {
     flex-direction: column;
   }
-  .console-button-whatsapp {
+  /* On a phone, WhatsApp is how a link gets sent: it comes first. */
+  .invite-share .console-button-whatsapp {
+    order: -1;
     align-self: stretch;
   }
   .invite-form-actions .console-button {
@@ -885,6 +1260,10 @@ select.console-input {
   }
   .invite-card .invite-title {
     font-size: 25px;
+  }
+  .invite-card,
+  .invite-card .console-actions {
+    text-align: left;
   }
   .invite-facts {
     grid-template-columns: minmax(0, 1fr);

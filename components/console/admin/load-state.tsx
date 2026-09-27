@@ -15,7 +15,7 @@ export function LoadError({
 }) {
   return (
     <div className="admin-load-error">
-      <Notice tone="error" title={`We couldn't load ${what}`} code={error.code}>
+      <Notice tone="error" title={`We couldn’t load ${what}`} code={error.code}>
         <p>{error.message}</p>
       </Notice>
       <p className="console-actions">

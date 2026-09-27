@@ -1,5 +1,9 @@
 import type { ActionResult } from '@/lib/console/action-result';
-import { liveLanguagesFirst, tomorrowUtc } from '@/lib/console/invite-link';
+import {
+  liveLanguagesFirst,
+  tomorrowUtc,
+  type InviteRole,
+} from '@/lib/console/invite-link';
 import type { OverviewData } from '@/lib/console/overview';
 import { adminPeoplePath } from '@/lib/console/paths';
 import { callRpc } from '@/lib/rpc';
@@ -34,10 +38,13 @@ export async function PeopleData({
   createInvitation,
   revokeRole,
   revokeInvitation,
+  invite = null,
 }: {
   createInvitation: FormAction<CreatedInvitation>;
   revokeRole: FormAction<{ ends_at: string }>;
   revokeInvitation: FormAction<unknown>;
+  /** From ?invite=…: open the invite dialog on this role and variety. */
+  invite?: { role: InviteRole; variety: string | null } | null;
 }) {
   const supabase = await serverSupabase();
   // The overview read is only for the publish gates, so the invite form can
@@ -73,6 +80,9 @@ export async function PeopleData({
         description={DESCRIPTION}
         actions={
           <InviteDialog
+            // A new ?invite=… link opens a fresh dialog on its choice.
+            key={invite ? `${invite.role}:${invite.variety ?? ''}` : 'plain'}
+            initial={invite}
             action={createInvitation}
             languages={liveLanguagesFirst(result.data.languages, openLanguages)}
             minEndDate={minEndDate}

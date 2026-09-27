@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { NativeText } from '@/components/native';
+import { formatPktDateTime, inviteDeepLink } from '@/lib/console/invite-link';
 import { adminPeoplePath, adminPublishPath } from '@/lib/console/paths';
 import {
   formatCount,
@@ -27,8 +28,8 @@ export function OverviewView({ view }: { view: View }) {
           <Stat
             label={
               view.languages.length > 1
-                ? 'Reviewed items, all languages'
-                : 'Reviewed items'
+                ? 'Reviewed phrases, all languages'
+                : 'Reviewed phrases'
             }
             value={formatCount(view.totals.reviewed)}
             hint={
@@ -39,8 +40,9 @@ export function OverviewView({ view }: { view: View }) {
           />
           <Stat label="In review" value={formatCount(view.totals.inReview)} />
           <Stat
-            label="Waiting to publish"
+            label="Approved, not live yet"
             value={formatCount(view.totals.waiting)}
+            hint="Go live with their whole lesson"
           />
           <Stat
             label="Live for learners"
@@ -149,7 +151,7 @@ function ReleaseStrip({ release }: { release: View['release'] }) {
             className="console-button console-button-primary"
             href={adminPublishPath()}
           >
-            Go to Publish
+            Open Publish
           </Link>
         }
       >
@@ -158,26 +160,38 @@ function ReleaseStrip({ release }: { release: View['release'] }) {
         </p>
       </EmptyState>
     );
+  // People read the date and the size; the release id is for support and
+  // the history, so it sits small underneath. (The overview doesn't know
+  // whether anything is ready to publish, so it never says so.)
   return (
-    <section className="overview-release" aria-label="Latest release">
+    <section className="overview-release" aria-label="What learners have">
       <div className="overview-release-text">
-        <p className="console-eyebrow">Learners are on</p>
-        <p className="overview-release-name">
-          <code>{release.name}</code>
+        <p className="console-eyebrow">What learners have</p>
+        <p className="overview-release-headline">
+          Live since{' '}
+          <time
+            dateTime={release.publishedAt}
+            title={formatPktDateTime(release.publishedAt)}
+          >
+            {release.publishedLabel}
+          </time>
+          ,{' '}
+          <span className="overview-release-size">
+            {formatCount(release.lessons)}{' '}
+            {release.lessons === 1 ? 'lesson' : 'lessons'} ·{' '}
+            {formatCount(release.items)}{' '}
+            {release.items === 1 ? 'phrase' : 'phrases'}
+          </span>
         </p>
-        <p className="console-hint">
-          {release.kindLabel} {release.publishedLabel} ·{' '}
-          {formatCount(release.lessons)}{' '}
-          {release.lessons === 1 ? 'lesson' : 'lessons'} ·{' '}
-          {formatCount(release.items)}{' '}
-          {release.items === 1 ? 'phrase' : 'phrases'}
+        <p className="overview-release-id">
+          {release.kindLabel} · <code>{release.name}</code>
         </p>
       </div>
       <Link
         className="console-button console-button-outline"
         href={adminPublishPath()}
       >
-        Publish
+        Open Publish
       </Link>
     </section>
   );
@@ -201,26 +215,48 @@ function LanguagePanel({ language: l }: { language: LanguageCard }) {
         className="overview-progress"
         max={100}
         value={percent}
-        aria-label={`${l.name}: reviewed items towards the target`}
-        aria-valuetext={l.progressLabel}
+        aria-label={`${l.name}: reviewed phrases towards the target`}
+        aria-valuetext={`${l.reviewedLine}. ${l.progressLabel}`}
       >
         {percent}%
       </progress>
       <p className="console-hint">{l.progressLabel}</p>
 
+      {/* One list, a row per step: the number, then what it means. Rows
+          never squeeze into five narrow tiles of two words a line. */}
       <ol className="overview-pipeline" aria-label={`${l.name} pipeline`}>
-        {l.steps.map((step) => (
-          <li
-            key={step.key}
-            className={`overview-step overview-step-${step.key}${step.value === 0 ? ' overview-step-empty' : ''}`}
-          >
-            <span className="overview-step-value">
-              {formatCount(step.value)}
-            </span>
-            <span className="overview-step-label">{step.label}</span>
-            <span className="overview-step-hint">{step.hint}</span>
-          </li>
-        ))}
+        {l.steps.map((step) => {
+          const body = (
+            <>
+              <span className="overview-step-value">
+                {formatCount(step.value)}
+              </span>
+              <span className="overview-step-text">
+                <span className="overview-step-label">{step.label}</span>
+                <span className="overview-step-hint">{step.hint}</span>
+              </span>
+            </>
+          );
+          return (
+            <li
+              key={step.key}
+              className={`overview-step overview-step-${step.key}${step.value === 0 ? ' overview-step-empty' : ''}`}
+            >
+              {step.key === 'waiting' ? (
+                // Why approved phrases aren't live yet: Publish lists what
+                // each held-back lesson still needs.
+                <Link
+                  className="overview-step-row overview-step-link"
+                  href={`${adminPublishPath()}#publish-held`}
+                >
+                  {body}
+                </Link>
+              ) : (
+                <span className="overview-step-row">{body}</span>
+              )}
+            </li>
+          );
+        })}
       </ol>
 
       <dl className="overview-facts">
@@ -244,8 +280,8 @@ function LanguagePanel({ language: l }: { language: LanguageCard }) {
           <div>
             <dt>Held back</dt>
             <dd>
-              {formatCount(l.gated)} {l.gated === 1 ? 'phrase' : 'phrases'}{' '}
-              behind a closed publish gate
+              {formatCount(l.gated)} {l.gated === 1 ? 'phrase' : 'phrases'} set
+              to Hold back
             </dd>
           </div>
         )}
@@ -262,7 +298,13 @@ function CoverageNote({ variety }: { variety: VarietyRow }) {
       {variety.coverage === 'none' && (
         <>
           {' '}
-          <Link href={adminPeoplePath()}>Invite a reviewer</Link>
+          {/* Opens the invite dialog on this variety. */}
+          <Link
+            className="overview-invite-link"
+            href={inviteDeepLink('language_reviewer', variety.id)}
+          >
+            Invite a reviewer
+          </Link>
         </>
       )}
     </span>

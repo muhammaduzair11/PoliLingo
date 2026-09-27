@@ -27,7 +27,7 @@ const notFound = () =>
   actionRefusal(
     'PL404_INVITATION_NOT_FOUND',
     sentenceFor('PL404_INVITATION_NOT_FOUND') ??
-      "We couldn't find that invitation.",
+      'We couldn’t find that invitation.',
   );
 
 /** Accepts the invitation, then opens the part of the workspace it grants. */
