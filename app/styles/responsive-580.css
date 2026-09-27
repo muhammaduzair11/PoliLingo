@@ -28,6 +28,10 @@
     padding: 9px 13px;
     gap: 10px;
   }
+  .header-cta {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
   .header-actions {
     gap: 1px;
   }
@@ -415,6 +419,7 @@
   .onboard-art h2 .native {
     font-size: 26px;
     margin-top: 0;
+    text-align: left;
   }
   .onboard-art .eyebrow {
     font-size: 8px;
@@ -940,5 +945,29 @@
   }
   [data-slot='alert-dialog-content'] {
     max-width: calc(100% - 40px) !important;
+  }
+}
+
+/* The header CTA keeps its words on one line. Where the header row is too
+   narrow for them (about 415px with the settings button, 370px on the home
+   page), only the arrow shows and the words stay for screen readers. */
+@media (max-width: 420px) {
+  .site-header:not(.home-header) .header-cta-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@media (max-width: 370px) {
+  .home-header .header-cta-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
