@@ -1,0 +1,180 @@
+{
+  "note": "Generated with the content repository's own normalise() and fingerprint() (E:/Polilingo/content, scripts/build.mjs and scripts/validate.mjs). Do not edit by hand; regenerate.",
+  "vectors": [
+    {
+      "name": "pashto",
+      "text": "ستړي مه شې",
+      "normalised": "ستړي مه شې",
+      "fingerprint": "598dfb5560d56cd1",
+      "sha256": "598dfb5560d56cd1a1cbc32af26678008f1ea96a7568980017be9bf5020bc261"
+    },
+    {
+      "name": "urdu",
+      "text": "آپ کیسے ہیں؟",
+      "normalised": "آپ کیسے ہیں؟",
+      "fingerprint": "1abe06f521c7077c",
+      "sha256": "1abe06f521c7077c5e45f2f387a9213b7efdcfc9a69a695e4b94cbad675be5a8"
+    },
+    {
+      "name": "urdu with question mark and spaces",
+      "text": "  آپ   کیسے ہیں؟  ",
+      "normalised": "آپ کیسے ہیں؟",
+      "fingerprint": "1abe06f521c7077c",
+      "sha256": "1abe06f521c7077c5e45f2f387a9213b7efdcfc9a69a695e4b94cbad675be5a8"
+    },
+    {
+      "name": "leading and trailing spaces",
+      "text": "   سلام   ",
+      "normalised": "سلام",
+      "fingerprint": "bda1fa4834533661",
+      "sha256": "bda1fa48345336618741fd2c4bc02809eb099c49a9b02fb5056401ab6d4dc3e6"
+    },
+    {
+      "name": "tabs and newlines inside",
+      "text": "ستړي\tمه\n\nشې",
+      "normalised": "ستړي مه شې",
+      "fingerprint": "598dfb5560d56cd1",
+      "sha256": "598dfb5560d56cd1a1cbc32af26678008f1ea96a7568980017be9bf5020bc261"
+    },
+    {
+      "name": "carriage return and vertical tab",
+      "text": "a\r\n\u000bb",
+      "normalised": "a b",
+      "fingerprint": "c8687a08aa5d6ed2",
+      "sha256": "c8687a08aa5d6ed2044328fa6a697ab8e96dc34291e8c2034ae8c38e6fcc6d65"
+    },
+    {
+      "name": "nbsp inside",
+      "text": "سلام ورور",
+      "normalised": "سلام ورور",
+      "fingerprint": "68f3bbc48e541329",
+      "sha256": "68f3bbc48e5413293cc6ec913a726a9431666289c7b354b0dd258e9cd558b1a8"
+    },
+    {
+      "name": "nbsp at the ends",
+      "text": " سلام ",
+      "normalised": "سلام",
+      "fingerprint": "bda1fa4834533661",
+      "sha256": "bda1fa48345336618741fd2c4bc02809eb099c49a9b02fb5056401ab6d4dc3e6"
+    },
+    {
+      "name": "zero width no-break space",
+      "text": "﻿سلام",
+      "normalised": "سلام",
+      "fingerprint": "bda1fa4834533661",
+      "sha256": "bda1fa48345336618741fd2c4bc02809eb099c49a9b02fb5056401ab6d4dc3e6"
+    },
+    {
+      "name": "ideographic and narrow spaces",
+      "text": "a　b c d e",
+      "normalised": "a b c d e",
+      "fingerprint": "52cf9f06f83e0a0a",
+      "sha256": "52cf9f06f83e0a0a90dc25dcf548c18421244f9520c577672cd27b6618f12134"
+    },
+    {
+      "name": "en and em spaces",
+      "text": "a b c d",
+      "normalised": "a b c d",
+      "fingerprint": "f82ce1b653e30b1c",
+      "sha256": "f82ce1b653e30b1ceb5711bbf75965dd24513011d7daa48bbd8610550154a1fd"
+    },
+    {
+      "name": "line and paragraph separators",
+      "text": "a b c",
+      "normalised": "a b c",
+      "fingerprint": "0e9f64031fcb2bc7",
+      "sha256": "0e9f64031fcb2bc708b531c2a20441580425d151a38503f38592a7dd36019d3b"
+    },
+    {
+      "name": "zero width space is not whitespace",
+      "text": "a​b",
+      "normalised": "a​b",
+      "fingerprint": "8df62aef5f92e4c3",
+      "sha256": "8df62aef5f92e4c30c0c938497f55f60078c361a476e7e0448485194ad79f884"
+    },
+    {
+      "name": "rtl mark is not whitespace",
+      "text": "‏سلام",
+      "normalised": "‏سلام",
+      "fingerprint": "38599f0ee09d011c",
+      "sha256": "38599f0ee09d011c8fd81cb2dc3fa27a6aa99e6c74de49337ed65e2e7d49a534"
+    },
+    {
+      "name": "combining acute to NFC",
+      "text": "Café",
+      "normalised": "Café",
+      "fingerprint": "73473dcc12b76308",
+      "sha256": "73473dcc12b763085904a5279d048c4d5b3b008c46f1f32443b99de04aa83a14"
+    },
+    {
+      "name": "already NFC",
+      "text": "Café",
+      "normalised": "Café",
+      "fingerprint": "73473dcc12b76308",
+      "sha256": "73473dcc12b763085904a5279d048c4d5b3b008c46f1f32443b99de04aa83a14"
+    },
+    {
+      "name": "arabic alef with madda decomposed",
+      "text": "آ",
+      "normalised": "آ",
+      "fingerprint": "b3d1e2abe09a5f5f",
+      "sha256": "b3d1e2abe09a5f5fcc164315c8dff7d38d8388c98bb5a8177f1336f001fb9399"
+    },
+    {
+      "name": "arabic fatha",
+      "text": "بَ",
+      "normalised": "بَ",
+      "fingerprint": "e006f0b8074fa19c",
+      "sha256": "e006f0b8074fa19c6706f30e017f42c40cca77b243f7c8e26c5d7fc140bcd5f2"
+    },
+    {
+      "name": "hangul jamo compose",
+      "text": "가",
+      "normalised": "가",
+      "fingerprint": "64ee5293d31bc58b",
+      "sha256": "64ee5293d31bc58b72d76ae9a86a902e90442428e29f24f4ecb257ba841cdd36"
+    },
+    {
+      "name": "only whitespace",
+      "text": " \t\n ",
+      "normalised": "",
+      "fingerprint": "e3b0c44298fc1c14",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "empty",
+      "text": "",
+      "normalised": "",
+      "fingerprint": "e3b0c44298fc1c14",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "latin",
+      "text": "Salaam",
+      "normalised": "Salaam",
+      "fingerprint": "01c4e0a6adefbd47",
+      "sha256": "01c4e0a6adefbd470b7ab0a6a530191be90aabca52855df040a68dfa16223c51"
+    },
+    {
+      "name": "mixed",
+      "text": "Stəṛay ma she — ستړي مه شې",
+      "normalised": "Stəṛay ma she — ستړي مه شې",
+      "fingerprint": "90b90488b59cba73",
+      "sha256": "90b90488b59cba7332eb1b5802b21fff47577852b30a58caf4c30435f9dbbc60"
+    },
+    {
+      "name": "emoji",
+      "text": "🦜 poli",
+      "normalised": "🦜 poli",
+      "fingerprint": "43decd6838821905",
+      "sha256": "43decd6838821905a0306a5c16594c824ce89b7a27dbba3e0512ed128fff7f46"
+    },
+    {
+      "name": "quotes and backslash",
+      "text": "he said \"hi\" \\ ok",
+      "normalised": "he said \"hi\" \\ ok",
+      "fingerprint": "1d3e2dd7f013bbc9",
+      "sha256": "1d3e2dd7f013bbc986996df2dc4204ba210b918f36e0fc671ea3801f80396855"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+# Database tests (docs/platform.md §3.11): a fresh local Supabase stack,
+# every migration and seed applied by `supabase db reset`, then
+# tests/db/*.test.mjs (the invariants, and each track's refusal tests).
+#
+# Not a required check: it needs Docker and takes a few minutes, so it
+# reports on every pull request without blocking a merge on its own.
+
+name: Database
+
+on:
+  pull_request:
+  push:
+    branches: [main, platform]
+
+concurrency:
+  group: db-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  db:
+    name: database
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set up the Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+
+      - name: Start the local stack
+        # The same services as `npm run db:start`.
+        run: supabase start -x studio,imgproxy,storage-api,realtime,edge-runtime,logflare,vector,postgres-meta,supavisor
+
+      - name: Apply migrations and seeds
+        run: supabase db reset
+
+      - name: Database tests
+        # The tests without the local cross-worktree lock: this runner is alone.
+        run: npm run test:db:ci
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+      - name: Stop the local stack
+        if: always()
+        run: supabase stop --no-backup

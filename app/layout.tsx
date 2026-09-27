@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 /* oxlint-disable next/no-page-custom-font -- These fonts load globally in the App Router root layout, not an individual Pages Router page. */
+import { AccountBoot } from '@/components/account-boot';
 import { LearningProvider } from '@/components/learning-provider';
 import { courses } from '@/lib/content';
 import { listJoin } from '@/lib/words';
@@ -35,7 +36,10 @@ export default function RootLayout({
         <a className="skip-link" href="#main-content">
           Skip to content
         </a>
-        <LearningProvider>{children}</LearningProvider>
+        <LearningProvider>
+          {children}
+          <AccountBoot />
+        </LearningProvider>
       </body>
     </html>
   );

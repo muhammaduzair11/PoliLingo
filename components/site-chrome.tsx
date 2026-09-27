@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useLearning } from './learning-provider';
 import { selectedCourse } from '@/lib/content';
+import { AccountChip } from './account/header-chip';
 export function Brand() {
   return (
     <Link href="/" className="brand" aria-label="PoliLingo home">
@@ -78,6 +79,7 @@ export function Header({ home = false }: { home?: boolean }) {
               <Settings2 size={20} />
             </Link>
           )}
+          <AccountChip />
           <Link
             className="button button-small button-ink"
             href={
@@ -102,6 +104,10 @@ export function Footer() {
         <Link href="/settings">
           Settings & sources <ArrowUpRight size={14} />
         </Link>
+        <nav className="footer-legal" aria-label="Legal">
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+        </nav>
       </div>
     </footer>
   );

@@ -1,0 +1,264 @@
+{
+  "note": "Generated with the content repository's own canonicalJson() (E:/Polilingo/content, scripts/build.mjs and scripts/validate.mjs). Do not edit by hand; regenerate.",
+  "vectors": [
+    {
+      "name": "empty object",
+      "input": {},
+      "canonical": "{}",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "name": "empty array",
+      "input": [],
+      "canonical": "[]",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "null",
+      "input": null,
+      "canonical": "null",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "name": "true",
+      "input": true,
+      "canonical": "true",
+      "sha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b"
+    },
+    {
+      "name": "false",
+      "input": false,
+      "canonical": "false",
+      "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+    },
+    {
+      "name": "zero",
+      "input": 0,
+      "canonical": "0",
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "name": "negative integer",
+      "input": -42,
+      "canonical": "-42",
+      "sha256": "fec80006df0542549b4cbaafb8987eee00bb49bca396eefe9ac8be5b5928e8f6"
+    },
+    {
+      "name": "decimal",
+      "input": 1.5,
+      "canonical": "1.5",
+      "sha256": "9f29a130438b81170b92a42650f9a94291ecad60bd47af2a3886e75f7f728725"
+    },
+    {
+      "name": "small decimal",
+      "input": -0.25,
+      "canonical": "-0.25",
+      "sha256": "c39e10a12e907115c23f0597a37ba310350471a14f107c08bc831478d0114554"
+    },
+    {
+      "name": "large integer",
+      "input": 123456789012,
+      "canonical": "123456789012",
+      "sha256": "2a33349e7e606a8ad2e30e3c84521f9377450cf09083e162e0a9b1480ce0f972"
+    },
+    {
+      "name": "plain string",
+      "input": "hello",
+      "canonical": "\"hello\"",
+      "sha256": "5aa762ae383fbb727af3c7a36d4940a5b8c40a989452d2304fc958ff3f354e7a"
+    },
+    {
+      "name": "empty string",
+      "input": "",
+      "canonical": "\"\"",
+      "sha256": "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+    },
+    {
+      "name": "quotes and backslashes",
+      "input": "say \"salaam\" \\ back\\slash /slash",
+      "canonical": "\"say \\\"salaam\\\" \\\\ back\\\\slash /slash\"",
+      "sha256": "ffb33e18410b6e91ed2242c6090149e9167bd21b69c5c52a9924c25bd99fc89a"
+    },
+    {
+      "name": "control characters",
+      "input": "tab\there\nnewline\rreturn\bback\fform\u0001one\u001funit",
+      "canonical": "\"tab\\there\\nnewline\\rreturn\\bback\\fform\\u0001one\\u001funit\"",
+      "sha256": "f4f23e3a8f62a4f35c3014db26dcd1719ae2c3ab136effd46b7cd87261a81c9e"
+    },
+    {
+      "name": "delete character",
+      "input": "delhere",
+      "canonical": "\"delhere\"",
+      "sha256": "ce9faa0a5f790e1091057d9ef2a73f21161608d84ad8d5a220a150d645927dfc"
+    },
+    {
+      "name": "pashto",
+      "input": "ستړي مه شې",
+      "canonical": "\"ستړي مه شې\"",
+      "sha256": "258f02cb8c988af8eb0bef421057112c65cc4589d64677662aa171c52d2d6271"
+    },
+    {
+      "name": "urdu",
+      "input": "آپ کیسے ہیں؟",
+      "canonical": "\"آپ کیسے ہیں؟\"",
+      "sha256": "7c964ca0fdb0b22c6a1ecb3f360e3207a5fa8a0282c110bb11de7aa1a3b48801"
+    },
+    {
+      "name": "nbsp and bidi marks kept verbatim",
+      "input": " سلام‏ ‫",
+      "canonical": "\" سلام‏ ‫\"",
+      "sha256": "5fb33f09b1474d47080b435cd78e9493345506ce4275f43abc4d32fe94d8c83f"
+    },
+    {
+      "name": "line and paragraph separators",
+      "input": "a b c",
+      "canonical": "\"a b c\"",
+      "sha256": "18c6bee2c10cadf5dec772e4b216f9060a21814a302ce989e183178afcf43e1a"
+    },
+    {
+      "name": "combining marks",
+      "input": "é and بَ",
+      "canonical": "\"é and بَ\"",
+      "sha256": "c4dd5b0fc48d85f203d0e2c4242b4fff5210aadf1ba12f15b2aa8a691a9baea4"
+    },
+    {
+      "name": "emoji",
+      "input": "poli 🦜 says hi",
+      "canonical": "\"poli 🦜 says hi\"",
+      "sha256": "58fa3c7b45a7021ffc381a96bbc1524a1cce157facff970db3794a54caf3f44d"
+    },
+    {
+      "name": "leading and trailing whitespace",
+      "input": "  spaced out \t",
+      "canonical": "\"  spaced out \\t\"",
+      "sha256": "026bbfae2d164b949040c98f4fd6b7761c7619935727190b688f49054d7a5a8d"
+    },
+    {
+      "name": "sorted keys",
+      "input": {
+        "9": 6,
+        "10": 5,
+        "zebra": 1,
+        "apple": 2,
+        "Mango": 3,
+        "_under": 4,
+        "a": 7,
+        "A": 8
+      },
+      "canonical": "{\"10\":5,\"9\":6,\"A\":8,\"Mango\":3,\"_under\":4,\"a\":7,\"apple\":2,\"zebra\":1}",
+      "sha256": "8be6ff35945bbdbc4884105581626bd9874da39c9b367f72f8892f1f6e327625"
+    },
+    {
+      "name": "nested objects",
+      "input": {
+        "outer": {
+          "z": {
+            "b": [3, 2, 1],
+            "a": null
+          },
+          "y": "why"
+        },
+        "first": true
+      },
+      "canonical": "{\"first\":true,\"outer\":{\"y\":\"why\",\"z\":{\"a\":null,\"b\":[3,2,1]}}}",
+      "sha256": "9570f4adce60e74dcff0950e42abc5ddff928d037b2f7da7a1c8f905f26b3dcf"
+    },
+    {
+      "name": "arrays keep order",
+      "input": [
+        3,
+        1,
+        2,
+        "b",
+        "a",
+        [
+          {
+            "b": 1,
+            "a": 2
+          }
+        ],
+        {},
+        [],
+        null,
+        false
+      ],
+      "canonical": "[3,1,2,\"b\",\"a\",[{\"a\":2,\"b\":1}],{},[],null,false]",
+      "sha256": "c38baf0e7a5d6854191f0e2915bb9ca2eca95afc85049fb2441c688ff4079e23"
+    },
+    {
+      "name": "unicode keys",
+      "input": {
+        "سلام": "ps",
+        "آپ": "ur",
+        "é": "e-acute",
+        "ñ": "n-tilde",
+        "z": "z"
+      },
+      "canonical": "{\"z\":\"z\",\"é\":\"e-acute\",\"ñ\":\"n-tilde\",\"آپ\":\"ur\",\"سلام\":\"ps\"}",
+      "sha256": "1b3b29f012d805db635c34545e1611ad74817f07188590367b69e2ba765ffffa"
+    },
+    {
+      "name": "keys needing escapes",
+      "input": {
+        "q\"uote": 1,
+        "back\\slash": 2,
+        "new\nline": 3
+      },
+      "canonical": "{\"back\\\\slash\":2,\"new\\nline\":3,\"q\\\"uote\":1}",
+      "sha256": "ea9a8d30801b07f5dcf596c7d2b6c9c28fd3a929c2b14517dcab7dae779a4633"
+    },
+    {
+      "name": "learner copy shaped",
+      "input": {
+        "courses": [
+          {
+            "id": "ps-crs-core",
+            "units": [
+              {
+                "id": "ps-unt-0a1b2c",
+                "lessons": [
+                  {
+                    "id": "ps-lsn-0a41c2",
+                    "title": "Greetings",
+                    "subtitle": "",
+                    "items": [
+                      {
+                        "id": "ps-itm-7f3a91",
+                        "native": "ستړي مه شې",
+                        "romanisation": "Stəṛay ma she",
+                        "meaning": "May you not be tired"
+                      }
+                    ],
+                    "exercises": [
+                      {
+                        "id": "ps-exr-111111",
+                        "kind": "meaning",
+                        "options": ["ps-itm-7f3a92"],
+                        "difficulty": 2
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "keymap": {
+          "lessons": [
+            {
+              "legacy_key": "pashto/greetings"
+            }
+          ]
+        },
+        "languages": [
+          {
+            "code": "ps",
+            "direction": "rtl"
+          }
+        ]
+      },
+      "canonical": "{\"courses\":[{\"id\":\"ps-crs-core\",\"units\":[{\"id\":\"ps-unt-0a1b2c\",\"lessons\":[{\"exercises\":[{\"difficulty\":2,\"id\":\"ps-exr-111111\",\"kind\":\"meaning\",\"options\":[\"ps-itm-7f3a92\"]}],\"id\":\"ps-lsn-0a41c2\",\"items\":[{\"id\":\"ps-itm-7f3a91\",\"meaning\":\"May you not be tired\",\"native\":\"ستړي مه شې\",\"romanisation\":\"Stəṛay ma she\"}],\"subtitle\":\"\",\"title\":\"Greetings\"}]}]}],\"keymap\":{\"lessons\":[{\"legacy_key\":\"pashto/greetings\"}]},\"languages\":[{\"code\":\"ps\",\"direction\":\"rtl\"}]}",
+      "sha256": "e07b2849f1d97a834d884aa655bdeb77139911b09f1420fa62c8d406f19d774d"
+    }
+  ]
+}

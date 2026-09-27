@@ -8,6 +8,7 @@ import {
   Pause,
   Download,
   Upload,
+  UserRound,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -36,6 +37,8 @@ import {
   resetProgress,
 } from '@/lib/progress';
 import { Header, Footer } from './site-chrome';
+import { accountsEnabled } from './account/accounts-enabled';
+import { accountHoldsProgress, useAccount } from '@/lib/account-store';
 import { Loading } from './status-views';
 function SettingRow({
   icon,
@@ -59,8 +62,52 @@ function SettingRow({
     </div>
   );
 }
+/**
+ * Signed out: an invitation to keep progress on every device. Signed in:
+ * the email and a link to the account page. Nothing while the build has no
+ * accounts.
+ */
+function AccountRow() {
+  const account = useAccount();
+  if (!accountsEnabled) return null;
+  const signedIn = account.status === 'signed-in';
+  return (
+    <section className="settings-card account-setting" aria-label="Account">
+      <SettingRow
+        icon={<UserRound />}
+        title={signedIn ? 'Your account' : 'Save your progress'}
+        description={
+          account.status === 'unknown'
+            ? 'Checking…'
+            : signedIn
+              ? (account.email ?? 'Signed in')
+              : 'Sign in to keep your progress on every device.'
+        }
+      >
+        {account.status === 'anonymous' && (
+          <Link
+            className="button button-small button-purple"
+            href="/sign-in?next=%2Fsettings"
+          >
+            Sign in
+          </Link>
+        )}
+        {signedIn && (
+          <Link className="button button-small button-outline" href="/account">
+            Manage
+          </Link>
+        )}
+      </SettingRow>
+    </section>
+  );
+}
 export function Settings() {
   const { state, ready, update } = useLearning();
+  // The "account keeps its copy" wording only when the last sync succeeded:
+  // otherwise some progress may exist only here, and a reset loses it.
+  const account = useAccount();
+  const accountHasIt = accountHoldsProgress(account);
+  const unsaved = account.status === 'signed-in' && !accountHasIt;
   const remembered = selectedCourse(state.selected);
   const [resetOpen, setResetOpen] = useState(false);
   const [notice, setNotice] = useState('');
@@ -122,6 +169,7 @@ export function Settings() {
         <p className="lead">
           A few little things to make this feel more like you.
         </p>
+        <AccountRow />
         <section className="settings-card">
           <SettingRow
             icon={<Volume2 />}
@@ -215,7 +263,7 @@ export function Settings() {
             </p>
           ))}
           <p>
-            This build uses content release <code>{contentVersion}</code>.
+            You are using content release <code>{contentVersion}</code>.
           </p>
         </section>
         <section className="reset-card">
@@ -255,8 +303,11 @@ export function Settings() {
           <div>
             <h3>A fresh start</h3>
             <p>
-              Progress is saved only in this browser. Resetting clears your
-              lessons, XP, badges, and preferences so you can start again.
+              {accountHasIt
+                ? 'Resetting clears your lessons, XP, badges, and preferences on this device. Your account keeps its copy, and it comes back here the next time your progress saves.'
+                : unsaved
+                  ? 'Some of your progress isn’t saved to your account yet. Resetting clears your lessons, XP, badges, and preferences on this device, and what isn’t saved can’t come back.'
+                  : 'Progress is saved only in this browser. Resetting clears your lessons, XP, badges, and preferences so you can start again.'}
             </p>
           </div>
           <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
@@ -267,9 +318,9 @@ export function Settings() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Start your adventure again?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This clears all your lessons, XP, streaks, badges, and
-                  preferences. There is no undo, so export your progress first
-                  if you might want it back.
+                  {accountHasIt
+                    ? 'This clears your lessons, XP, streaks, badges, and preferences on this device only. Your account still has your progress and will bring it back on the next save.'
+                    : `${unsaved ? 'Some of your progress isn’t saved to your account yet. ' : ''}This clears all your lessons, XP, streaks, badges, and preferences. There is no undo, so export your progress first if you might want it back.`}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

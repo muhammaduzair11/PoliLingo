@@ -8,11 +8,32 @@ is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- You can now sign in to keep your progress safe, with Google or a 6-digit code sent to
+  your email. It is optional: you can still learn without an account, exactly as before.
+  We ask your birth year and month first; if you are under 13, you keep learning without an
+  account.
+- Signed in, your lessons, XP and streak save to your account as you learn and come back
+  on any device you sign in on. Progress on your device is never deleted: not when you sign
+  in, sign out, switch accounts or delete your account. If a device already saved to a
+  different account, the app asks before adding its progress to yours.
+- Your account page shows what is saved, lets you download a copy of your data, and lets
+  you delete your account.
+- After a lesson, if you have a streak of two days or more, the app offers to save it by
+  signing in. You can dismiss it.
+- New and corrected lessons now reach you without an app update. When the team publishes,
+  an open app picks them up within about a minute, and never in the middle of a lesson.
+- For the PoliLingo team: an invitation-only workspace. Reviewers check phrases and lessons
+  for their own language and variety, approve them, ask for changes or suggest a fix.
+  Editors write and arrange lessons and generate exercises. Admins invite people with a
+  one-time link, see how each language is progressing, publish a new release after seeing
+  exactly what will change, and can bring back an earlier release.
+- Draft privacy notice and terms, at /privacy and /terms, pending legal review.
+
 - Progress can now be exported to a file and imported back from Settings. Lessons and
   streak days from both are combined; your XP shows the higher of the two totals.
 
-- Settings shows which content release the app was built from, and credits where each
-  language's phrases come from.
+- Settings shows which content release you are using, which can be newer than the app
+  itself, and credits where each language's phrases come from.
 
 ### Changed
 
@@ -48,3 +69,5 @@ is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   exported progress files carry it.
 - A progress file from an earlier version imports. One that cannot be imported now says
   why, instead of always saying it is not a progress file.
+- Signed in, Reset clears your progress on this device only. Your account keeps its copy,
+  and it comes back the next time your progress saves.

@@ -25,6 +25,7 @@ import {
   importProgress,
   mergeProgress,
   hydrateProgress,
+  latestStored,
   resetProgress,
   BACKUP_KEY_PREFIX,
   EXPORT_FORMAT,
@@ -991,6 +992,41 @@ test('export then import round-trips, and importing twice changes nothing', () =
   assert.deepEqual(twice.state, once.state);
   assert.equal(importProgress(fresh, V1_RAW).ok, true);
 });
+test("an export keeps the device's accounts, and an import never takes them on", () => {
+  const synced = {
+    ...migrateV2toV3(migrateV1toV2(legacyState(), 'source')),
+    userId: 'account-a',
+    lastSyncedAt: '2026-09-27T09:00:00.000Z',
+    importedIntoAccounts: ['account-a'],
+  };
+  // The file is the state exactly as stored, account bookkeeping included.
+  const file = exportProgress(synced, '2026-09-27T10:00:00.000Z');
+  assert.deepEqual(JSON.parse(file).state.importedIntoAccounts, ['account-a']);
+  assert.equal(JSON.parse(file).state.userId, 'account-a');
+  // A device that never synced takes the progress but claims no account.
+  const fresh = importProgress(initialState('target'), file);
+  assert.equal(fresh.ok, true);
+  assert.deepEqual(fresh.state.importedIntoAccounts, []);
+  assert.equal(fresh.state.userId, null);
+  assert.equal(fresh.state.lastSyncedAt, null);
+  assert.deepEqual(fresh.state.completed, synced.completed);
+  // A device synced to another account keeps its own.
+  const other = {
+    ...initialState('other'),
+    userId: 'account-b',
+    lastSyncedAt: '2026-09-26T08:00:00.000Z',
+    importedIntoAccounts: ['account-b'],
+  };
+  const merged = importProgress(other, file);
+  assert.equal(merged.ok, true);
+  assert.deepEqual(merged.state.importedIntoAccounts, ['account-b']);
+  assert.equal(merged.state.userId, 'account-b');
+  assert.equal(merged.state.lastSyncedAt, '2026-09-26T08:00:00.000Z');
+  // mergeProgress directly, as loadProgress() uses it, is the same.
+  assert.deepEqual(mergeProgress(other, synced).importedIntoAccounts, [
+    'account-b',
+  ]);
+});
 test("an old export imports: from v0.2, or with an older release's lessons", () => {
   const here = initialState('here');
   // An export made on v0.2 (#19), before content releases.
@@ -1334,4 +1370,56 @@ test('randomId falls back when randomUUID is missing or throws', () => {
     assert.notEqual(randomId(source), id);
   }
   assert.match(randomId(), uuid);
+});
+
+test('a change in an idle tab keeps the lessons another tab saved', () => {
+  const [a, b, c] = courses.flatMap((course) =>
+    course.lessons.map((l) => ({ course: course.id, id: l.id })),
+  );
+  const day = '2026-09-24';
+  // Tab B loaded earlier and holds one lesson; tab A then finished two more
+  // and saved them to the live key.
+  const tabB = complete(
+    { ...initialState('d'), selected: a.course },
+    a.course,
+    a.id,
+    'first',
+    day,
+  );
+  const tabA = complete(
+    complete(tabB, b.course, b.id, 'second', day),
+    c.course,
+    c.id,
+    'third',
+    day,
+  );
+  const storage = {
+    getItem: (key) => (key === STORAGE_KEY ? JSON.stringify(tabA) : null),
+  };
+
+  // A release activating in tab B starts from both, so its write loses nothing.
+  const next = latestStored(tabB, storage);
+  const sorted = (list) => [...list].sort((p, q) => p.localeCompare(q));
+  assert.deepEqual(
+    sorted(Object.keys(next.completed)),
+    sorted(Object.keys(tabA.completed)),
+  );
+  assert.deepEqual(sorted(next.rewarded), sorted(tabA.rewarded));
+  assert.equal(next.xp, tabA.xp);
+  assert.deepEqual(next.activity, tabA.activity);
+
+  // Nothing newer stored, or nothing readable: the tab's own copy, unchanged.
+  assert.equal(latestStored(tabA, storage), tabA);
+  assert.equal(latestStored(tabB, { getItem: () => null }), tabB);
+  assert.equal(latestStored(tabB, { getItem: () => '{"version":9}' }), tabB);
+  assert.equal(latestStored(tabB, { getItem: () => 'not json' }), tabB);
+  assert.equal(latestStored(tabB, null), tabB);
+  assert.equal(
+    latestStored(tabB, {
+      getItem: () => {
+        throw new DOMException('The operation is insecure.', 'SecurityError');
+      },
+    }),
+    tabB,
+  );
 });
