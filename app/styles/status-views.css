@@ -23,6 +23,30 @@
 .empty-page h1 {
   font-size: 44px;
 }
+.empty-page > p {
+  font-size: var(--text-body);
+  color: var(--text-muted);
+  max-width: 34ch;
+}
+.loading-page > p {
+  font-size: var(--text-small);
+  color: var(--text-muted);
+}
+/* The not-found page offers every visible language. */
+.empty-languages {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+.empty-languages .button {
+  gap: 12px;
+}
+.empty-languages .native {
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--ink);
+}
 .storage-warning {
   position: fixed;
   bottom: 12px;
