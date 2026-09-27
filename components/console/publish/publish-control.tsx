@@ -83,14 +83,17 @@ export function PublishControl({
         <ConfirmAction
           key={contentHash}
           action={run}
-          triggerLabel={`Publish ${release}`}
+          triggerLabel="Publish to learners"
           triggerTone="primary"
-          title={`Publish ${release}?`}
+          title="Publish to learners?"
           description={
             <>
-              {summary} Learners&apos; apps pick it up the next time they open,
-              within a minute. If something&apos;s wrong, you can go back to an
-              earlier release from the history.
+              {summary} Learners’ apps pick it up the next time they open,
+              within a minute. If something’s wrong, you can go back to an
+              earlier release from the history.{' '}
+              <span className="publish-dialog-id">
+                It will be saved as <code>{release}</code>.
+              </span>
             </>
           }
           confirmLabel="Publish now"
@@ -109,28 +112,28 @@ export function PublishControl({
               rows={2}
               maxLength={500}
               className="console-input"
-              placeholder="What's new, in a few words"
+              placeholder="What’s new, in a few words"
             />
           </div>
         </ConfirmAction>
       )}
       {state === 'empty' && (
         <Notice tone="warning" code="PL422_EMPTY_RELEASE">
-          This release would have no lessons in it, so it can&apos;t be
-          published. Check the lessons held back below.
+          This release would have no lessons in it, so it can’t be published.
+          Check the lessons held back below.
         </Notice>
       )}
       {state === 'clock' && (
         <Notice tone="warning" code="PL409_RELEASE_CLOCK">
-          A release is dated later than today, so the next name can&apos;t be
-          worked out. Publishing is paused until the clock is fixed. Please tell
-          the team.
+          A release is dated later than today, so the next name can’t be worked
+          out. Publishing is paused until the clock is fixed. Please tell the
+          team.
         </Notice>
       )}
       {state === 'check_failed' && (
         <Notice tone="warning" code="PL422_HASH_MISMATCH">
-          The preview didn&apos;t pass its content check, so publishing is
-          paused. Nothing was changed. Please tell the team.
+          The preview didn’t pass its content check, so publishing is paused.
+          Nothing was changed. Please tell the team.
         </Notice>
       )}
       <div aria-live="polite" className="publish-outcome">

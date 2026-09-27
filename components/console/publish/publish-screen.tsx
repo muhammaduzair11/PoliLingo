@@ -10,7 +10,13 @@ import {
   diffReleases,
 } from '@/lib/console/release-diff';
 import { CountersignQueue, type CountersignRow } from './countersign-queue';
-import { count, formatDate, formatDateTime, listJoin } from './format';
+import {
+  count,
+  formatDate,
+  formatDateTime,
+  formatTime,
+  listJoin,
+} from './format';
 import { LessonTable } from './lesson-table';
 import { PublishControl } from './publish-control';
 import { ReleaseHistory, type HistoryRow } from './release-history';
@@ -125,6 +131,7 @@ export function PublishScreen({
   const historyRows: HistoryRow[] = releases.map((row) => ({
     ...row,
     publishedLabel: formatDateTime(row.published_at),
+    publishedDay: formatDate(row.published_at),
   }));
 
   return (
@@ -138,31 +145,41 @@ export function PublishScreen({
       {liveCheck && !liveCheck.ok && (
         <Notice
           tone="warning"
-          title="The live release didn't pass its content check"
+          title="The live release didn’t pass its content check"
           code="PL422_HASH_MISMATCH"
         >
-          Learners&apos; apps refuse a copy that fails this check and keep the
+          Learners’ apps refuse a copy that fails this check and keep the
           lessons they already have. Please tell the team.
         </Notice>
       )}
 
+      {/* People read dates and sizes; a release's id is for the history
+          and for support, so it sits small under them. */}
       <section className="publish-status" aria-label="Release status">
         <div className="publish-status-card">
           <p className="publish-status-label">Live for learners</p>
           {latest ? (
             <>
-              <p className="publish-status-name">{latest.name}</p>
-              <p className="publish-status-meta">
-                Published{' '}
-                <time dateTime={latest.published_at}>
-                  {formatDateTime(latest.published_at)}
+              <p className="publish-status-name">
+                Since{' '}
+                <time
+                  dateTime={latest.published_at}
+                  title={formatDateTime(latest.published_at)}
+                >
+                  {formatDate(latest.published_at)}
                 </time>
+              </p>
+              <p className="publish-status-meta">
                 {releases[0] && (
                   <>
-                    {' · '}
-                    {count(releases[0].lessons, 'lesson', 'lessons')}
+                    {count(releases[0].lessons, 'lesson', 'lessons')} ·{' '}
+                    {count(releases[0].items, 'phrase', 'phrases')} ·{' '}
                   </>
                 )}
+                published at {formatTime(latest.published_at)}
+              </p>
+              <p className="publish-status-id">
+                <code>{latest.name}</code>
               </p>
             </>
           ) : (
@@ -173,13 +190,20 @@ export function PublishScreen({
         <div className="publish-status-card publish-status-next">
           <p className="publish-status-label">Next release</p>
           <p className="publish-status-name">
-            {state === 'unchanged' ? 'Up to date' : preview.release}
+            {state === 'unchanged'
+              ? 'Up to date'
+              : count(preview.stats.lessons, 'lesson', 'lessons')}
           </p>
           <p className="publish-status-meta">
             {state === 'unchanged'
-              ? `Everything ready is already in ${preview.base?.name ?? 'the live release'}.`
-              : `${count(preview.stats.lessons, 'lesson', 'lessons')} · ${count(preview.stats.items, 'phrase', 'phrases')}. ${summarise(preview)}`}
+              ? 'Everything that’s ready is already live.'
+              : `${count(preview.stats.items, 'phrase', 'phrases')}. ${summarise(preview)}`}
           </p>
+          {state !== 'unchanged' && (
+            <p className="publish-status-id">
+              Will be <code>{preview.release}</code>
+            </p>
+          )}
           <PublishControl
             state={state}
             release={preview.release}
@@ -214,7 +238,9 @@ export function PublishScreen({
         title="What changes for learners"
         description={
           anyChange
-            ? `Compared with ${preview.base?.name ?? 'nothing published yet'}.`
+            ? preview.base
+              ? 'Compared with what learners have now.'
+              : 'Nothing has been published yet, so every lesson is new.'
             : undefined
         }
       >
@@ -229,8 +255,8 @@ export function PublishScreen({
           <EmptyState title="Learners are up to date">
             <p>
               {preview.base
-                ? `Everything that's ready is already live in ${preview.base.name}. Lessons appear here once they're approved.`
-                : "Lessons appear here once they're approved."}
+                ? `Everything that’s ready is already live. Lessons appear here once they’re approved.`
+                : 'Lessons appear here once they’re approved.'}
             </p>
           </EmptyState>
         ) : (
@@ -277,7 +303,7 @@ export function PublishScreen({
       <Section
         id="publish-held"
         title="Held back"
-        description="Lessons that aren't in the next release yet, and what they need."
+        description="Lessons that aren’t in the next release yet, and what they need."
       >
         {heldBack.length === 0 ? (
           <EmptyState title="Nothing is held back">

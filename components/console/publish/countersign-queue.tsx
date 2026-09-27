@@ -66,7 +66,8 @@ export function CountersignQueue({
               {
                 key: 'reviewer',
                 header: 'Reviewer',
-                cell: (row) => row.reviewer_name ?? row.reviewer_id,
+                // Never a raw id: a name, or plain words.
+                cell: (row) => row.reviewer_name ?? 'A reviewer',
               },
               {
                 key: 'at',
@@ -107,15 +108,17 @@ export function CountersignQueue({
 
 const labelFor = (row: AwaitingCountersign) =>
   row.target_type === 'lesson'
-    ? `the lesson “${row.lesson_title ?? row.target_id}”`
-    : `“${row.meaning ?? row.target_id}” in ${row.lesson_title ?? 'its lesson'}`;
+    ? row.lesson_title
+      ? `the lesson “${row.lesson_title}”`
+      : 'an untitled lesson'
+    : `${row.meaning ? `“${row.meaning}”` : 'a phrase'} in ${row.lesson_title ?? 'its lesson'}`;
 
 function Target({ row }: { row: AwaitingCountersign }) {
   if (row.target_type === 'lesson')
     return (
       <span className="publish-lesson">
         <span className="publish-lesson-title">
-          {row.lesson_title ?? row.target_id}
+          {row.lesson_title ?? 'Untitled lesson'}
         </span>
         <span className="publish-lesson-meta">Whole lesson</span>
       </span>

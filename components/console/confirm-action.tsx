@@ -11,6 +11,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import type { ActionResult } from '@/lib/console/action-result';
+import { useAnnounce, useKeepFocus } from './announcer';
 import { Notice } from './notice';
 import { SubmitButton, type ButtonTone } from './submit-button';
 
@@ -23,6 +24,13 @@ import { SubmitButton, type ButtonTone } from './submit-button';
  * `fields` become hidden inputs; `children` are extra inputs inside the
  * dialog, such as a reason. `action` must be a server action (a
  * 'use server' function) returning ActionResult.
+ *
+ * `announce` says the outcome in the console's live region at the top of
+ * the page, which outlives a trigger the action removes; `focusAfter` is
+ * the id of what takes focus then (a section heading), if focus was lost.
+ *
+ * The dialog wears the console's own buttons, left-aligned text at every
+ * width, and for a danger action the safe choice first on phones.
  */
 export function ConfirmAction<T>({
   action,
@@ -37,6 +45,8 @@ export function ConfirmAction<T>({
   fields,
   children,
   successMessage,
+  announce,
+  focusAfter,
   onSuccess,
 }: {
   action: (
@@ -54,14 +64,23 @@ export function ConfirmAction<T>({
   fields?: Record<string, string>;
   children?: ReactNode;
   successMessage?: ReactNode;
+  /** Said in the page's live region on success. */
+  announce?: ReactNode | ((data: T) => ReactNode);
+  /** The id of the element to focus on success when focus was lost. */
+  focusAfter?: string;
   onSuccess?: (data: T) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const say = useAnnounce();
+  const keepFocus = useKeepFocus();
   const [result, formAction] = useActionState(
     async (previous: ActionResult<T> | null, formData: FormData) => {
       const next = await action(previous, formData);
       if (next.ok) {
         setOpen(false);
+        if (announce)
+          say(typeof announce === 'function' ? announce(next.data) : announce);
+        keepFocus(focusAfter);
         onSuccess?.(next.data);
       }
       return next;
@@ -76,9 +95,11 @@ export function ConfirmAction<T>({
         >
           {triggerLabel}
         </AlertDialogTrigger>
-        <AlertDialogContent className="console-dialog">
+        <AlertDialogContent
+          className={`console-dialog${tone === 'danger' ? ' console-dialog-danger' : ''}`}
+        >
           <form action={formAction} className="console-dialog-form">
-            <AlertDialogHeader>
+            <AlertDialogHeader className="console-dialog-header">
               <AlertDialogTitle>{title}</AlertDialogTitle>
               {description && (
                 <AlertDialogDescription>{description}</AlertDialogDescription>
@@ -96,8 +117,10 @@ export function ConfirmAction<T>({
                 {result.message}
               </Notice>
             )}
-            <AlertDialogFooter>
-              <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
+            <AlertDialogFooter className="console-dialog-footer">
+              <AlertDialogCancel className="console-button console-button-outline">
+                {cancelLabel}
+              </AlertDialogCancel>
               <SubmitButton
                 tone={tone === 'danger' ? 'danger' : 'primary'}
                 pendingLabel={pendingLabel}

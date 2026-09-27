@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { EmptyState } from '@/components/console/empty-state';
 import { Notice } from '@/components/console/notice';
 import { PageHeader } from '@/components/console/page-header';
-import { StatusBadge } from '@/components/console/status-badge';
+import { STATUS_LABELS, StatusBadge } from '@/components/console/status-badge';
 import { FieldDiff } from '@/components/console/review/field-diff';
 import { LoadError } from '@/components/console/review/load-error';
 import { OutcomeProvider } from '@/components/console/review/outcome';
@@ -27,14 +27,53 @@ import { callRpc } from '@/lib/rpc';
 import { serverSupabase } from '@/lib/supabase/server';
 import { acceptSuggestion, declineSuggestion } from './actions';
 
-export const metadata: Metadata = { title: 'Suggestions' };
+export const metadata: Metadata = { title: 'Suggested fixes' };
+
+type PhraseName = { meaning: string | null; native: string | null };
+
+/**
+ * The phrase each recently handled suggestion was about, so the list can
+ * name it. page_admin_suggestions() gives only the item id there: the open
+ * list covers some, and page_review_item() (a read any team member may
+ * make) the rest. A phrase that can't be read is just "A phrase".
+ */
+async function recentPhrases(
+  supabase: Awaited<ReturnType<typeof serverSupabase>>,
+  page: AdminSuggestionsPage,
+): Promise<Map<string, PhraseName>> {
+  const names = new Map<string, PhraseName>(
+    page.open.map((s) => [
+      s.item_id,
+      { meaning: s.current.meaning, native: s.current.native },
+    ]),
+  );
+  const missing = [...new Set(page.recent.map((r) => r.item_id))].filter(
+    (id) => !names.has(id),
+  );
+  const pages = await Promise.all(
+    missing.map((id) =>
+      callRpc<{ item: PhraseName }>(supabase, 'page_review_item', {
+        p_item_id: id,
+      }),
+    ),
+  );
+  pages.forEach((result, i) => {
+    if (result.ok && result.data?.item)
+      names.set(missing[i], {
+        meaning: result.data.item.meaning,
+        native: result.data.item.native,
+      });
+  });
+  return names;
+}
 
 export default async function AdminSuggestionsPage() {
   const gate = await requireRole('editor');
   if (!gate.ok) return gate.view;
 
+  const supabase = await serverSupabase();
   const result = await callRpc<AdminSuggestionsPage>(
-    await serverSupabase(),
+    supabase,
     'page_admin_suggestions',
   );
   if (!result.ok)
@@ -50,6 +89,7 @@ export default async function AdminSuggestionsPage() {
 
   const page = result.data;
   const now = page.generated_at;
+  const phrases = await recentPhrases(supabase, page);
 
   return (
     <div className="review-page">
@@ -71,8 +111,13 @@ export default async function AdminSuggestionsPage() {
           <ul className="review-suggestion-list" aria-label="Open suggestions">
             {page.open.map((s) => {
               const changes = suggestionDiff(s.current, s.proposed);
-              const suggester =
-                s.suggester_name ?? `Contributor ${s.suggester_id}`;
+              // Never a raw contributor id: a name, or plain words.
+              const suggester = s.suggester_name ?? 'a team member';
+              const badge = badgeFor({
+                review_status: s.review_status,
+                submitted: s.lesson_submitted,
+                retired: s.item_retired,
+              });
               return (
                 <li key={s.id} className="review-card review-suggestion">
                   <div className="review-suggestion-head">
@@ -92,12 +137,10 @@ export default async function AdminSuggestionsPage() {
                         </Link>
                       </h2>
                     </div>
+                    {/* The phrase's own state, not the suggestion's. */}
                     <StatusBadge
-                      status={badgeFor({
-                        review_status: s.review_status,
-                        submitted: s.lesson_submitted,
-                        retired: s.item_retired,
-                      })}
+                      status={badge}
+                      label={`Phrase: ${STATUS_LABELS[badge].toLowerCase()}`}
                     />
                   </div>
                   <p className="review-entry-head">
@@ -110,7 +153,10 @@ export default async function AdminSuggestionsPage() {
                     </time>
                   </p>
                   {s.note && (
-                    <blockquote className="review-quote">{s.note}</blockquote>
+                    <figure className="suggestion-note">
+                      <figcaption>Their note</figcaption>
+                      <blockquote className="review-quote">{s.note}</blockquote>
+                    </figure>
                   )}
                   {changes.length > 0 ? (
                     <FieldDiff
@@ -173,9 +219,10 @@ export default async function AdminSuggestionsPage() {
               {page.recent.map((r) => (
                 <li key={r.id}>
                   <Link href={reviewItemPath(r.item_id)}>
-                    {SUGGESTION_STATUS_LABELS[r.status]}
-                  </Link>{' '}
-                  · from {r.suggester_name ?? 'a reviewer'}
+                    <PhraseLabel phrase={phrases.get(r.item_id)} />
+                  </Link>
+                  , {SUGGESTION_STATUS_LABELS[r.status].toLowerCase()} · from{' '}
+                  {r.suggester_name ?? 'a reviewer'}
                   {r.resolved_by_name && `, by ${r.resolved_by_name}`}
                   {r.resolved_at && (
                     <>
@@ -203,4 +250,11 @@ export default async function AdminSuggestionsPage() {
       </OutcomeProvider>
     </div>
   );
+}
+
+/** “Thank you”, or the phrase’s own text, or “A phrase”. */
+function PhraseLabel({ phrase }: { phrase: PhraseName | undefined }) {
+  if (phrase?.meaning) return <>“{phrase.meaning}”</>;
+  if (phrase?.native) return <bdi dir="auto">{phrase.native}</bdi>;
+  return <>A phrase</>;
 }

@@ -33,8 +33,12 @@ import { serverSupabase } from '@/lib/supabase/server';
 // Every console page is per person: never prerendered, never cached.
 export const dynamic = 'force-dynamic';
 
+// Pages name themselves ("Overview"); the tab reads "Overview · PoliLingo Workspace".
 export const metadata: Metadata = {
-  title: 'Workspace',
+  title: {
+    default: 'Workspace · PoliLingo',
+    template: '%s · PoliLingo Workspace',
+  },
   robots: { index: false, follow: false },
 };
 
@@ -72,9 +76,23 @@ async function signOut(): Promise<ActionResult<null>> {
   }
 }
 
-/** Review for reviewers; Edit for editors and admins; Admin for admins. */
+/**
+ * Admin first for admins (Overview, People, Publish, Suggested fixes), then
+ * Edit; Review for reviewers; Edit for editors, who also decide on
+ * reviewers' suggested fixes.
+ */
 function navFor(context: MyContext): NavGroup[] {
   const groups: NavGroup[] = [];
+  if (hasRole(context, 'admin'))
+    groups.push({
+      label: 'Admin',
+      items: [
+        { href: adminOverviewPath(), label: 'Overview' },
+        { href: adminPeoplePath(), label: 'People' },
+        { href: adminPublishPath(), label: 'Publish' },
+        { href: adminSuggestionsPath(), label: 'Suggested fixes' },
+      ],
+    });
   if (hasRole(context, 'reviewer'))
     groups.push({
       label: 'Review',
@@ -83,24 +101,13 @@ function navFor(context: MyContext): NavGroup[] {
   if (hasRole(context, 'editor'))
     groups.push({
       label: 'Edit',
-      // Editors accept or decline reviewers' suggestions too; admins find
-      // Suggestions under Admin.
+      // Admins find Suggested fixes under Admin.
       items: context.is_admin
         ? [{ href: editTreePath(), label: 'Lessons' }]
         : [
             { href: editTreePath(), label: 'Lessons' },
-            { href: adminSuggestionsPath(), label: 'Suggestions' },
+            { href: adminSuggestionsPath(), label: 'Suggested fixes' },
           ],
-    });
-  if (hasRole(context, 'admin'))
-    groups.push({
-      label: 'Admin',
-      items: [
-        { href: adminOverviewPath(), label: 'Overview' },
-        { href: adminPeoplePath(), label: 'People' },
-        { href: adminSuggestionsPath(), label: 'Suggestions' },
-        { href: adminPublishPath(), label: 'Publish' },
-      ],
     });
   return groups;
 }
@@ -119,7 +126,7 @@ export default async function ConsoleLayout({
     return (
       <ConsoleShell>
         <section className="console-panel">
-          <h1>The workspace isn&apos;t set up here</h1>
+          <h1>The workspace isn’t set up here</h1>
           <Notice tone="warning" code="NOT_CONFIGURED">
             This copy of PoliLingo has no database settings, so the workspace
             can&apos;t open. Learning works as usual.
@@ -131,7 +138,7 @@ export default async function ConsoleLayout({
     return (
       <ConsoleShell>
         <NoAccess
-          title="We couldn't open the workspace"
+          title="We couldn’t open the workspace"
           reason={access.error}
         />
       </ConsoleShell>

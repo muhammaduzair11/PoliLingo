@@ -11,6 +11,8 @@ import {
   diffReleases,
   lessonPlaces,
   readBackVerdict,
+  heldState,
+  reasonSentence,
 } from '../lib/console/release-diff.ts';
 
 const baseline = JSON.parse(
@@ -266,4 +268,147 @@ test('readBackVerdict: every hash must agree with the published one', () => {
     'mismatch',
   );
   assert.equal(readBackVerdict(null, hash, hash), 'mismatch');
+});
+
+const reason = (code, message, problem_code) => ({
+  code,
+  message,
+  problem_code,
+});
+
+test('a held-back lesson gets one honest badge', () => {
+  // "At the bazaar": never sent for review, and no exercises yet.
+  assert.equal(
+    heldState({
+      class: 'reviewed',
+      reasons: [
+        reason(
+          'problem',
+          'This lesson needs at least one exercise.',
+          'PL422_TOO_FEW_EXERCISES',
+        ),
+        reason(
+          'lesson_not_approved',
+          "The lesson hasn't been sent for review yet.",
+        ),
+        reason('items_not_approved', 'None of its 3 phrases is approved yet.'),
+      ],
+    }),
+    'not_finished',
+  );
+  // Sent for review: only then "In review".
+  assert.equal(
+    heldState({
+      class: 'reviewed',
+      reasons: [
+        reason('lesson_not_approved', 'The lesson is waiting for review.'),
+        reason('items_not_approved', "3 of its 4 phrases aren't approved yet."),
+      ],
+    }),
+    'in_review',
+  );
+  assert.equal(
+    heldState({
+      class: 'reviewed',
+      reasons: [
+        reason(
+          'lesson_not_approved',
+          'A reviewer asked for changes to this lesson.',
+        ),
+      ],
+    }),
+    'changes_requested',
+  );
+  assert.equal(heldState({ class: 'empty', reasons: [] }), 'not_finished');
+  assert.equal(
+    heldState({
+      class: 'reviewed',
+      reasons: [
+        reason(
+          'gated',
+          'Held back: the publish gate is closed on the unit "Audit unit".',
+        ),
+        reason(
+          'lesson_not_approved',
+          "The lesson hasn't been sent for review yet.",
+        ),
+      ],
+    }),
+    'held_back',
+  );
+  assert.equal(
+    heldState({
+      class: 'reviewed',
+      reasons: [reason('retired', 'Its unit or course is retired.')],
+    }),
+    'retired',
+  );
+  assert.equal(
+    heldState({
+      class: 'demo',
+      reasons: [
+        reason(
+          'demo_not_live',
+          'Starter content for Hindko is never shown to learners.',
+        ),
+      ],
+    }),
+    'starter',
+  );
+  assert.equal(
+    heldState({
+      class: 'reviewed',
+      reasons: [
+        reason(
+          'awaiting_countersign',
+          "The lesson's approval needs an admin's countersign.",
+        ),
+      ],
+    }),
+    'countersign',
+  );
+  assert.equal(heldState({ class: 'reviewed', reasons: [] }), 'not_ready');
+});
+
+test('reasons read in the switch’s own words, with typographic quotes', () => {
+  assert.equal(
+    reasonSentence(
+      reason(
+        'gated',
+        'Held back: the publish gate is closed on the unit "Audit unit: at the bazaar".',
+      ),
+    ),
+    'Set to Hold back on the unit “Audit unit: at the bazaar”.',
+  );
+  assert.equal(
+    reasonSentence(reason('gated', 'Something else entirely')),
+    'Set to Hold back, so learners don’t see it yet.',
+  );
+  assert.equal(
+    reasonSentence(
+      reason(
+        'lesson_not_approved',
+        "The lesson hasn't been sent for review yet.",
+      ),
+    ),
+    'The lesson hasn’t been sent for review yet.',
+  );
+  assert.equal(
+    reasonSentence(
+      reason(
+        'awaiting_countersign',
+        "2 phrases' approvals need an admin's countersign.",
+      ),
+    ),
+    '2 phrases’ approvals need an admin’s countersign.',
+  );
+  for (const text of [
+    reasonSentence(
+      reason(
+        'gated',
+        'Held back: the publish gate is closed on the Hindko language.',
+      ),
+    ),
+  ])
+    assert.doesNotMatch(text, /publish gate/);
 });

@@ -12,6 +12,8 @@ import type { PublishOutcome, ReleaseRow } from './types';
 export type HistoryRow = ReleaseRow & {
   /** Preformatted on the server, so server and browser agree. */
   publishedLabel: string;
+  /** "26 Sep 2026", the day in Pakistan, for the Go back dialog. */
+  publishedDay: string;
 };
 
 type RollbackAction = (
@@ -89,12 +91,12 @@ function ReleaseName({ row, live }: { row: ReleaseRow; live: boolean }) {
  */
 export function ReleaseHistory({
   releases,
-  nextName,
   action,
 }: {
   releases: HistoryRow[];
-  /** The name the next release gets, for the rollback dialog. */
-  nextName: string;
+  /** The name the next release gets. No longer shown: the Go back dialog
+      speaks in dates. Kept so callers don't change. */
+  nextName?: string;
   action: RollbackAction;
 }) {
   const [outcome, setOutcome] = useState<PublishOutcome | null>(null);
@@ -133,13 +135,7 @@ export function ReleaseHistory({
       align: 'end',
       cell: (row) =>
         canGoBack(row) ? (
-          <RollbackButton
-            row={row}
-            liveName={live.name}
-            nextName={nextName}
-            action={action}
-            onDone={setOutcome}
-          />
+          <RollbackButton row={row} action={action} onDone={setOutcome} />
         ) : (
           <span className="publish-muted">—</span>
         ),
@@ -156,14 +152,10 @@ export function ReleaseHistory({
 
 function RollbackButton({
   row,
-  liveName,
-  nextName,
   action,
   onDone,
 }: {
   row: HistoryRow;
-  liveName: string;
-  nextName: string;
   action: RollbackAction;
   onDone: (outcome: PublishOutcome) => void;
 }) {
@@ -177,17 +169,17 @@ function RollbackButton({
           Go back<span className="sr-only"> to {row.name}</span>
         </>
       }
-      title={`Go back to ${row.name}?`}
+      // Short and plain: the date people know it by, what learners get,
+      // and that nothing is lost. The ids are in the history table.
+      title={`Go back to the release of ${row.publishedDay}?`}
       description={
         <>
-          Learners get the {count(row.lessons, 'lesson', 'lessons')} of{' '}
-          {row.name} again, exactly as they were, in a new release, {nextName}.{' '}
-          {liveName} stays in the history. If any of those lessons has been
-          retired or held back by a publish gate since, going back is refused.
-          Newer lessons that are ready come back in the next preview.
+          Learners get the {count(row.lessons, 'lesson', 'lessons')} from{' '}
+          {row.publishedDay} again, as a new release. The release they have now
+          stays in the history.
         </>
       }
-      confirmLabel={`Go back to ${row.name}`}
+      confirmLabel="Go back"
       pendingLabel="Going back…"
       tone="danger"
       fields={{ release: row.name }}
