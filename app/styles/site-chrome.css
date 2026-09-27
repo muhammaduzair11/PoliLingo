@@ -35,6 +35,12 @@
   align-items: center;
   gap: 8px;
 }
+/* The CTA keeps its words on one line at every width, and the nav gives way
+   first. On the narrowest phones only its arrow shows (responsive-580.css). */
+.header-cta {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 .home-header .button-ink {
   box-shadow: 0 3px 0 #c5bbce;
 }

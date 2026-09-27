@@ -134,6 +134,11 @@
 picture {
   display: contents;
 }
+/* With the <picture> box gone, its <source> elements would become empty
+   flex items and add a gap each before Poli. They never render anyway. */
+picture > source {
+  display: none;
+}
 .poli {
   object-fit: contain;
 }

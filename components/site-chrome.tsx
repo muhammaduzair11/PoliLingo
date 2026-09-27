@@ -81,12 +81,14 @@ export function Header({ home = false }: { home?: boolean }) {
           )}
           <AccountChip />
           <Link
-            className="button button-small button-ink"
+            className="button button-small button-ink header-cta"
             href={
               remembered ? `/learn/${remembered.id}` : home ? '#languages' : '/'
             }
           >
-            {remembered ? 'Keep going' : 'Let’s go'}
+            <span className="header-cta-label">
+              {remembered ? 'Keep going' : 'Let’s go'}
+            </span>
             <ArrowUpRight size={17} />
           </Link>
         </div>
