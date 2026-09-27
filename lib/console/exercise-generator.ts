@@ -67,20 +67,32 @@ export const nativeKey = (native: string): string => normaliseNative(native);
 export const meaningKey = (meaning: string): string =>
   normaliseNative(meaning).toLowerCase();
 
-/** "How do you say "Thank you"?" / "How do you ask "What is your name?"" */
+/**
+ * The learner builds the meaning from word tiles, so the prompt must not
+ * say it: it would hand them the answer.
+ */
+export const ASSEMBLE_PROMPT = 'Build the meaning.';
+
+/**
+ * An "In context" exercise opens with a moment the editor describes; until
+ * they do, it asks the question on its own.
+ */
+export const CONTEXT_PROMPT = 'What do you say?';
+
+/**
+ * How do you say “Thank you”? / How do you ask “What is your name?”, with
+ * curly quotes, as learner copy has them.
+ */
 export function translationPrompt(meaning: string): string {
   const text = normaliseNative(meaning).replace(/\.+$/, '');
-  if (text.endsWith('?')) return `How do you ask "${text}"`;
-  if (text.endsWith('!')) return `How do you say "${text}"`;
-  return `How do you say "${text}"?`;
+  if (text.endsWith('?')) return `How do you ask “${text}”`;
+  if (text.endsWith('!')) return `How do you say “${text}”`;
+  return `How do you say “${text}”?`;
 }
 
-/** "Build the sentence "My name is Sara"." / "Build the sentence "Where are you from?"" */
-export function assemblePrompt(meaning: string): string {
-  const text = normaliseNative(meaning).replace(/\.+$/, '');
-  return /[?!]$/.test(text)
-    ? `Build the sentence "${text}"`
-    : `Build the sentence "${text}".`;
+/** Always “Build the meaning.”: the meaning is the answer. */
+export function assemblePrompt(_meaning?: string): string {
+  return ASSEMBLE_PROMPT;
 }
 
 /** The prompt a new exercise of `kind` starts with. */
@@ -94,6 +106,8 @@ export function defaultPrompt(kind: string, meaning: string): string {
       return MATCH_PROMPT;
     case 'assemble':
       return assemblePrompt(meaning);
+    case 'context':
+      return CONTEXT_PROMPT;
     default:
       return '';
   }

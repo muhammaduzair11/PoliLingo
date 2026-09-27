@@ -11,6 +11,7 @@ import { LoadError } from '@/components/console/review/load-error';
 import { PhraseSummary } from '@/components/console/review/phrase';
 import { getAccess, hasRole, requireRole } from '@/lib/console/access';
 import {
+  adminOverviewPath,
   adminPublishPath,
   editTreePath,
   learnPath,
@@ -40,24 +41,43 @@ export default async function ReviewQueuePage() {
     // rather than "no role here".
     const access = await getAccess();
     if (access.state === 'ready' && access.context.is_admin)
+      // An admin’s part in review is on Publish: what is approved, and the
+      // countersigns a sole reviewer’s approvals wait for. Their way on is
+      // there or back to the overview, not to learning.
       return (
-        <NoAccess title="Admins don't approve phrases">
-          <p>
-            A native-speaker reviewer does, so nobody checks their own work.
-          </p>
-          <p className="console-actions">
-            <Link
-              className="console-button console-button-primary"
-              href={adminPublishPath()}
-            >
-              See what&apos;s approved in Publish
-            </Link>
-          </p>
-        </NoAccess>
+        <div className="review-page">
+          <PageHeader
+            eyebrow="Review"
+            title="Reviewers approve phrases here"
+            description="A native-speaker reviewer approves each phrase, so nobody checks their own work."
+          />
+          <section className="console-panel review-admin-panel">
+            <p>
+              As an admin, you see what is approved on Publish. You also
+              countersign there: when a variety has only one reviewer and they
+              approve text they wrote, it waits for your countersign before
+              learners see it.
+            </p>
+            <p className="console-actions">
+              <Link
+                className="console-button console-button-primary"
+                href={adminPublishPath()}
+              >
+                Go to Publish
+              </Link>
+              <Link
+                className="console-button console-button-outline"
+                href={adminOverviewPath()}
+              >
+                Back to the overview
+              </Link>
+            </p>
+          </section>
+        </div>
       );
     if (access.state === 'ready' && hasRole(access.context, 'editor'))
       return (
-        <NoAccess title="Editors don't approve phrases">
+        <NoAccess title="Editors don’t approve phrases">
           <p>
             A native-speaker reviewer does, so nobody checks their own work. A
             lesson joins their queue when you submit it.
@@ -120,7 +140,7 @@ export default async function ReviewQueuePage() {
       />
 
       {soleNames.length > 0 && (
-        <Notice tone="info" title="You're the only reviewer here right now">
+        <Notice tone="info" title="You’re the only reviewer here right now">
           As the only {listNames(soleNames)} reviewer, you can approve text you
           wrote yourself. An admin countersigns those approvals before learners
           see them.
@@ -129,7 +149,7 @@ export default async function ReviewQueuePage() {
 
       {total === 0 ? (
         <EmptyState
-          title="You're all caught up"
+          title="You’re all caught up"
           action={
             <Link
               className="console-button console-button-outline"
@@ -141,7 +161,7 @@ export default async function ReviewQueuePage() {
         >
           <p>
             Nothing is waiting for you. New phrases show up here as soon as an
-            editor writes them, and lessons once they&apos;re submitted.
+            editor writes them, and lessons once they’re submitted.
           </p>
         </EmptyState>
       ) : (

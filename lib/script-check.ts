@@ -89,6 +89,23 @@ export const INVISIBLE_CHARS: ReadonlyMap<number, string> = new Map([
 const SMART_QUOTES = new Set([0x2018, 0x2019, 0x201c, 0x201d]);
 const isArabicDigit = (cp: number) =>
   (cp >= 0x0660 && cp <= 0x0669) || (cp >= 0x06f0 && cp <= 0x06f9);
+const isAsciiDigit = (cp: number) => cp >= 0x30 && cp <= 0x39;
+
+/** "Five" in each language, for the numbers message's example. */
+const FIVE: Readonly<Record<string, string>> = {
+  ps: 'پنځه',
+  ur: 'پانچ',
+  hno: 'پنج',
+};
+
+/**
+ * One message for every digit, Western or Arabic-Indic: no character list
+ * has digits, so "use 0-9 instead" would only trade one refusal for another.
+ */
+export function numbersMessage(language: string): string {
+  const five = FIVE[language] ?? FIVE.ps;
+  return `Numbers can’t go in a phrase yet: write it as a word (${five}).`;
+}
 const isArabicScript = (cp: number) =>
   (cp >= 0x0600 && cp <= 0x06ff) || (cp >= 0x0750 && cp <= 0x077f);
 const isLatinLetter = (cp: number) =>
@@ -150,12 +167,15 @@ export function checkNative(language: string, text: string): ScriptIssue[] {
   const positions = firstPositions(text);
   for (const [cp, at] of positions) {
     const invisible = INVISIBLE_CHARS.get(cp);
+    // Messages name the character and where it is, never its code point:
+    // that is for support, and the field puts it in a tooltip (issueLines'
+    // `detail`).
     if (invisible) {
       issues.push(
         issue(
           'PL422_INVISIBLE_CHAR',
           'native',
-          `There's an invisible ${invisible} (${codepointLabel(cp)}) at position ${at}. It usually comes along when text is copied from a website or Word. Delete it, or retype that spot.`,
+          `There’s an invisible ${invisible} at position ${at}. It usually comes along when text is copied from a website or Word. Delete it, or retype that spot.`,
           cp,
           at,
         ),
@@ -165,31 +185,27 @@ export function checkNative(language: string, text: string): ScriptIssue[] {
         issue(
           'PL422_SMART_QUOTE',
           'native',
-          `There's a curly quote (${String.fromCodePoint(cp)}) at position ${at}. Use a straight quote, or none.`,
+          `There’s a curly quote (${String.fromCodePoint(cp)}) at position ${at}. Leave quotation marks out of the phrase.`,
           cp,
           at,
         ),
       );
     } else if (isArabicDigit(cp)) {
       issues.push(
-        issue(
-          'PL422_ARABIC_DIGIT',
-          'native',
-          `There's an Arabic-Indic digit (${String.fromCodePoint(cp)}) at position ${at}. Use 0-9, or spell the number out.`,
-          cp,
-          at,
-        ),
+        issue('PL422_ARABIC_DIGIT', 'native', numbersMessage(language), cp, at),
       );
     } else if (orthography && !orthography.allowed.has(cp)) {
       const hint = orthography.spec.hints.find((h) => h.from === cp);
       const fix = hint
-        ? ` Use ${String.fromCodePoint(hint.to)} (${codepointLabel(hint.to)}) instead.`
+        ? ` Use ${String.fromCodePoint(hint.to)} instead.`
         : ` If it really belongs in ${orthography.spec.name}, ask an admin to add it to the character list.`;
       issues.push(
         issue(
           'PL422_CHAR_NOT_ALLOWED',
           'native',
-          `"${String.fromCodePoint(cp)}" (${codepointLabel(cp)}) at position ${at} isn't in the ${orthography.spec.name} character list.${fix}`,
+          isAsciiDigit(cp)
+            ? numbersMessage(language)
+            : `“${String.fromCodePoint(cp)}” at position ${at} isn’t in the ${orthography.spec.name} character list.${fix}`,
           cp,
           at,
         ),
@@ -221,7 +237,7 @@ export function checkRomanisation(text: string): ScriptIssue[] {
       issue(
         'PL422_ROMANISATION_SCRIPT',
         'romanisation',
-        `The romanisation has native-script letters, starting at position ${arabic[1]}. Write it in Latin letters, the way a learner would say it, like "Salaam".`,
+        `The romanisation has native-script letters, starting at position ${arabic[1]}. Write it in Latin letters, the way a learner would say it, like “Salaam”.`,
         arabic[0],
         arabic[1],
       ),
@@ -231,7 +247,7 @@ export function checkRomanisation(text: string): ScriptIssue[] {
       issue(
         'PL422_ROMANISATION_NO_LATIN',
         'romanisation',
-        'The romanisation needs Latin letters, like "Salaam" or "Kya haal hai?".',
+        'The romanisation needs Latin letters, like “Salaam” or “Kya haal hai?”',
       ),
     );
   return issues;
@@ -251,6 +267,8 @@ export type IssueLine = {
   key: string;
   severity: ScriptIssue['severity'];
   message: string;
+  /** The characters' code points ("U+0643"), for a tooltip; never the text. */
+  detail?: string;
 };
 
 /** "1", "1 and 6", "1, 4 and 6" */
@@ -263,19 +281,20 @@ function andList(parts: readonly string[]): string {
 const codepointOf = (issue: ScriptIssue) =>
   issue.char === null ? null : (issue.char.codePointAt(0) ?? null);
 
-/** "“ (U+201C)" style labels: the character and its code point. */
-const charLabel = (issue: ScriptIssue) =>
-  `"${issue.char}" (${codepointLabel(codepointOf(issue) ?? 0)})`;
+/** “?” style labels: the character, in curly quotes. */
+const charLabel = (issue: ScriptIssue) => `“${issue.char}”`;
 
 /**
  * The issues as a field shows them. The checks above report each character
  * on its own, which is what the database compares, but "hello" typed into
  * the Pashto field would then read as five near-identical lines. Here the
  * repeats of one kind become one line: Latin letters (with the warning that
- * says what probably happened), characters missing from the list (the "ask
- * an admin" clause once), curly quotes, Arabic-Indic digits and invisible
- * characters. A character with a suggested replacement keeps its own line,
- * and a kind with a single issue keeps its own message.
+ * says what probably happened), numbers (Western and Arabic-Indic digits
+ * alike), characters missing from the list (the "ask an admin" clause
+ * once), curly quotes and invisible characters. A character with a
+ * suggested replacement keeps its own line, and a kind with a single issue
+ * keeps its own message. Romanisation with native-script letters is not
+ * also told it has no Latin: fixing the one fixes the other.
  */
 export function issueLines(
   language: string,
@@ -286,15 +305,22 @@ export function issueLines(
   const kindOf = (issue: ScriptIssue): string => {
     const cp = codepointOf(issue);
     if (issue.code === 'LATIN_IN_NATIVE') return 'latin';
+    if (issue.code === 'PL422_ARABIC_DIGIT') return 'number';
     if (issue.code !== 'PL422_CHAR_NOT_ALLOWED' || cp === null)
       return issue.code;
     if (isLatinLetter(cp)) return 'latin';
+    if (isAsciiDigit(cp)) return 'number';
     return orthography?.spec.hints.some((h) => h.from === cp)
       ? `hint-${issue.position}`
       : issue.code;
   };
+  const scriptReported = issues.some(
+    (i) => i.code === 'PL422_ROMANISATION_SCRIPT',
+  );
   const groups = new Map<string, ScriptIssue[]>();
   for (const issue of issues) {
+    if (issue.code === 'PL422_ROMANISATION_NO_LATIN' && scriptReported)
+      continue;
     const kind = kindOf(issue);
     groups.set(kind, [...(groups.get(kind) ?? []), issue]);
   }
@@ -303,10 +329,24 @@ export function issueLines(
     const severity = group.some((i) => i.severity === 'error')
       ? 'error'
       : 'warning';
-    const line = (message: string): IssueLine => ({ key, severity, message });
+    const points = [
+      ...new Set(
+        group
+          .map(codepointOf)
+          .filter((cp): cp is number => cp !== null)
+          .map(codepointLabel),
+      ),
+    ];
+    const line = (message: string): IssueLine => ({
+      key,
+      severity,
+      message,
+      ...(points.length > 0 ? { detail: points.join(' ') } : {}),
+    });
     const chars = group.map((i) => i.char ?? '').join(' ');
     const at = andList(group.map((i) => String(i.position)));
 
+    if (key === 'number') return line(numbersMessage(language));
     if (key === 'latin') {
       // The warning always comes; the letters themselves are errors only
       // when the language has a character list to check them against.
@@ -316,29 +356,24 @@ export function issueLines(
       if (letters.length === 0) return line(group[0].message);
       return line(
         letters.length === 1
-          ? `The Latin letter ${letters[0]} isn't ${name}. Did the romanisation end up here?`
-          : `Latin letters ${letters.join(', ')} aren't ${name}. Did the romanisation end up here?`,
+          ? `The Latin letter ${letters[0]} isn’t ${name}. Did the romanisation end up here?`
+          : `Latin letters ${letters.join(', ')} aren’t ${name}. Did the romanisation end up here?`,
       );
     }
     if (group.length === 1) return line(group[0].message);
     switch (key) {
       case 'PL422_CHAR_NOT_ALLOWED':
         return line(
-          `${andList(group.map(charLabel))} aren't in the ${name} character list. If they really belong in ${name}, ask an admin to add them to the character list.`,
+          `${andList(group.map(charLabel))} aren’t in the ${name} character list. If they really belong in ${name}, ask an admin to add them to the character list.`,
         );
       case 'PL422_SMART_QUOTE':
         return line(
-          `There are curly quotes (${chars}) at positions ${at}. Use straight quotes, or none.`,
-        );
-      case 'PL422_ARABIC_DIGIT':
-        return line(
-          `There are Arabic-Indic digits (${chars}) at positions ${at}. Use 0-9, or spell the numbers out.`,
+          `There are curly quotes (${chars}) at positions ${at}. Leave quotation marks out of the phrase.`,
         );
       case 'PL422_INVISIBLE_CHAR': {
-        const names = group.map((i) => {
-          const cp = codepointOf(i) ?? 0;
-          return `${INVISIBLE_CHARS.get(cp) ?? 'character'} ${codepointLabel(cp)}`;
-        });
+        const names = group.map(
+          (i) => INVISIBLE_CHARS.get(codepointOf(i) ?? 0) ?? 'character',
+        );
         return line(
           `There are invisible characters (${andList(names)}) at positions ${at}. They usually come along when text is copied from a website or Word. Delete them, or retype those spots.`,
         );

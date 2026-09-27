@@ -5,7 +5,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  MATCH_PROMPT,
   assemblePrompt,
+  defaultPrompt,
   generateExercises,
   isValidDistractor,
   longestMeaningIndex,
@@ -155,7 +157,9 @@ test('assemble goes to the longest meaning and never has choices', () => {
   const assemble = generateExercises(ITEMS).find((e) => e.kind === 'assemble');
   assert.equal(assemble.answer, 'ps-itm-000005');
   assert.deepEqual(assemble.options, []);
-  assert.equal(assemble.prompt, 'Build the sentence "What is your name?"');
+  // The learner builds the meaning, so the prompt never states it.
+  assert.equal(assemble.prompt, 'Build the meaning.');
+  assert.doesNotMatch(assemble.prompt, /What is your name/);
 });
 
 test('match only with 4 or more phrases', () => {
@@ -205,19 +209,24 @@ test('small lessons: one phrase gets only an assemble; none gets nothing', () =>
   );
 });
 
-test('prompts read naturally', () => {
-  assert.equal(translationPrompt('Thank you'), 'How do you say "Thank you"?');
-  assert.equal(translationPrompt('I am fine.'), 'How do you say "I am fine"?');
+test('prompts read naturally, with curly quotes', () => {
+  assert.equal(translationPrompt('Thank you'), 'How do you say “Thank you”?');
+  assert.equal(translationPrompt('I am fine.'), 'How do you say “I am fine”?');
   assert.equal(
     translationPrompt('What is your name?'),
-    'How do you ask "What is your name?"',
+    'How do you ask “What is your name?”',
   );
-  assert.equal(translationPrompt('Welcome!'), 'How do you say "Welcome!"');
+  assert.equal(translationPrompt('Welcome!'), 'How do you say “Welcome!”');
+  assert.equal(assemblePrompt(' My name  is Sara. '), 'Build the meaning.');
   assert.equal(
-    assemblePrompt(' My name  is Sara. '),
-    'Build the sentence "My name is Sara".',
+    defaultPrompt('assemble', 'My name is Sara'),
+    'Build the meaning.',
   );
-  for (const e of generateExercises(ITEMS))
+  assert.equal(defaultPrompt('context', 'Hello'), 'What do you say?');
+  assert.equal(defaultPrompt('match', 'Hello'), MATCH_PROMPT);
+  for (const e of generateExercises(ITEMS)) {
     assert.ok(e.prompt.length >= 1 && e.prompt.length <= 300);
+    assert.doesNotMatch(e.prompt, /"/, `${e.key}: no straight quotes`);
+  }
   assert.equal(byId.size, ITEMS.length);
 });

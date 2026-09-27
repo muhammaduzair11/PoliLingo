@@ -21,7 +21,7 @@ export function RedactButton({
       action={action}
       triggerTone="quiet"
       triggerLabel="Remove text"
-      title="Remove this comment's text?"
+      title="Remove this comment’s text?"
       description="The entry stays in the history as “[removed]”. Use this for personal details or anything abusive."
       confirmLabel="Remove text"
       pendingLabel="Removing…"
@@ -59,7 +59,7 @@ export function WithdrawButton({
       triggerTone="quiet"
       triggerLabel="Withdraw"
       title="Withdraw your suggestion?"
-      description="Editors won't see it any more. You can suggest a new fix at any time."
+      description="Editors won’t see it any more. You can suggest a new fix at any time."
       confirmLabel="Withdraw"
       pendingLabel="Withdrawing…"
       fields={{ suggestion_id: suggestionId }}
@@ -68,10 +68,10 @@ export function WithdrawButton({
 }
 
 /**
- * An admin countersigns a sole reviewer's approval of text they wrote, so
+ * An admin countersigns a sole reviewer’s approval of text they wrote, so
  * it can publish. The database refuses the reviewer themself. The button
  * leaves the page once the review is countersigned, so the confirmation goes
- * to the page's OutcomeProvider.
+ * to the page’s OutcomeProvider.
  */
 export function CountersignButton({
   decisionId,

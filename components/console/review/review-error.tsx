@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Notice } from '@/components/console/notice';
 
 /**
- * The error boundary's view for the review screens: something failed that
+ * The error boundary’s view for the review screens: something failed that
  * was not a refusal. Nothing raw is shown; the digest, when there is one,
  * goes in small print for support.
  */
@@ -25,7 +25,7 @@ export function ReviewError({
   const digest = typeof raw === 'string' ? raw : '';
   return (
     <section className="console-panel review-load-error">
-      <h1>This page didn&apos;t load</h1>
+      <h1>This page didn’t load</h1>
       <Notice tone="error" code={digest || null}>
         Something went wrong on our side. Nothing was changed.
       </Notice>

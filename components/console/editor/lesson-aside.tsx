@@ -10,62 +10,49 @@ import {
 } from '@/lib/console/editor';
 
 /**
- * What the database says is wrong with the lesson (private.lesson_problems):
- * blocking problems first, then warnings, each linking to the phrase or
- * exercise at fault.
+ * Problems with the lesson (private.lesson_problems, reworded where the
+ * database’s words would mean nothing to an editor), each with a "Show me"
+ * link to the phrase or exercise at fault. Blocking ones sit under the
+ * review checklist’s Problems row; `quiet` ones are its footnote.
  */
-export function ProblemList({ problems }: { problems: Problem[] }) {
-  const sorted = [...problems].sort(
-    (a, b) =>
-      Number(a.severity !== 'blocking') - Number(b.severity !== 'blocking'),
-  );
+export function ProblemLines({
+  problems,
+  quiet = false,
+}: {
+  problems: Problem[];
+  quiet?: boolean;
+}) {
   return (
-    <section className="editor-panel" aria-labelledby="problems-heading">
-      <h2 id="problems-heading" className="editor-panel-title">
-        Checks
-      </h2>
-      {sorted.length === 0 ? (
-        <p className="editor-panel-text">
-          Nothing to fix. The database found no problems.
-        </p>
-      ) : (
-        <ul className="editor-problems">
-          {sorted.map((problem, i) => {
-            const anchor =
-              problem.target_type === 'item'
-                ? `#item-${problem.target_id}`
-                : problem.target_type === 'exercise'
-                  ? `#exercise-${problem.target_id}`
-                  : null;
-            return (
-              <li
-                key={`${problem.code}-${problem.target_id ?? ''}-${i}`}
-                className={`editor-problem editor-problem-${problem.severity}`}
-              >
-                <span className="editor-problem-severity">
-                  {problem.severity === 'blocking' ? 'Fix' : 'Note'}
-                </span>
-                <span>
-                  {problem.message}
-                  {anchor && (
-                    <>
-                      {' '}
-                      <a href={anchor} className="editor-problem-link">
-                        Show me
-                      </a>
-                    </>
-                  )}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
+    <ul className={`editor-problems${quiet ? ' editor-problems-quiet' : ''}`}>
+      {problems.map((problem, i) => {
+        const anchor =
+          problem.target_type === 'item'
+            ? `#item-${problem.target_id}`
+            : problem.target_type === 'exercise'
+              ? `#exercise-${problem.target_id}`
+              : null;
+        return (
+          <li
+            key={`${problem.code}-${problem.target_id ?? ''}-${i}`}
+            className={`editor-problem editor-problem-${problem.severity}`}
+          >
+            {problem.message}
+            {anchor && (
+              <>
+                {' '}
+                <a href={anchor} className="editor-problem-link">
+                  Show me
+                </a>
+              </>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
-/** The lesson's latest changes, newest first, with who made them. */
+/** The lesson’s latest changes, newest first, with who made them. */
 export function HistoryList({
   revisions,
   total,
