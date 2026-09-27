@@ -3,7 +3,7 @@
 ## Supported versions
 
 PoliLingo is a continuously deployed web application. Only the version currently live at
-<https://poli-lingo.vercel.app> is supported. Tagged releases are historical records, not
+<https://polilingo.me> (and its Vercel address <https://poli-lingo.vercel.app>) is supported. Tagged releases are historical records, not
 maintained branches.
 
 ## Reporting a vulnerability
