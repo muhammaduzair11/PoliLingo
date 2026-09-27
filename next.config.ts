@@ -12,6 +12,14 @@ const problem = productionReleaseProblem(
 if (problem) throw new Error(problem);
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // A production build once shipped a stylesheet without the console and
+    // account partials that app/globals.css imports, while clean builds had
+    // them. Turbopack's build cache is on by default and the host restores it
+    // between builds, so every build starts clean instead.
+    // scripts/check-build-css.mjs stops a build that loses them again.
+    turbopackFileSystemCacheForBuild: false,
+  },
   // Hindko's URLs while it is not shown (temporary), and the MVP's lesson URLs
   // to permanent lesson ids (permanent). Both come from the learner copy; see
   // lib/redirects.ts.
