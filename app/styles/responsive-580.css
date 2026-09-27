@@ -28,10 +28,6 @@
     padding: 9px 13px;
     gap: 10px;
   }
-  .header-cta {
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
   .header-actions {
     gap: 1px;
   }
