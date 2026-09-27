@@ -15,6 +15,9 @@
 /.next/
 /.vinext/
 /out/
+# written by next dev for coding agents
+/AGENTS.md
+/CLAUDE.md
 
 # misc
 .DS_Store
