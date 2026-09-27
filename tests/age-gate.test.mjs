@@ -8,7 +8,9 @@ import {
   ageBandCookie,
   ageBandFor,
   ageOn,
+  BIRTH_PROBLEM_MESSAGES,
   birthProblem,
+  birthProblemField,
   isAgeBand,
   parseAgeBand,
   readBirth,
@@ -58,19 +60,41 @@ test('future dates and nonsense are refused, and never let anyone through', () =
   assert.equal(birthProblem(2026, 9, today), null);
   assert.equal(birthProblem(1906, 1, today), null);
   assert.equal(birthProblem(1905, 12, today), 'too-long-ago');
-  for (const [y, m] of [
-    [Number.NaN, 5],
-    [1990, Number.NaN],
-    [1990, 0],
-    [1990, 13],
-    [1990.5, 5],
-    [90, 5],
-    [19900, 5],
+  for (const [y, m, problem] of [
+    [Number.NaN, Number.NaN, 'incomplete'],
+    [90, Number.NaN, 'incomplete'],
+    [1990, Number.NaN, 'no-month'],
+    [1990, 0, 'no-month'],
+    [1990, 13, 'no-month'],
+    [Number.NaN, 5, 'short-year'],
+    [1990.5, 5, 'short-year'],
+    [98, 5, 'short-year'],
+    [199, 5, 'short-year'],
+    [19900, 5, 'short-year'],
   ])
-    assert.equal(birthProblem(y, m, today), 'incomplete', `${y}-${m}`);
+    assert.equal(birthProblem(y, m, today), problem, `${y}-${m}`);
   assert.equal(ageBandFor(2027, 1, today), 'under-13');
   assert.equal(ageBandFor(Number.NaN, 1, today), 'under-13');
   assert.equal(ageBandFor(1800, 1, today), 'under-13');
+});
+
+test('each problem says what to fix, and names the field to focus', () => {
+  assert.equal(BIRTH_PROBLEM_MESSAGES['no-month'], 'Choose your birth month.');
+  assert.equal(
+    BIRTH_PROBLEM_MESSAGES['short-year'],
+    'Type all four digits of the year, like 1998.',
+  );
+  for (const [problem, field] of [
+    ['incomplete', 'month'],
+    ['no-month', 'month'],
+    ['short-year', 'year'],
+    ['future', 'year'],
+    ['too-long-ago', 'year'],
+  ]) {
+    assert.equal(birthProblemField(problem), field, problem);
+    assert.ok(BIRTH_PROBLEM_MESSAGES[problem], problem);
+    assert.doesNotMatch(BIRTH_PROBLEM_MESSAGES[problem], /'/, problem);
+  }
 });
 
 test('reading the form', () => {

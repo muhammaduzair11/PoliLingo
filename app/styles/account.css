@@ -3,6 +3,10 @@
  * Created empty by the foundation (docs/platform.md 1, 4.4). Use the tokens in
  * tokens.css and the console kit's classes from console.css; semantic class
  * names only.
+ *
+ * Muted text uses var(--text-muted) with its value as the fallback, so it
+ * reads at 4.5:1 or more on white and on the ivory page whichever order the
+ * partials land in.
  */
 
 /* Header chip ------------------------------------------------------------- */
@@ -94,18 +98,20 @@
 
 /* Save-your-streak card on the lesson finish screen ----------------------- */
 
+/* A quiet lavender card with an outline button, so the lesson's own violet
+   button stays the one thing to press next. */
 .save-streak {
   position: relative;
   display: flex;
   align-items: flex-start;
   gap: 16px;
   margin: 0 0 25px;
-  padding: 22px 56px 22px 22px;
+  padding: 20px 56px 20px 20px;
   border-radius: 1.5rem;
-  background: var(--purple);
-  color: #fff;
+  background: #f5f0ff;
+  border: 1px solid #e4d8fa;
+  color: var(--ink);
   text-align: left;
-  box-shadow: 0 5px 0 #3b197b;
 }
 .save-streak-icon {
   display: inline-flex;
@@ -115,8 +121,8 @@
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: #ffffff1f;
-  color: var(--yellow);
+  background: #fff;
+  color: #e0671a;
 }
 .save-streak-copy {
   display: flex;
@@ -129,24 +135,55 @@
   font-size: 19px;
   letter-spacing: -0.02em;
   line-height: 1.25;
+  word-spacing: 0.06em;
 }
 .save-streak p {
   font-size: 14px;
-  color: #eadffc;
+  color: #5c4f6b;
   margin-bottom: 8px;
 }
-.save-streak .button-yellow {
-  box-shadow: 0 3px 0 #d2a32c;
+.save-streak .save-streak-button {
+  min-height: 44px;
+  background: #fff;
+  font-size: 14px;
 }
 .save-streak-dismiss {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  color: #eadffc;
+  top: 8px;
+  right: 8px;
+  color: #5c4f6b;
 }
 .save-streak-dismiss:hover {
-  background: #ffffff1f;
-  color: #fff;
+  background: #e9defc;
+  color: var(--ink);
+}
+/* Wider than a phone: one row, words on the left and the button on the
+   right, so the card stays short and the lesson's next button stays near. */
+@media (min-width: 581px) {
+  .save-streak {
+    align-items: center;
+    padding: 16px 56px 16px 18px;
+  }
+  .save-streak-copy {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 18px;
+    row-gap: 2px;
+    flex: 1;
+  }
+  .save-streak-copy > h2,
+  .save-streak-copy > p {
+    grid-column: 1;
+  }
+  .save-streak p {
+    margin-bottom: 0;
+  }
+  .save-streak .save-streak-button {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    white-space: nowrap;
+  }
 }
 
 /* Settings: the account row ----------------------------------------------- */
@@ -156,6 +193,78 @@
 }
 .account-setting .button {
   white-space: nowrap;
+}
+
+/* Session notices: "Signed in as …", "Signed out" (account-boot.tsx) ------ */
+
+/* An <output> (a polite live region), so a block by hand. */
+.session-toast-region {
+  display: block;
+  position: fixed;
+  left: 50%;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  width: min(440px, calc(100% - 32px));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.session-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 6px 8px 14px;
+  border-radius: 16px;
+  background: var(--ink);
+  color: #fff;
+  box-shadow: 0 10px 30px #26183b40;
+  pointer-events: auto;
+  animation: session-toast-in 0.22s ease-out;
+}
+.session-toast-text {
+  flex: 1;
+  text-wrap: pretty;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.session-toast-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--mint);
+  color: var(--ink);
+}
+.session-toast-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: #e7ddf5;
+}
+.session-toast-close:hover {
+  background: #ffffff1f;
+  color: #fff;
+}
+.session-toast-close:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: -2px;
+}
+@keyframes session-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
 }
 
 /* Sign-in frame ----------------------------------------------------------- */
@@ -176,8 +285,13 @@
   margin: 0 auto;
   padding: 20px 64px;
 }
+/* A 44px tall hit area around the words, without moving them. */
 .auth-back {
-  font-size: 14px;
+  min-height: 44px;
+  margin: 0 -8px;
+  padding: 0 8px;
+  font-size: 15px;
+  gap: 8px;
 }
 .auth-main {
   flex: 1;
@@ -190,14 +304,22 @@
 .auth-foot {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  padding: 20px;
-  font-size: 13px;
-  color: #82758d;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px 12px;
+  font-size: 14px;
+  color: var(--text-muted, #6b5a7b);
 }
 .auth-foot a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+.auth-foot a:hover {
+  color: var(--purple);
 }
 
 /* Sign-in card ------------------------------------------------------------ */
@@ -208,7 +330,7 @@
   gap: 14px;
   width: 100%;
   max-width: 480px;
-  padding: 36px;
+  padding: 32px 36px 30px;
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 1.5rem;
@@ -216,11 +338,17 @@
 }
 .signin-card > .eyebrow {
   font-size: 11px;
+  line-height: 1.5;
 }
+/* Tight letter-spacing pulls words together at display sizes: the extra
+   word gap keeps them apart, and balance keeps a lone word off the last
+   line. */
 .signin-title {
   font-size: 34px;
   line-height: 1.08;
   letter-spacing: -0.045em;
+  word-spacing: 0.08em;
+  text-wrap: balance;
 }
 .signin-title:focus {
   outline: none;
@@ -230,8 +358,10 @@
   outline-offset: 5px;
 }
 .signin-lead {
-  color: #7b6c89;
+  color: var(--text-muted, #6b5a7b);
   font-size: 15px;
+  line-height: 1.5;
+  text-wrap: pretty;
 }
 .signin-email {
   color: var(--ink);
@@ -244,6 +374,53 @@
   border: 1px solid #d9c9f5;
   font-size: 14px;
 }
+
+/* Poli and one line, on top of every sign-in card (poli-says.tsx). */
+.poli-says {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.poli-says > picture {
+  display: block;
+  flex-shrink: 0;
+  line-height: 0;
+}
+.poli-says-art {
+  width: 84px;
+  max-width: none;
+  height: 84px;
+  object-fit: contain;
+  /* The art has air around Poli; this keeps the figure on the text edge. */
+  margin: -6px 0 -6px -8px;
+}
+.poli-says-bubble {
+  position: relative;
+  min-width: 0;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: #f5f0ff;
+  border: 1px solid #e4d8fa;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+/* The tail points at Poli. */
+.poli-says-bubble::before {
+  content: '';
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  background: #f5f0ff;
+  border-left: 1px solid #e4d8fa;
+  border-bottom: 1px solid #e4d8fa;
+  transform: translateY(-50%) rotate(45deg);
+}
+
 .signin-form {
   display: flex;
   flex-direction: column;
@@ -271,7 +448,7 @@
   gap: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: #6b6277;
+  color: var(--text-muted, #6b5a7b);
   min-width: 0;
 }
 .signin-label {
@@ -304,19 +481,22 @@ select.signin-input {
   background-size: 6px 6px;
   background-repeat: no-repeat;
 }
+/* Lighter than typed text, still 5:1 on white. */
 .signin-input::placeholder {
-  color: #aa9db6;
+  color: #75688a;
+  opacity: 1;
 }
 .signin-input:focus-visible {
-  outline: 3px solid #8853e955;
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
   border-color: var(--ring);
 }
 .signin-input[aria-invalid='true'] {
   border-color: #b63751;
 }
 .signin-hint {
-  font-size: 13px;
-  color: #82758d;
+  font-size: 14px;
+  color: var(--text-muted, #6b5a7b);
 }
 .signin-hint:empty,
 .signin-error:empty {
@@ -329,9 +509,10 @@ select.signin-input {
 }
 .signin-foot,
 .signin-small {
-  font-size: 13px;
-  color: #82758d;
+  font-size: 14px;
+  color: var(--text-muted, #6b5a7b);
   text-align: center;
+  text-wrap: balance;
 }
 .signin-foot a,
 .signin-small a {
@@ -339,6 +520,22 @@ select.signin-input {
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+/* A 44px tall hit area that leaves the line height alone. */
+.signin-foot a {
+  padding: 12px 2px;
+  margin: -12px -2px;
+}
+/* Step 2's way back to the age question. */
+.signin-change {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0 6px;
+  margin-top: -6px;
+  font-size: 14px;
+  color: var(--text-muted, #6b5a7b);
 }
 .signin-card .button {
   gap: 12px;
@@ -364,7 +561,7 @@ select.signin-input {
   align-items: center;
   gap: 12px;
   font-size: 13px;
-  color: #9b8ba8;
+  color: var(--text-muted, #6b5a7b);
 }
 .signin-or::before,
 .signin-or::after {
@@ -407,6 +604,11 @@ select.signin-input {
 .signin-otp-group {
   gap: 8px;
 }
+/* A wrong code turns the slots' borders red; the kit's ring would draw a
+   pink pill behind the whole group, so it goes. */
+.signin-otp .signin-otp-group {
+  box-shadow: none;
+}
 .signin-otp .signin-otp-slot {
   width: 48px;
   height: 58px;
@@ -423,6 +625,7 @@ select.signin-input {
 }
 .signin-otp .signin-otp-slot[aria-invalid='true'] {
   border-color: #b63751;
+  box-shadow: none;
 }
 .signin-code-help {
   display: flex;
@@ -445,8 +648,12 @@ select.signin-input {
   text-underline-offset: 3px;
 }
 .signin-text-button:disabled {
-  color: #a597b2;
+  color: var(--text-muted, #6b5a7b);
   text-decoration: none;
+}
+.signin-text-button.signin-countdown:disabled {
+  color: #7b6c89;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Account page ------------------------------------------------------------ */
@@ -465,15 +672,57 @@ select.signin-input {
 .account-page > h1 {
   font-size: 44px;
   margin: 0;
+  word-spacing: 0.06em;
+  text-wrap: balance;
 }
 .account-page > .lead {
   font-size: 16px;
   margin-top: -6px;
+  text-wrap: pretty;
 }
 .account-page > .lead strong {
   color: var(--ink);
   overflow-wrap: anywhere;
 }
+
+/* Lessons, XP and streak: what the account keeps safe. */
+.account-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.account-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 16px 20px;
+  border-radius: 18px;
+  background: #f1e9fc;
+}
+.account-stat-xp {
+  background: #fff3c9;
+}
+.account-stat-streak {
+  background: #ffe8ef;
+}
+.account-stat strong {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.account-stat span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4b3d5c;
+}
+
 .account-card {
   display: flex;
   flex-direction: column;
@@ -512,7 +761,7 @@ select.signin-input {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #8b779a;
+  color: var(--text-muted, #6b5a7b);
 }
 .account-facts dd {
   margin: 4px 0 0;
@@ -539,14 +788,15 @@ select.signin-input {
   gap: 24px;
   padding: 6px 0;
 }
-.account-row + .account-row {
+.account-row + .account-row,
+.account-sign-out {
   border-top: 1px solid #eee7f3;
   padding-top: 18px;
 }
 .account-row > p {
   flex: 1;
   font-size: 14px;
-  color: #7b6c89;
+  color: var(--text-muted, #6b5a7b);
 }
 .account-action {
   display: flex;
@@ -561,11 +811,12 @@ select.signin-input {
   gap: 10px;
 }
 .account-sync {
+  flex: 1;
   display: flex;
   align-items: flex-start;
   gap: 12px;
   font-size: 14px;
-  color: #7b6c89;
+  color: var(--text-muted, #6b5a7b);
 }
 .account-sync strong {
   color: var(--ink);
@@ -581,11 +832,22 @@ select.signin-input {
   background: #fff3f5;
   color: #b63751;
 }
+/* The trigger is an outline in danger red: solid red is the dialog's. */
+.account-danger .console-button-outline {
+  background: #fff;
+  border-color: #e6b8c3;
+  color: #a02e46;
+}
+.account-danger .console-button-outline:hover {
+  background: #fff5f7;
+  border-color: #b63751;
+}
 .account-delete-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
   font-size: 14px;
+  text-align: left;
 }
 .account-delete-list ul {
   margin: 0 0 6px;
@@ -597,20 +859,14 @@ select.signin-input {
 .account-delete-heading {
   font-weight: 700;
 }
-.account-farewell {
-  align-items: flex-start;
-  margin-top: 30px;
-  padding: 36px;
+/* The delete dialog reads as a list of facts: left-aligned at every width. */
+.console-dialog:has(.account-delete-list) [data-slot='alert-dialog-header'] {
+  place-items: start;
+  text-align: left;
 }
-.account-farewell h1 {
-  font-size: 40px;
-}
-.account-farewell h1:focus {
-  outline: none;
-}
-.account-farewell p:not(.eyebrow) {
-  color: #7b6c89;
-  max-width: 560px;
+.console-dialog:has(.account-delete-list)
+  [data-slot='alert-dialog-description'] {
+  text-wrap: pretty;
 }
 .account-actions {
   display: flex;
@@ -627,6 +883,81 @@ select.signin-input {
 .account-setup-error {
   width: 100%;
   max-width: 480px;
+}
+
+/* "Add this device's progress?" (account-switch-dialog.tsx). The frame and
+   type sizes come from dialogs.css; this left-aligns it at every width and
+   gives the two buttons the site's own look. */
+.account-switch-header {
+  place-items: start;
+  text-align: left;
+}
+.account-switch-title {
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.account-switch-text {
+  text-align: left;
+  text-wrap: pretty;
+}
+.account-switch-email {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.account-switch-check {
+  color: #2e8a4c;
+}
+.account-switch-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.account-switch-facts li {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #f1e9fc;
+  color: #311264;
+  font-size: 14px;
+  font-weight: 600;
+}
+.account-switch-error {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #a02e46;
+}
+/* dialogs.css sizes every dialog button with !important; these two are the
+   site's large buttons, so they say so the same way. */
+.account-switch .account-switch-add,
+.account-switch .account-switch-later {
+  height: auto;
+  min-height: 48px !important;
+  padding: 12px 20px !important;
+  border-radius: 12px !important;
+  font-size: 15px !important;
+  font-weight: 700;
+}
+.account-switch .account-switch-add {
+  background: var(--purple);
+  border: 1.5px solid #7241c7;
+  color: #fff;
+  box-shadow: 0 3px 0 #3b197b;
+}
+.account-switch .account-switch-add:hover {
+  background: #5528a8;
+}
+.account-switch .account-switch-later {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  color: var(--purple);
+}
+.account-switch .account-switch-later:hover {
+  border-color: var(--ring);
+  background: #fff;
+  color: var(--purple);
 }
 
 /* Privacy and terms ------------------------------------------------------- */
@@ -649,16 +980,19 @@ select.signin-input {
   line-height: 1.5;
 }
 .legal-banner svg {
+  flex-shrink: 0;
   margin-top: 1px;
   color: var(--purple);
 }
 .legal-page > h1 {
   font-size: 48px;
   margin: 12px 0 8px;
+  word-spacing: 0.06em;
+  text-wrap: balance;
 }
 .legal-updated {
-  font-size: 13px;
-  color: #8b779a;
+  font-size: 14px;
+  color: var(--text-muted, #6b5a7b);
   margin-bottom: 26px;
 }
 .legal-intro {
@@ -683,7 +1017,9 @@ select.signin-input {
 .legal-body h2 {
   font-size: 26px;
   letter-spacing: -0.035em;
+  word-spacing: 0.06em;
   margin-bottom: 12px;
+  text-wrap: balance;
 }
 .legal-body p,
 .legal-body li {
@@ -703,11 +1039,95 @@ select.signin-input {
   flex-direction: column;
   gap: 8px;
 }
+/* The base styles drop list markers; lists of facts keep a purple bullet. */
+.legal-points,
+.legal-body ul,
+.account-delete-list ul {
+  list-style: disc;
+}
+.legal-points li::marker,
+.legal-body li::marker,
+.account-delete-list li::marker {
+  color: var(--purple);
+}
 .legal-page a:not(.button) {
   color: var(--purple);
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* Short screens (a laptop on a projector, a small phone) ----------------- */
+
+/* Before the width rules below, so a phone's own sizes win. On a laptop
+   (up to 940px tall: 1280x720, 1440x900) the whole of step 2 fits without
+   scrolling; a tall phone keeps the roomier card. */
+@media (max-height: 760px), (min-width: 581px) and (max-height: 940px) {
+  .auth-bar {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .auth-main {
+    padding-top: 6px;
+    padding-bottom: 24px;
+  }
+  .signin-card {
+    gap: 10px;
+    padding-top: 22px;
+    padding-bottom: 22px;
+  }
+  .signin-title {
+    font-size: 30px;
+  }
+  .poli-says-art {
+    width: 64px;
+    height: 64px;
+  }
+  .signin-input {
+    min-height: 48px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .signin-card .button:not(.button-small) {
+    min-height: 52px;
+    padding-top: 13px;
+    padding-bottom: 13px;
+  }
+  .signin-form {
+    gap: 6px;
+  }
+  .auth-foot {
+    padding-top: 0;
+    padding-bottom: 4px;
+  }
+}
+
+/* A short laptop screen (a projector at 1280x720): a mouse, not a thumb, so
+   the small links can be less tall, and all of step 2 fits with no scroll. */
+@media (max-height: 760px) and (min-width: 581px) {
+  .auth-back {
+    min-height: 36px;
+  }
+  .auth-main {
+    padding-bottom: 8px;
+  }
+  .auth-foot a {
+    min-height: 32px;
+  }
+  .poli-says-art {
+    width: 56px;
+    height: 56px;
+    margin-top: -4px;
+    margin-bottom: -4px;
+  }
+  .signin-or {
+    margin: -2px 0;
+  }
+  .signin-change .signin-text-button {
+    min-height: 32px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
 }
 
 /* Under 800px ------------------------------------------------------------- */
@@ -724,11 +1144,12 @@ select.signin-input {
 /* Under 580px ------------------------------------------------------------- */
 
 @media (max-width: 580px) {
+  /* A 44px hit area around a 30px circle. */
   .header-actions .account-chip,
   .header-actions .account-chip-placeholder,
   .header-actions .account-sign-in {
-    width: 38px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
   }
   .account-chip-initial {
     width: 30px;
@@ -736,8 +1157,8 @@ select.signin-input {
     font-size: 14px;
   }
   .account-chip .account-chip-dot {
-    right: 1px;
-    bottom: 4px;
+    right: 4px;
+    bottom: 6px;
     width: 11px;
     height: 11px;
   }
@@ -745,19 +1166,33 @@ select.signin-input {
     font-size: 22px;
   }
   .auth-back {
-    font-size: 13px;
+    font-size: 14px;
     gap: 6px;
   }
   .auth-main {
-    padding: 8px 16px 36px;
+    padding: 4px 16px 16px;
+  }
+  .auth-foot {
+    padding-bottom: 4px;
   }
   .signin-card {
-    padding: 26px 20px;
+    padding: 22px 20px 20px;
     border-radius: 1rem;
     box-shadow: none;
   }
   .signin-title {
     font-size: 28px;
+  }
+  .poli-says {
+    gap: 12px;
+  }
+  .poli-says-art {
+    width: 72px;
+    height: 72px;
+  }
+  .poli-says-bubble {
+    padding: 9px 12px;
+    font-size: 14px;
   }
   .signin-otp-group {
     gap: 6px;
@@ -782,12 +1217,31 @@ select.signin-input {
     white-space: normal;
     text-align: left;
   }
+  .session-toast-text {
+    font-size: 14px;
+  }
   .account-page {
-    padding-top: 28px;
+    padding-top: 24px;
     gap: 16px;
   }
   .account-page > h1 {
     font-size: 34px;
+  }
+  .account-page > .lead {
+    font-size: 15px;
+  }
+  .account-stats {
+    gap: 8px;
+  }
+  .account-stat {
+    padding: 12px 12px 14px;
+    border-radius: 14px;
+  }
+  .account-stat strong {
+    font-size: 26px;
+  }
+  .account-stat span {
+    font-size: 13px;
   }
   .account-card {
     padding: 20px;
@@ -801,15 +1255,15 @@ select.signin-input {
     align-items: stretch;
     max-width: none;
   }
+  /* Every account button is at least 44px tall and 14px on a phone. */
+  .account-card .button-small,
+  .account-card .console-button {
+    min-height: 44px;
+    font-size: 14px;
+  }
   .account-action .button,
   .account-row > .console-button {
     width: 100%;
-  }
-  .account-farewell {
-    padding: 26px 20px;
-  }
-  .account-farewell h1 {
-    font-size: 32px;
   }
   .legal-page > h1 {
     font-size: 36px;
@@ -822,18 +1276,13 @@ select.signin-input {
   }
   .site-footer .footer-legal {
     justify-content: flex-end;
-    font-size: 11px;
+    font-size: 12px;
   }
 }
 
 /* Under 350px ------------------------------------------------------------- */
 
 @media (max-width: 350px) {
-  .header-actions .account-chip,
-  .header-actions .account-chip-placeholder,
-  .header-actions .account-sign-in {
-    width: 32px;
-  }
   .header-actions .account-sign-in svg {
     width: 18px;
   }
@@ -843,10 +1292,14 @@ select.signin-input {
     font-size: 13px;
   }
   .signin-card {
-    padding: 22px 16px;
+    padding: 20px 16px;
   }
   .signin-title {
     font-size: 25px;
+  }
+  .poli-says-art {
+    width: 60px;
+    height: 60px;
   }
   .signin-birth-fields {
     grid-template-columns: minmax(0, 1fr);
@@ -859,12 +1312,14 @@ select.signin-input {
     height: 50px;
     font-size: 21px;
   }
-  .auth-back span,
   .auth-bar .brand-dot {
     display: none;
   }
   .save-streak {
     flex-direction: column;
+  }
+  .account-stat strong {
+    font-size: 22px;
   }
 }
 

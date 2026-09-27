@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
+import type { BackLink } from '@/lib/safe-next';
 import { Card } from './sign-in-flow';
 
 /**
@@ -24,7 +25,7 @@ export function ConfirmSignIn({
   nonce: string;
   /** Already checked by safeNext(). */
   next: string;
-  back: string;
+  back: BackLink;
 }) {
   const [busy, setBusy] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -41,7 +42,7 @@ export function ConfirmSignIn({
   }, []);
 
   return (
-    <Card>
+    <Card pose="encourage" says="One tap and you’re in.">
       <p className="eyebrow purple">ALMOST THERE</p>
       <h1 className="signin-title" tabIndex={-1} ref={heading}>
         Finish signing in
@@ -78,8 +79,8 @@ export function ConfirmSignIn({
       </form>
       <p className="signin-small">
         You can also type the 6-digit code from the same email on the page where
-        you asked for it. <Link href={back}>Keep learning</Link> without signing
-        in.
+        you asked for it. Or skip signing in:{' '}
+        <Link href={back.href}>{back.label}</Link>
       </p>
     </Card>
   );

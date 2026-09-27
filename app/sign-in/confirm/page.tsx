@@ -64,7 +64,7 @@ export default async function ConfirmSignInPage({
           back={back}
         />
       ) : tokenHash && type ? (
-        <Card>
+        <Card pose="thinking" says="This link belongs to another browser.">
           <p className="eyebrow purple">{eyebrow}</p>
           <h1 className="signin-title">
             Open this link where you asked for it
@@ -81,11 +81,11 @@ export default async function ConfirmSignInPage({
             Sign in here instead <ArrowRight size={19} />
           </Link>
           <p className="signin-small">
-            <Link href={back}>Keep learning</Link> without signing in.
+            Or skip signing in: <Link href={back.href}>{back.label}</Link>
           </p>
         </Card>
       ) : (
-        <Card>
+        <Card pose="thinking" says="Part of that link went missing.">
           <p className="eyebrow purple">{eyebrow}</p>
           <h1 className="signin-title">This sign-in link isn’t complete</h1>
           <p className="signin-lead">

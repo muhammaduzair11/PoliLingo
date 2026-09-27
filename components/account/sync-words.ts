@@ -23,7 +23,7 @@ export const SYNC_SENTENCE: Readonly<Record<SyncStatus, string>> = {
   error:
     'We couldn’t save to your account just now. Your progress is safe here, and we’ll try again.',
   paused:
-    'Saving to your account is paused on this device. Your progress is safe here.',
+    'Saving to your account is paused in this tab. Your progress is safe here.',
 };
 
 /** "just now", "5 minutes ago", "yesterday"… for the last save. */

@@ -52,12 +52,12 @@ export const SPECIFIC_MESSAGE_CODES: ReadonlySet<string> = new Set([
 
 export const GENERIC_MESSAGE = 'Something went wrong. Nothing was changed.';
 export const NETWORK_MESSAGE =
-  "We can't reach PoliLingo's server right now. Nothing was changed.";
+  'We can’t reach PoliLingo’s server right now. Nothing was changed.';
 export const SESSION_MESSAGE = 'Your session ended. Please sign in again.';
 export const DUPLICATE_MESSAGE = 'That already exists.';
-export const NO_ACCESS_MESSAGE = "Your account doesn't have access to this.";
+export const NO_ACCESS_MESSAGE = 'Your account doesn’t have access to this.';
 export const NOT_CONFIGURED_MESSAGE =
-  "The workspace isn't connected to its database yet.";
+  'The workspace isn’t connected to its database yet.';
 
 const PL_MESSAGE = /^(PL\d{3}_[A-Z0-9_]+):\s*([\s\S]*)$/;
 const JWT_CODES = new Set(['PGRST301', 'PGRST302', 'PGRST303']);

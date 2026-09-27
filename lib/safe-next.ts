@@ -187,38 +187,97 @@ export function signInAudience(next: string): SignInAudience {
   return 'learner';
 }
 
-/**
- * The sign-in pages' eyebrow (before the step count), and step 2's heading
- * and the line under it.
- */
-export const SIGN_IN_WORDS: Readonly<
-  Record<SignInAudience, { eyebrow: string; title: string; lead: string }>
-> = {
+export type SignInWords = {
+  /** The eyebrow, before the step count. */
+  eyebrow: string;
+  /** Step 1: the line under "First, when were you born?". */
+  ageLead: string;
+  /** Step 1: what Poli says above it. */
+  hello: string;
+  /** Step 2: the heading and the line under it. */
+  title: string;
+  lead: string;
+};
+
+/** The sign-in pages' words for each audience. */
+export const SIGN_IN_WORDS: Readonly<Record<SignInAudience, SignInWords>> = {
   invite: {
     eyebrow: 'JOIN THE POLILINGO TEAM',
+    // Team members are not told "you never need an account": they do.
+    ageLead: 'We ask everyone once, for safety. Only your age band is kept.',
+    hello: 'Welcome to the team! One quick check first.',
     title: 'Accept your invitation',
     // The invitation only opens for the address it was sent to.
     lead: 'No password to remember. Use the email address this invitation was sent to.',
   },
   workspace: {
     eyebrow: 'SIGN IN TO THE WORKSPACE',
+    ageLead: 'We ask everyone once, for safety. Only your age band is kept.',
+    hello: 'Good to see you. One quick check first.',
     title: 'Sign in to the workspace',
     lead: 'No password to remember. Use the email address your workspace role is linked to.',
   },
   learner: {
     eyebrow: 'SAVE YOUR PROGRESS',
+    ageLead:
+      'New here or coming back, it starts the same way: your birth month and year once, then your email. We keep only your age band.',
+    hello: 'I’ll keep your lessons, XP and streak safe.',
     title: 'Keep your progress on every device',
     lead: 'No password to remember. Your progress on this device stays here either way.',
   },
 };
 
+/** The sign-in steps, as the eyebrow counts them: age, email, code. */
+export const SIGN_IN_STEPS = 3;
+
+/** "SAVE YOUR PROGRESS · STEP 2 OF 3" */
+export function stepEyebrow(eyebrow: string, step: number): string {
+  return `${eyebrow} · STEP ${step} OF ${SIGN_IN_STEPS}`;
+}
+
+export type BackLink = { href: string; label: string };
+
 /**
- * Where "Back to learning" goes from the sign-in pages: `next` when it is a
- * learner page, else the learning map. It never lands on a workspace page.
+ * The sign-in pages' way back, named for where it goes: `next` when it is a
+ * learner page, else the learning map for a learner and the home page for
+ * someone on the way to the workspace or an invitation. It never lands on a
+ * workspace page, and never says "learning" to someone who came from
+ * Settings.
  */
-export function learnerBack(next: string): string {
-  return /^\/(?:learn|lesson|onboarding|settings)(?:[/?#]|$)/.test(next) ||
-    next === '/'
-    ? next
-    : DEFAULT_NEXT;
+export function learnerBack(target: string): BackLink {
+  // Going back is not signing in: never carry the "just signed in" flag.
+  const next = withoutSignedIn(target);
+  if (/^\/settings(?:[/?#]|$)/.test(next))
+    return { href: next, label: 'Back to settings' };
+  if (/^\/lesson(?:[/?#]|$)/.test(next))
+    return { href: next, label: 'Back to your lesson' };
+  if (/^\/learn(?:[/?#]|$)/.test(next))
+    return { href: next, label: 'Back to your map' };
+  if (/^\/onboarding(?:[/?#]|$)/.test(next) || /^\/(?:[?#]|$)/.test(next))
+    return { href: next, label: 'Back to PoliLingo' };
+  if (signInAudience(next) !== 'learner')
+    return { href: '/', label: 'Back to PoliLingo' };
+  return { href: DEFAULT_NEXT, label: 'Back to your map' };
+}
+
+/** The query flag that tells the next page someone has just signed in. */
+export const SIGNED_IN_PARAM = 'signed_in';
+
+/**
+ * `next` (already through safeNext) with ?signed_in=1, so the page it opens
+ * can say who just signed in (components/account/runtime.tsx). Adding it
+ * twice changes nothing, and the hash stays last.
+ */
+export function withSignedIn(next: string): string {
+  const url = new URL(next, BASE);
+  url.searchParams.set(SIGNED_IN_PARAM, '1');
+  return url.pathname + url.search + url.hash;
+}
+
+/** `path` without ?signed_in; anything else in it is left exactly as it was. */
+export function withoutSignedIn(path: string): string {
+  if (!path.includes(`${SIGNED_IN_PARAM}=`)) return path;
+  const url = new URL(path, BASE);
+  url.searchParams.delete(SIGNED_IN_PARAM);
+  return url.pathname + url.search + url.hash;
 }

@@ -211,7 +211,7 @@ export function SyncAgent() {
         setAddError(null);
         setSaved(true);
         setAnnouncement(
-          "Done. This device's progress is saved to your account.",
+          'Done. This device’s progress is saved to your account.',
         );
       }
       if (again) {
@@ -260,7 +260,7 @@ export function SyncAgent() {
     addedTo.current = userId;
     setAddError(null);
     setAdding(true);
-    setAnnouncement("Adding this device's progress to your account…");
+    setAnnouncement('Adding this device’s progress to your account…');
     run.current('add');
   }
 
