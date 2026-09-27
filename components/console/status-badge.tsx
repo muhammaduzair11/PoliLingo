@@ -17,7 +17,7 @@ export const STATUS_LABELS: Record<ContentStatus, string> = {
   approved: 'Approved',
   rejected: 'Rejected',
   live: 'Live',
-  gated: 'Gated',
+  gated: 'Held back',
   retired: 'Retired',
   demo: 'Starter',
   sole_reviewer: 'Needs countersign',
