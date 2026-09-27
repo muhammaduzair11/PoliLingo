@@ -12,6 +12,8 @@ const problem = productionReleaseProblem(
 if (problem) throw new Error(problem);
 
 const nextConfig: NextConfig = {
+  // Nothing needs to know which framework serves the site.
+  poweredByHeader: false,
   experimental: {
     // A production build once shipped a stylesheet without the console and
     // account partials that app/globals.css imports, while clean builds had
@@ -19,6 +21,24 @@ const nextConfig: NextConfig = {
     // between builds, so every build starts clean instead.
     // scripts/check-build-css.mjs stops a build that loses them again.
     turbopackFileSystemCacheForBuild: false,
+  },
+  // Plain safety headers on every response. The invitation page also sets its
+  // own no-referrer policy, which is stricter and wins on that page.
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+        ],
+      },
+    ];
   },
   // Hindko's URLs while it is not shown (temporary), and the MVP's lesson URLs
   // to permanent lesson ids (permanent). Both come from the learner copy; see
