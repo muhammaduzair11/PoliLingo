@@ -14,7 +14,7 @@ import {
  * (lib/script-check.ts). Native text is checked as the database will store
  * it, normalised; problems name the character and where it is.
  *
- * Uncontrolled from the form's point of view: it submits under `name` like
+ * Uncontrolled from the form’s point of view: it submits under `name` like
  * any input. `onValueChange` hears every change with its problems.
  */
 export function ScriptField({
@@ -35,7 +35,7 @@ export function ScriptField({
   label: ReactNode;
   /** ps, ur, hno: picks the character list and the `lang` attribute. */
   language: string;
-  /** The language's writing direction, for native text. */
+  /** The language’s writing direction, for native text. */
   dir?: 'rtl' | 'ltr';
   kind: 'native' | 'romanisation';
   defaultValue?: string;
@@ -94,6 +94,7 @@ export function ScriptField({
           <li
             key={line.key}
             className={`script-issue script-issue-${line.severity}`}
+            title={line.detail}
           >
             {line.message}
           </li>
