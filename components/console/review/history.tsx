@@ -43,7 +43,7 @@ const who = (name: string | null, id: string | null) =>
 /**
  * Everything that happened to a phrase or lesson, newest first: its
  * revisions, review decisions, comments (with replies) and suggestions.
- * History is append-only; an admin can only blank a comment's text.
+ * History is append-only; an admin can only blank a comment’s text.
  */
 export function ReviewHistory({
   targetType,
@@ -242,7 +242,7 @@ export function ReviewHistory({
             )}
             {s.resolution_note && (
               <p className="console-hint">
-                Editor&apos;s reason: {s.resolution_note}
+                Editor’s reason: {s.resolution_note}
               </p>
             )}
           </>

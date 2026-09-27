@@ -32,7 +32,7 @@ const valuesOf = (item: ItemFields): Values => ({
 });
 
 /**
- * "Suggest a fix": the phrase's fields, prefilled, with the same live
+ * "Suggest a fix": the phrase’s fields, prefilled, with the same live
  * script checks the editor has. A native-script letter in the
  * romanisation, or an invisible character in the native text, is flagged
  * as it is typed. An editor applies the fix word for word later; the
@@ -121,8 +121,8 @@ export function SuggestFix({
           Suggest a fix
         </h3>
         <p className="console-hint">
-          Change only what&apos;s wrong. An editor applies your fix exactly as
-          you write it.
+          Change only what’s wrong. An editor applies your fix exactly as you
+          write it.
         </p>
       </div>
       <input type="hidden" name="item_id" value={itemId} />
