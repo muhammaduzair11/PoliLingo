@@ -4,9 +4,10 @@
  * new team member lands, how each refusal reads on the invitation page, and
  * the dates on the people page.
  *
- * Pure: no React, no Supabase. Dates are shown in UTC so the server render
- * and the browser agree, and a role's end date means the start of that day
- * in UTC.
+ * Pure: no React, no Supabase. Dates are written out by hand so the server
+ * render and the browser agree. Times people read (a release, a sign-in)
+ * are shown in Pakistan time (PKT, UTC+5); a role's end date still means
+ * the start of that day in UTC, as the End role dialog says.
  */
 
 export type InviteRole = 'admin' | 'editor' | 'language_reviewer';
@@ -59,13 +60,13 @@ export function scopeLabel(scope: Scope): string {
 export function inviteHeadline(scope: Scope): string {
   switch (scope.role) {
     case 'admin':
-      return "You're invited to help run PoliLingo";
+      return 'You’re invited to help run PoliLingo';
     case 'editor':
       return scope.language_name
-        ? `You're invited to write ${scope.language_name} lessons`
-        : "You're invited to write lessons for PoliLingo";
+        ? `You’re invited to write ${scope.language_name} lessons`
+        : 'You’re invited to write lessons for PoliLingo';
     case 'language_reviewer':
-      return `You're invited to review ${scopeLabel(scope)}`;
+      return `You’re invited to review ${scopeLabel(scope)}`;
   }
 }
 
@@ -98,6 +99,54 @@ export function consoleHomeFor(role: string): string {
   if (role === 'admin') return '/admin';
   if (role === 'editor') return '/edit';
   return '/review';
+}
+
+const QUERY_ROLES: Readonly<Record<string, InviteRole>> = {
+  admin: 'admin',
+  editor: 'editor',
+  reviewer: 'language_reviewer',
+};
+
+/**
+ * /admin/people?invite=reviewer&variety=… : the people page with the
+ * invite dialog open on that role (and variety), from a link elsewhere.
+ */
+export function inviteDeepLink(
+  role: InviteRole,
+  variety?: string | null,
+): string {
+  const name = role === 'language_reviewer' ? 'reviewer' : role;
+  const params = new URLSearchParams({ invite: name });
+  if (variety && role === 'language_reviewer') params.set('variety', variety);
+  return `/admin/people?${params.toString()}`;
+}
+
+/** What inviteDeepLink asked for, from the page's query, or null. */
+export function inviteFromQuery(query: {
+  invite?: string | string[];
+  variety?: string | string[];
+}): { role: InviteRole; variety: string | null } | null {
+  const first = (v: string | string[] | undefined) =>
+    Array.isArray(v) ? v[0] : v;
+  const invite = first(query.invite);
+  const role =
+    invite && Object.hasOwn(QUERY_ROLES, invite) ? QUERY_ROLES[invite] : null;
+  if (!role) return null;
+  const variety = first(query.variety);
+  return {
+    role,
+    variety:
+      role === 'language_reviewer' && variety && /^[\w-]{1,80}$/.test(variety)
+        ? variety
+        : null,
+  };
+}
+
+/** The button to that part: "Go to the overview", "Go to your lessons", … */
+export function consoleHomeLabel(role: string): string {
+  if (role === 'admin') return 'Go to the overview';
+  if (role === 'editor') return 'Go to your lessons';
+  return 'Go to your review queue';
 }
 
 /**
@@ -149,6 +198,39 @@ export function formatDay(value: string | Date | null | undefined): string {
   return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
+// Pakistan Standard Time is UTC+5 all year (no daylight saving since 2009),
+// so shifting the instant and reading it back in UTC gives the wall clock in
+// Pakistan the same way in every runtime, with no Intl time-zone data.
+const PKT_OFFSET_MS = 5 * 60 * 60 * 1000;
+
+function inPkt(value: string | Date | null | undefined): Date | null {
+  const date = toDate(value);
+  return date ? new Date(date.getTime() + PKT_OFFSET_MS) : null;
+}
+
+/** "27 Sep 2026": the day it was in Pakistan. Empty for a missing date. */
+export function formatPktDay(value: string | Date | null | undefined): string {
+  const date = inPkt(value);
+  return date ? formatDay(date) : '';
+}
+
+/** "8:53 pm": the time in Pakistan, 12-hour. Empty for a missing date. */
+export function formatPktTime(value: string | Date | null | undefined): string {
+  const date = inPkt(value);
+  if (!date) return '';
+  const hours = date.getUTCHours();
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  return `${hours % 12 || 12}:${minutes} ${hours < 12 ? 'am' : 'pm'}`;
+}
+
+/** "27 Sep 2026, 8:53 pm PKT", or empty. */
+export function formatPktDateTime(
+  value: string | Date | null | undefined,
+): string {
+  const day = formatPktDay(value);
+  return day ? `${day}, ${formatPktTime(value)} PKT` : '';
+}
+
 /** "Mon 28 Sep", in UTC, or empty. */
 export function formatWeekday(value: string | Date | null | undefined): string {
   const date = toDate(value);
@@ -186,11 +268,11 @@ export function inviteMessage({
       : scope.role === 'editor'
         ? `to write ${scope.language_name ? `${scope.language_name} ` : ''}lessons on PoliLingo`
         : 'to help run PoliLingo';
-  const until = formatDay(expiresAt);
+  const until = formatPktDay(expiresAt);
   const address = email?.trim() || 'the email address this was sent to';
   return [
-    `${hello} You're invited ${what}.`,
-    `Open this link and sign in with ${address} to join. It's just for you, works once${until ? ` and expires on ${until}` : ''}:`,
+    `${hello} You’re invited ${what}.`,
+    `Open this link and sign in with ${address} to join. It’s just for you, works once${until ? ` and expires on ${until}` : ''}:`,
     url,
   ].join('\n\n');
 }
@@ -205,7 +287,7 @@ export type InviteRefusal = { title: string; message: string; next: string };
 
 const REFUSALS: Readonly<Record<string, InviteRefusal>> = {
   PL404_INVITATION_NOT_FOUND: {
-    title: "We couldn't find that invitation",
+    title: 'We couldn’t find that invitation',
     message: 'The link may be incomplete, or it may have been mistyped.',
     next: 'Check you opened the whole link, or ask the person who invited you to send a new one.',
   },
@@ -292,6 +374,23 @@ export function grantWindowLabel(grant: GrantWindow): string {
     case 'ended':
       return `Ended ${formatDay(grant.ends_at)}`;
   }
+}
+
+/**
+ * The invite form's languages, those learners can see first and those
+ * behind a closed publish gate last, each group keeping its order. The form
+ * starts on the first, so a new reviewer is offered a live language rather
+ * than whichever hidden one sorts first by name. With no gates known (the
+ * read failed), the order is left as it was.
+ */
+export function liveLanguagesFirst<T extends { code: string }>(
+  languages: readonly T[],
+  open: ReadonlySet<string> | null,
+): T[] {
+  if (!open) return [...languages];
+  return [...languages].sort(
+    (a, b) => Number(!open.has(a.code)) - Number(!open.has(b.code)),
+  );
 }
 
 /** YYYY-MM-DD of the UTC day after `now`: the earliest end date to offer. */

@@ -37,7 +37,7 @@ export default async function PublishPage() {
         />
         <Notice
           tone="error"
-          title="We couldn't build the preview"
+          title="We couldn’t build the preview"
           code={result.error.code}
         >
           <p>{result.error.message}</p>

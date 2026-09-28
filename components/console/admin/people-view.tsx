@@ -1,16 +1,20 @@
+import Link from 'next/link';
 import type { ActionResult } from '@/lib/console/action-result';
 import {
   formatDay,
+  formatPktDateTime,
+  formatPktDay,
   grantWindowLabel,
+  inviteDeepLink,
   latestEndDate,
   roleLabel,
   scopeLabel,
 } from '@/lib/console/invite-link';
 import { ConfirmAction } from '../confirm-action';
-import { DataTable } from '../data-table';
+import { DataTable, type Column } from '../data-table';
 import { EmptyState } from '../empty-state';
 import { Stat, StatGrid } from '../stat';
-import { EndWhenFields } from './end-when-fields';
+import { EndRoleAction } from './end-role-action';
 import type { Grant, OpenInvitation, PeoplePage, Person } from './types';
 
 type FormAction<T> = (
@@ -24,12 +28,59 @@ const STATUS_LABELS: Record<Person['status'], string> = {
   ended: 'Left',
 };
 
+const TEAM_HEADING = 'people-team';
+const INVITATIONS_HEADING = 'people-invitations';
+
 function roleWithScope(grant: {
   role: Grant['role'];
   language_name: string | null;
   variety_name: string | null;
 }): string {
   return `${roleLabel(grant.role)} · ${scopeLabel(grant)}`;
+}
+
+const currentGrants = (p: Person) =>
+  p.grants.filter((g) => g.state !== 'ended');
+
+/**
+ * What the status pill says. A person with no role left is "No role", not
+ * a green "Active": their account is active, but they aren't on the team.
+ */
+function statusOf(p: Person): { label: string; tone: string } {
+  if (!p.has_account) return { label: 'Account deleted', tone: 'ended' };
+  if (currentGrants(p).length === 0) return { label: 'No role', tone: 'ended' };
+  return { label: STATUS_LABELS[p.status], tone: p.status };
+}
+
+function StatusPill({
+  person,
+  className,
+}: {
+  person: Person;
+  className?: string;
+}) {
+  const status = statusOf(person);
+  return (
+    <span
+      className={`people-status people-status-${status.tone}${className ? ` ${className}` : ''}`}
+    >
+      {status.label}
+    </span>
+  );
+}
+
+/**
+ * The one open-ended admin grant, when there is exactly one: ending it
+ * would leave the workspace without an admin, so it offers inviting
+ * another admin instead. (revoke_role refuses it anyway.)
+ */
+function soleAdminGrant(people: Person[]): string | null {
+  const open = people.flatMap((p) =>
+    p.grants.filter(
+      (g) => g.role === 'admin' && g.state !== 'ended' && !g.ends_at,
+    ),
+  );
+  return open.length === 1 ? open[0].id : null;
 }
 
 /** The people page: the team with their roles, and invitations still waiting. */
@@ -44,12 +95,12 @@ export function PeopleView({
   revokeRole: FormAction<{ ends_at: string }>;
   revokeInvitation: FormAction<unknown>;
 }) {
-  const current = (p: Person) => p.grants.filter((g) => g.state !== 'ended');
-  const active = page.people.filter(
-    (p) => p.status === 'active' && current(p).length > 0,
-  );
+  // Current members first; people whose roles have all ended fold away.
+  const members = page.people.filter((p) => currentGrants(p).length > 0);
+  const former = page.people.filter((p) => currentGrants(p).length === 0);
+  const active = members.filter((p) => p.status === 'active');
   const reviewers = active.filter((p) =>
-    current(p).some((g) => g.role === 'language_reviewer'),
+    currentGrants(p).some((g) => g.role === 'language_reviewer'),
   );
   const waiting = page.invitations.filter((i) => i.state === 'open');
   const expired = page.invitations.filter((i) => i.state === 'expired').length;
@@ -60,6 +111,51 @@ export function PeopleView({
   ]
     .filter(Boolean)
     .join(' · ');
+  const soleAdmin = soleAdminGrant(page.people);
+
+  const columns: Column<Person>[] = [
+    {
+      key: 'person',
+      header: 'Person',
+      cell: (p) => <PersonCell person={p} me={page.me} />,
+    },
+    {
+      key: 'roles',
+      header: 'Roles',
+      cell: (p) => (
+        <RolesCell
+          person={p}
+          self={p.id === page.me}
+          soleAdmin={soleAdmin}
+          minEndDate={minEndDate}
+          revokeRole={revokeRole}
+        />
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      // On phones the pill sits beside the name instead.
+      hideOnMobile: true,
+      cell: (p) => <StatusPill person={p} />,
+    },
+    {
+      key: 'seen',
+      header: 'Last signed in',
+      hideOnMobile: true,
+      cell: (p) =>
+        p.last_sign_in_at ? (
+          <time
+            dateTime={p.last_sign_in_at}
+            title={formatPktDateTime(p.last_sign_in_at)}
+          >
+            {formatPktDay(p.last_sign_in_at)}
+          </time>
+        ) : (
+          <span className="people-muted">Not yet</span>
+        ),
+    },
+  ];
 
   return (
     <div className="people-page">
@@ -73,61 +169,36 @@ export function PeopleView({
         />
       </StatGrid>
 
-      <section className="people-section" aria-labelledby="people-team">
-        <h2 id="people-team" className="people-heading">
+      <section className="people-section" aria-labelledby={TEAM_HEADING}>
+        <h2 id={TEAM_HEADING} className="people-heading" tabIndex={-1}>
           Team
         </h2>
         <DataTable
-          rows={page.people}
+          className="people-table"
+          rows={members}
           rowKey={(p) => p.id}
           empty={
             <EmptyState title="No one here yet">
               <p>Invite a reviewer or an editor to get started.</p>
             </EmptyState>
           }
-          columns={[
-            {
-              key: 'person',
-              header: 'Person',
-              cell: (p) => <PersonCell person={p} me={page.me} />,
-            },
-            {
-              key: 'roles',
-              header: 'Roles',
-              cell: (p) => (
-                <RolesCell
-                  person={p}
-                  minEndDate={minEndDate}
-                  revokeRole={revokeRole}
-                />
-              ),
-            },
-            {
-              key: 'status',
-              header: 'Status',
-              cell: (p) => (
-                <span className={`people-status people-status-${p.status}`}>
-                  {p.has_account ? STATUS_LABELS[p.status] : 'Account deleted'}
-                </span>
-              ),
-            },
-            {
-              key: 'seen',
-              header: 'Last signed in',
-              hideOnMobile: true,
-              cell: (p) =>
-                p.last_sign_in_at ? (
-                  formatDay(p.last_sign_in_at)
-                ) : (
-                  <span className="people-muted">Not yet</span>
-                ),
-            },
-          ]}
+          columns={columns}
         />
+        {former.length > 0 && (
+          <details className="people-former">
+            <summary>Former team members ({former.length})</summary>
+            <DataTable
+              className="people-table"
+              rows={former}
+              rowKey={(p) => p.id}
+              columns={columns}
+            />
+          </details>
+        )}
       </section>
 
-      <section className="people-section" aria-labelledby="people-invitations">
-        <h2 id="people-invitations" className="people-heading">
+      <section className="people-section" aria-labelledby={INVITATIONS_HEADING}>
+        <h2 id={INVITATIONS_HEADING} className="people-heading" tabIndex={-1}>
           Invitations waiting
         </h2>
         <p className="console-hint people-lead">
@@ -135,6 +206,7 @@ export function PeopleView({
           cancel it and send a new invitation.
         </p>
         <DataTable
+          className="people-invitations"
           rows={page.invitations}
           rowKey={(i) => i.id}
           empty={
@@ -149,10 +221,16 @@ export function PeopleView({
               cell: (i) => (
                 <span className="people-person">
                   <span className="people-name">
-                    {i.display_name || i.email}
+                    {i.display_name || (
+                      <span className="people-email-text" title={i.email}>
+                        {i.email}
+                      </span>
+                    )}
                   </span>
                   {i.display_name && (
-                    <span className="people-email">{i.email}</span>
+                    <span className="people-email" title={i.email}>
+                      {i.email}
+                    </span>
                   )}
                 </span>
               ),
@@ -168,7 +246,12 @@ export function PeopleView({
               hideOnMobile: true,
               cell: (i) => (
                 <span className="people-person">
-                  <span>{formatDay(i.created_at)}</span>
+                  <time
+                    dateTime={i.created_at}
+                    title={formatPktDateTime(i.created_at)}
+                  >
+                    {formatPktDay(i.created_at)}
+                  </time>
                   {i.created_by_name && (
                     <span className="people-email">by {i.created_by_name}</span>
                   )}
@@ -181,7 +264,7 @@ export function PeopleView({
               cell: (i) =>
                 i.state === 'expired' ? (
                   <span className="people-status people-status-ended">
-                    Expired {formatDay(i.expires_at)}
+                    Expired {formatPktDay(i.expires_at)}
                   </span>
                 ) : i.state === 'void' ? (
                   <span className="people-person">
@@ -189,11 +272,16 @@ export function PeopleView({
                       No longer valid
                     </span>
                     <span className="people-email">
-                      The sender isn&apos;t an admin now
+                      The sender isn’t an admin now
                     </span>
                   </span>
                 ) : (
-                  formatDay(i.expires_at)
+                  <time
+                    dateTime={i.expires_at}
+                    title={formatPktDateTime(i.expires_at)}
+                  >
+                    {formatPktDay(i.expires_at)}
+                  </time>
                 ),
             },
             {
@@ -217,30 +305,43 @@ function PersonCell({ person, me }: { person: Person; me: string | null }) {
   const contact = person.private;
   return (
     <span className="people-person">
-      <span className="people-name">
+      {/* The contributor id is for support, not for reading: on hover only. */}
+      <span className="people-name" title={person.id}>
         {person.display_name}
         {person.id === me && <span className="people-you">You</span>}
+        <StatusPill person={person} className="people-status-inline" />
       </span>
-      {person.email && <span className="people-email">{person.email}</span>}
-      <span className="people-meta">
-        <code>{person.id}</code>
-        {contact?.region && <span>{contact.region}</span>}
-        {contact?.whatsapp && <span>WhatsApp {contact.whatsapp}</span>}
-      </span>
+      {person.email && (
+        <span className="people-email" title={person.email}>
+          {person.email}
+        </span>
+      )}
+      {(contact?.region || contact?.whatsapp) && (
+        <span className="people-meta">
+          {contact.region && <span>{contact.region}</span>}
+          {contact.whatsapp && <span>WhatsApp {contact.whatsapp}</span>}
+        </span>
+      )}
     </span>
   );
 }
 
 function RolesCell({
   person,
+  self,
+  soleAdmin,
   minEndDate,
   revokeRole,
 }: {
   person: Person;
+  /** The row is the viewer's own: the dialog speaks to them. */
+  self: boolean;
+  /** The id of the only open-ended admin grant, if there is just one. */
+  soleAdmin: string | null;
   minEndDate: string;
   revokeRole: FormAction<{ ends_at: string }>;
 }) {
-  const current = person.grants.filter((g) => g.state !== 'ended');
+  const current = currentGrants(person);
   const past = person.grants.filter((g) => g.state === 'ended');
   return (
     <div className="people-roles">
@@ -260,21 +361,28 @@ function RolesCell({
                     {grantWindowLabel(g)}
                   </span>
                 </span>
-                <ConfirmAction
-                  action={revokeRole}
-                  triggerLabel={g.ends_at ? 'End sooner' : 'End role'}
-                  triggerTone="quiet"
-                  title={`End ${person.display_name}’s ${roleLabel(g.role).toLowerCase()} role${g.ends_at ? ' sooner' : ''}?`}
-                  description={endDescription(g)}
-                  confirmLabel="End role"
-                  cancelLabel="Keep it"
-                  pendingLabel="Ending…"
-                  tone="danger"
-                  fields={{ grant_id: g.id }}
-                  successMessage="Done. The role's end is saved."
-                >
-                  <EndWhenFields minDate={minEndDate} maxDate={maxDate} />
-                </ConfirmAction>
+                {g.id === soleAdmin ? (
+                  <Link
+                    className="people-only-admin"
+                    href={inviteDeepLink('admin')}
+                  >
+                    Only admin: invite another admin first
+                  </Link>
+                ) : (
+                  <EndRoleAction
+                    grantId={g.id}
+                    role={g.role}
+                    who={self ? 'You' : person.display_name}
+                    self={self}
+                    hasEnd={Boolean(g.ends_at)}
+                    title={`End ${self ? 'your' : `${person.display_name}’s`} ${roleLabel(g.role).toLowerCase()} role${g.ends_at ? ' sooner' : ''}?`}
+                    description={endDescription(g, self)}
+                    minDate={minEndDate}
+                    maxDate={maxDate}
+                    focusAfter={TEAM_HEADING}
+                    action={revokeRole}
+                  />
+                )}
               </li>
             );
           })}
@@ -304,17 +412,21 @@ function RolesCell({
   );
 }
 
-function endDescription(g: Grant): string {
+function endDescription(g: Grant, self: boolean): string {
+  const they = self ? 'You' : 'They';
   const what =
     g.role === 'language_reviewer'
-      ? `They won't be able to review ${scopeLabel(g)} any more.`
+      ? `${they} won’t be able to review ${scopeLabel(g)} any more.`
       : g.role === 'editor'
-        ? `They won't be able to edit ${g.language_name ?? 'lessons'} any more.`
-        : 'They lose admin access to the workspace.';
+        ? `${they} won’t be able to edit ${g.language_name ?? 'lessons'} any more.`
+        : `${they} lose admin access to the workspace.`;
   const already = g.ends_at
-    ? ` It's set to end on ${formatDay(g.ends_at)}; you can bring that forward.`
+    ? ` It’s set to end on ${formatDay(g.ends_at)}; you can bring that forward.`
     : '';
-  return `${what}${already} Everything they did stays in the history, under their name.`;
+  const history = self
+    ? 'Everything you did stays in the history, under your name.'
+    : 'Everything they did stays in the history, under their name.';
+  return `${what}${already} ${history}`;
 }
 
 function InvitationActions({
@@ -327,7 +439,12 @@ function InvitationActions({
   return (
     <ConfirmAction
       action={revokeInvitation}
-      triggerLabel="Cancel"
+      triggerLabel={
+        <>
+          Cancel
+          <span className="sr-only"> the invitation to {invitation.email}</span>
+        </>
+      }
       triggerTone="quiet"
       title="Cancel this invitation?"
       description={`The link sent to ${invitation.email} stops working straight away. You can always invite them again.`}
@@ -336,6 +453,8 @@ function InvitationActions({
       pendingLabel="Cancelling…"
       tone="danger"
       fields={{ invitation_id: invitation.id }}
+      announce={`Invitation to ${invitation.email} cancelled.`}
+      focusAfter={INVITATIONS_HEADING}
     />
   );
 }

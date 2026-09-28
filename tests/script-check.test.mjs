@@ -10,6 +10,7 @@ import {
   checkPhrase,
   checkRomanisation,
   isStorable,
+  issueLines,
   normaliseNative,
   orthographyLanguages,
   textFingerprint,
@@ -80,8 +81,10 @@ test('characters outside the language list, with a fix when there is one', () =>
   assert.equal(kaf.code, 'PL422_CHAR_NOT_ALLOWED');
   assert.equal(kaf.char, 'ك');
   assert.equal(kaf.position, 1);
-  assert.match(kaf.message, /U\+0643/);
-  assert.match(kaf.message, /U\+06A9/);
+  // The message names the letters, not their code points (those go in the
+  // field's tooltip), and says what to use instead.
+  assert.doesNotMatch(kaf.message, /U\+/);
+  assert.match(kaf.message, /Use ک instead/);
   // Pashto letters are not Urdu's.
   assert.deepEqual(codes(checkNative('ur', 'ښا')), [
     ['PL422_CHAR_NOT_ALLOWED', 'ښ', 1, 'error'],
@@ -223,4 +226,98 @@ test('warnings alone still let an item be stored', () => {
   assert.equal(isStorable([]), true);
   assert.equal(isStorable(checkNative('xx', 'abc')), true);
   assert.equal(isStorable(checkNative('ps', 'abc')), false);
+});
+
+test('the field groups repeats of one kind into one line', () => {
+  const lines = (language, text) =>
+    issueLines(language, checkNative(language, text)).map((l) => [
+      l.severity,
+      l.message,
+    ]);
+  // Latin letters: one line for all of them, the warning folded in.
+  assert.deepEqual(lines('ps', 'hello'), [
+    [
+      'error',
+      'Latin letters h, e, l, o aren’t Pashto. Did the romanisation end up here?',
+    ],
+  ]);
+  assert.deepEqual(lines('ps', 'سa'), [
+    [
+      'error',
+      'The Latin letter a isn’t Pashto. Did the romanisation end up here?',
+    ],
+  ]);
+  // Without a character list the warning is all there is, as it was.
+  assert.deepEqual(
+    lines('xx', 'abc').map(([severity]) => severity),
+    ['warning'],
+  );
+  // Characters missing from the list: one line, "ask an admin" once.
+  const [missing, ...rest] = lines('ur', 'کیا?@');
+  assert.deepEqual(rest, []);
+  assert.match(missing[1], /“\?” and “@” aren’t/);
+  assert.doesNotMatch(missing[1], /U\+/);
+  assert.equal(missing[1].match(/ask an admin/g).length, 1);
+  // A character with a replacement keeps its own line and its fix.
+  assert.deepEqual(lines('ur', 'كتاب'), [
+    ['error', checkNative('ur', 'كتاب')[0].message],
+  ]);
+  assert.deepEqual(lines('ur', '“سلام”'), [
+    [
+      'error',
+      'There are curly quotes (“ ”) at positions 1 and 6. Leave quotation marks out of the phrase.',
+    ],
+  ]);
+  assert.deepEqual(lines('ps', 'سل ۳ ٣'), [
+    ['error', 'Numbers can’t go in a phrase yet: write it as a word (پنځه).'],
+  ]);
+  assert.match(
+    lines('ps', 'س‏ ل')[0][1],
+    /right-to-left mark and no-break space\) at positions 2 and 3/,
+  );
+  // A single issue keeps its own message; clean text has no lines.
+  assert.deepEqual(lines('ur', 'کیا?'), [
+    ['error', checkNative('ur', 'کیا?')[0].message],
+  ]);
+  assert.deepEqual(lines('ps', 'ستړي مه شې'), []);
+  // Native script in the romanisation is one message: fixing it also gives
+  // it Latin letters, so "needs Latin letters" would only repeat it.
+  assert.deepEqual(
+    issueLines('ps', checkRomanisation('سلام')).map((l) => l.message),
+    [checkRomanisation('سلام')[0].message],
+  );
+  assert.deepEqual(
+    issueLines('ps', checkRomanisation('123 !')).map((l) => l.message),
+    checkRomanisation('123 !').map((i) => i.message),
+  );
+});
+
+test('numbers get one message, Western or Arabic-Indic, with no code points', () => {
+  const line = (language, text) =>
+    issueLines(language, checkNative(language, text));
+  const western = line('ps', '5');
+  const eastern = line('ps', '۵');
+  assert.equal(western.length, 1);
+  assert.deepEqual(
+    western.map((l) => l.message),
+    eastern.map((l) => l.message),
+  );
+  assert.equal(
+    western[0].message,
+    'Numbers can’t go in a phrase yet: write it as a word (پنځه).',
+  );
+  // The code point is kept for the tooltip only.
+  assert.equal(western[0].detail, 'U+0035');
+  assert.equal(eastern[0].detail, 'U+06F5');
+  // Mixed digits are still one line; each language has its own example.
+  assert.equal(line('ps', 'سل 5 ۵').length, 1);
+  assert.match(line('ur', '۵')[0].message, /\(پانچ\)/);
+  // The codes stay as the database has them.
+  assert.deepEqual(
+    [...checkNative('ps', '5'), ...checkNative('ps', '۵')].map((i) => i.code),
+    ['PL422_CHAR_NOT_ALLOWED', 'PL422_ARABIC_DIGIT'],
+  );
+  // No message anywhere shows a code point.
+  for (const text of ['5', 'كتاب', '“سلام”', 'س‏ ل', 'hello', 'کیا?@'])
+    for (const l of line('ur', text)) assert.doesNotMatch(l.message, /U\+/);
 });

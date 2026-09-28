@@ -1,6 +1,7 @@
 /* Final readability and narrow-viewport refinements. */
 .hero-languages {
   display: flex;
+  align-items: center;
   gap: 9px;
   margin-top: 18px;
   flex-wrap: wrap;
@@ -11,15 +12,29 @@
   gap: 10px;
   border: 1px solid #baa0df88;
   background: #7443cb;
-  padding: 8px 13px;
+  padding: 8px 14px;
   min-height: 40px;
   border-radius: 9px;
-  font-size: 13px;
+  font-size: 14px;
   color: #fff;
 }
 .hero-languages a:hover {
   background: #8051d5;
   transform: translateY(-2px);
+}
+/* For a returning learner the first-words link steps back to a quiet text
+   link beside the language chips (components/home.tsx). */
+.hero-languages a.hero-more {
+  border-color: transparent;
+  background: none;
+  padding-inline: 6px;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  color: #f1e8fe;
+}
+.hero-languages a.hero-more:hover {
+  background: none;
+  color: #fff;
 }
 .answer-option:has(:focus-visible),
 .goal-option:has(:focus-visible) {
@@ -37,9 +52,6 @@
   max-width: 100%;
   overflow-wrap: anywhere;
 }
-.setting-row p,
-.sources-card p,
-.course-facts p,
 .study-card > p,
 .lesson-help,
 .feedback p {
@@ -52,24 +64,6 @@
 }
 .study-card > strong {
   font-size: 15px;
-}
-.stop-label p,
-.map-footer > span,
-.daily-card > p,
-.poli-tip p,
-.badge-card > p {
-  font-size: 13px;
-}
-.language-card p,
-.sample-response,
-.sample-option,
-.sample-copy > p,
-.sample-top,
-.quiet-link,
-.saved-note,
-.lesson-count,
-.lesson-footer > p {
-  font-size: 13px;
 }
 .header-inner,
 .hero-inner,
@@ -108,27 +102,16 @@ body {
 .inline-goals label {
   min-height: 44px;
 }
+/* The radio keeps its own round size: as a flex item in the goal card it
+   would otherwise stretch or squash. */
 .goal-option [data-slot='radio-group-item'] {
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
 }
-@media (max-width: 800px) {
-  .sample-top {
-    font-size: 10px;
-  }
-  .sample-card h3 {
-    font-size: 21px;
-  }
-  .sample-option {
-    font-size: 12px;
-  }
-  .sample-response {
-    font-size: 12px;
-  }
-  .steps p,
-  .how-intro > p,
-  .meet-copy p {
-    font-size: 14px;
-  }
+.goal-option [data-slot='radio-group-indicator'] > span {
+  width: 10px;
+  height: 10px;
 }
 @media (max-width: 580px) {
   .hero h1 {
@@ -139,35 +122,15 @@ body {
     margin-top: 15px;
   }
   .hero-languages a {
-    font-size: 12px;
-    padding: 7px 12px;
-    min-height: 38px;
+    padding: 7px 14px;
+    min-height: 44px;
     gap: 6px;
   }
   .hero-art {
     margin-top: 18px;
   }
-  .hero-copy > p {
-    font-size: 14px;
-  }
-  .language-card p {
-    font-size: 14px;
-  }
-  .section-heading > p,
-  .steps p,
-  .how-intro > p,
-  .sample-copy > p,
-  .meet-copy p {
-    font-size: 15px;
-  }
-  .sample-top {
-    font-size: 10px;
-  }
   .sample-top > span:last-child {
     display: none;
-  }
-  .sample-response {
-    font-size: 13px;
   }
   .study-card .native {
     font-size: 26px;
@@ -183,20 +146,12 @@ body {
   .match-column .roman {
     font-size: 13px;
   }
-  .course-facts p,
-  .sources-card p,
-  .setting-row p {
-    font-size: 13px;
-  }
   .lesson-help,
   .feedback p {
     font-size: 13px;
   }
   .stop-label h3 {
     font-size: 15px;
-  }
-  .stop-label p {
-    font-size: 11px;
   }
   .lesson-footer > p {
     font-size: 11px;
@@ -209,28 +164,15 @@ body {
   .lesson-count {
     font-size: 11px !important;
   }
-  .map-footer > span {
-    font-size: 11px;
-  }
-  .daily-card > p,
-  .badge-card > p {
-    font-size: 12px;
-  }
   .setting-row {
     flex-wrap: wrap;
   }
-  .setting-row > div {
+  .setting-text {
     min-width: 130px;
   }
   .inline-goals {
     flex-wrap: wrap;
     gap: 12px;
-  }
-  .site-footer > div {
-    font-size: 11px;
-  }
-  .site-footer > div a {
-    font-size: 11px;
   }
   .resume-card .eyebrow {
     font-size: 10px;
@@ -250,6 +192,8 @@ body {
     font-size: clamp(25px, 7vw, 32px);
   }
 }
+/* The narrowest phones (320-350px) get tighter gutters and a smaller logo,
+   never smaller text. */
 @media (max-width: 350px) {
   .header-inner {
     padding: 14px 14px;
@@ -270,32 +214,19 @@ body {
     gap: 6px;
     white-space: nowrap;
   }
-  .header-actions .motion-button {
-    width: 28px;
-  }
   .hero-inner {
     padding-left: 17px;
     padding-right: 17px;
   }
   .hero-footnote {
     gap: 9px;
-    font-size: 9px;
   }
   .section-wrap {
     padding-left: 17px;
     padding-right: 17px;
   }
   .hero-languages a {
-    padding: 7px 9px;
-  }
-  .sample-options {
-    gap: 6px;
-  }
-  .sample-option {
-    font-size: 10px;
-  }
-  .sample-option .native {
-    font-size: 23px;
+    padding: 7px 10px;
   }
   .sample-card h3 {
     font-size: 20px;
@@ -317,9 +248,6 @@ body {
   .badge-row > div > span {
     width: 48px;
     height: 48px;
-  }
-  .badge-row small {
-    font-size: 11px;
   }
   .map-poli {
     display: none;

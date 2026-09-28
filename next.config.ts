@@ -22,9 +22,12 @@ const nextConfig: NextConfig = {
     // scripts/check-build-css.mjs stops a build that loses them again.
     turbopackFileSystemCacheForBuild: false,
   },
-  // Plain safety headers on every response. The invitation page also sets its
-  // own no-referrer policy, which is stricter and wins on that page.
+  // Plain safety headers on every response. The pages whose address carries
+  // a secret (a sign-in link's token, an invitation) send no referrer at
+  // all: a later rule setting the same header wins, so theirs come last.
+  // Their pages also say so in a <meta name="referrer">.
   async headers() {
+    const noReferrer = [{ key: 'Referrer-Policy', value: 'no-referrer' }];
     return [
       {
         source: '/(.*)',
@@ -38,6 +41,9 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      { source: '/auth/confirm', headers: noReferrer },
+      { source: '/sign-in/confirm', headers: noReferrer },
+      { source: '/invite/:token*', headers: noReferrer },
     ];
   },
   // Hindko's URLs while it is not shown (temporary), and the MVP's lesson URLs

@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EmptyState } from '@/components/console/empty-state';
 import { PageHeader } from '@/components/console/page-header';
-import { Stat, StatGrid } from '@/components/console/stat';
 import { StatusBadge } from '@/components/console/status-badge';
 import { EditorLoadError } from '@/components/console/editor/editor-states';
 import {
@@ -24,15 +23,52 @@ import {
   treeView,
   utcToday,
   type EditTree,
+  type EditorStatus,
+  type StatusCounts as Counts,
   type TreeCourseView,
   type TreeLanguageView,
   type TreeUnitView,
+  type TreeView,
 } from '@/lib/console/editor';
 import { editLessonPath, editTreePath, learnPath } from '@/lib/console/paths';
 import { callRpc } from '@/lib/rpc';
 import { serverSupabase } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Lessons' };
+
+/** The groups the stats count, each lesson in exactly one. */
+const STAT_GROUPS: {
+  key: string;
+  label: string;
+  statuses: EditorStatus[];
+}[] = [
+  { key: 'draft', label: 'Drafts', statuses: ['draft'] },
+  { key: 'in-review', label: 'In review', statuses: ['in_review'] },
+  {
+    key: 'changes',
+    label: 'Need changes',
+    statuses: ['changes_requested', 'rejected'],
+  },
+  { key: 'approved', label: 'Approved', statuses: ['approved'] },
+  { key: 'starter', label: 'Starter', statuses: ['demo'] },
+  { key: 'retired', label: 'Retired', statuses: ['retired'] },
+];
+
+const groupOf = (status: EditorStatus) =>
+  STAT_GROUPS.find((g) => g.statuses.includes(status))?.key ?? status;
+
+/** The first lesson of each stat group, in tree order: where its stat jumps. */
+function firstOfEach(tree: TreeView): Map<string, string> {
+  const firsts = new Map<string, string>();
+  for (const language of tree.languages)
+    for (const course of language.courses)
+      for (const unit of course.units)
+        for (const lesson of unit.lessons) {
+          const group = groupOf(lesson.status);
+          if (!firsts.has(group)) firsts.set(group, lesson.id);
+        }
+  return firsts;
+}
 
 export default async function EditTreePage() {
   const gate = await requireRole('editor');
@@ -55,41 +91,114 @@ export default async function EditTreePage() {
 
   const tree = treeView(result.data);
   const today = utcToday(new Date());
-  const { counts } = tree;
+  const firsts = firstOfEach(tree);
+  // Languages with courses first (treeView orders them so); the rest are
+  // one quiet line each at the foot, not a big empty panel above the work.
+  const working = tree.languages.filter((l) => l.courses.length > 0);
+  const empty = tree.languages.filter((l) => l.courses.length === 0);
 
   return (
     <div className="editor-page">
       <PageHeader
         eyebrow="Edit"
         title="Lessons"
-        description="Every course you can edit, unit by unit. Open a lesson to write its phrases and exercises, then send it for review."
+        description="Open a lesson to write its phrases and exercises, then send it for review."
       />
 
-      <StatGrid>
-        <Stat label="Lessons" value={tree.lessonCount} />
-        <Stat label="Drafts" value={counts.draft} hint="Still being written" />
-        <Stat
-          label="In review"
-          value={counts.in_review}
-          hint="Waiting for a reviewer"
-        />
-        <Stat
-          label="Need changes"
-          value={counts.changes_requested + counts.rejected}
-          hint="A reviewer sent them back"
-        />
-        <Stat label="Approved" value={counts.approved} />
-      </StatGrid>
+      <StatusStats
+        total={tree.lessonCount}
+        counts={tree.counts}
+        firsts={firsts}
+      />
 
-      {tree.languages.map((language) => (
+      {working.map((language) => (
         <LanguageSection
           key={language.code}
           language={language}
           isAdmin={tree.isAdmin}
           today={today}
+          firsts={firsts}
+          showCounts={working.length > 1}
         />
       ))}
+
+      {empty.length > 0 && (
+        <section
+          className="editor-languages-empty"
+          aria-label="Languages without courses"
+        >
+          {empty.map((language, i) => (
+            <p key={language.code} className="editor-language-empty">
+              <strong>{language.name}</strong>{' '}
+              <NativeText
+                text={language.native_name}
+                lang={language.code}
+                dir={language.direction}
+              />
+              : no courses yet.
+              {i === empty.length - 1 &&
+                ' New courses are added by the PoliLingo team.'}
+            </p>
+          ))}
+        </section>
+      )}
     </div>
+  );
+}
+
+/**
+ * How many lessons are in each state. The groups add up to the total, and
+ * each count jumps to the first lesson in that state. On a phone they are
+ * one row of chips.
+ */
+function StatusStats({
+  total,
+  counts,
+  firsts,
+}: {
+  total: number;
+  counts: Counts;
+  firsts: Map<string, string>;
+}) {
+  const groups = STAT_GROUPS.map((g) => ({
+    ...g,
+    count: g.statuses.reduce((sum, s) => sum + counts[s], 0),
+    // Starter and retired lessons are the exception: no tile when none.
+  })).filter((g) => g.count > 0 || !['starter', 'retired'].includes(g.key));
+  return (
+    <nav className="editor-stats" aria-label="Lessons by status">
+      <ul>
+        <li>
+          <span className="editor-stat editor-stat-total">
+            <span className="editor-stat-value">{total}</span>
+            <span className="editor-stat-label">Lessons</span>
+          </span>
+        </li>
+        {groups.map((g) => {
+          const body = (
+            <>
+              <span className="editor-stat-value">{g.count}</span>
+              <span className="editor-stat-label">{g.label}</span>
+            </>
+          );
+          const first = firsts.get(g.key);
+          return (
+            <li key={g.key}>
+              {g.count > 0 && first ? (
+                <a
+                  href={`#lesson-${first}`}
+                  className="editor-stat editor-stat-link"
+                >
+                  {body}
+                </a>
+              ) : (
+                <span className="editor-stat">{body}</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 
@@ -97,10 +206,18 @@ function LanguageSection({
   language,
   isAdmin,
   today,
+  firsts,
+  showCounts,
 }: {
   language: TreeLanguageView;
   isAdmin: boolean;
   today: string;
+  firsts: Map<string, string>;
+  /**
+   * Counts at a level only when it has siblings: with one language (or one
+   * course) they would repeat the numbers above them.
+   */
+  showCounts: boolean;
 }) {
   const headingId = `lang-${language.code}`;
   const hasDemo = language.courses.some((c) =>
@@ -118,7 +235,7 @@ function LanguageSection({
               dir={language.direction}
             />
           </h2>
-          <StatusCounts counts={language.counts} />
+          {showCounts && <StatusCounts counts={language.counts} />}
         </div>
         {language.publish_gate === 'blocked' && (
           <StatusBadge status="gated" label="Held back from learners" />
@@ -152,11 +269,11 @@ function LanguageSection({
       {language.demo_period && hasDemo && (
         <div className="editor-demo-note">
           <p>
-            <StatusBadge status="demo" /> Demo lessons are starter content:
-            read-only, never reviewed, and replaced by reviewed lessons.
+            <StatusBadge status="demo" /> lessons are read-only and never
+            reviewed; reviewed lessons replace them.
             {language.demo_period.live
-              ? ` They stay live until ${formatDay(language.demo_period.sunset)}.`
-              : ' They are never shown to learners.'}
+              ? ` Live until ${formatDay(language.demo_period.sunset)}.`
+              : ' Never shown to learners.'}
           </p>
           {isAdmin && language.demo_period.live && (
             <DemoSunsetForm
@@ -169,23 +286,16 @@ function LanguageSection({
         </div>
       )}
 
-      {language.courses.length === 0 ? (
-        <EmptyState title={`No ${language.name} courses yet`}>
-          <p>
-            Courses come from the curriculum. Ask an admin to add one, then you
-            can write its units and lessons here.
-          </p>
-        </EmptyState>
-      ) : (
-        language.courses.map((course) => (
-          <CourseCard
-            key={course.id}
-            course={course}
-            language={language}
-            isAdmin={isAdmin}
-          />
-        ))
-      )}
+      {language.courses.map((course) => (
+        <CourseCard
+          key={course.id}
+          course={course}
+          language={language}
+          isAdmin={isAdmin}
+          firsts={firsts}
+          showCounts={language.courses.length > 1}
+        />
+      ))}
     </section>
   );
 }
@@ -194,10 +304,14 @@ function CourseCard({
   course,
   language,
   isAdmin,
+  firsts,
+  showCounts,
 }: {
   course: TreeCourseView;
   language: TreeLanguageView;
   isAdmin: boolean;
+  firsts: Map<string, string>;
+  showCounts: boolean;
 }) {
   const unitIds = course.units.map((u) => u.id);
   return (
@@ -210,7 +324,7 @@ function CourseCard({
             {course.units.length === 1 ? 'unit' : 'units'}
           </p>
         </div>
-        <StatusCounts counts={course.counts} />
+        {showCounts && <StatusCounts counts={course.counts} />}
       </header>
 
       {course.units.length === 0 ? (
@@ -227,6 +341,7 @@ function CourseCard({
               unitIds={unitIds}
               language={language}
               isAdmin={isAdmin}
+              firsts={firsts}
             />
           ))}
         </ol>
@@ -243,18 +358,20 @@ function UnitBlock({
   unitIds,
   language,
   isAdmin,
+  firsts,
 }: {
   unit: TreeUnitView;
   course: TreeCourseView;
   unitIds: string[];
   language: TreeLanguageView;
   isAdmin: boolean;
+  firsts: Map<string, string>;
 }) {
   const label = `Unit ${unit.position}`;
   const lessonIds = unit.lessons.map((l) => l.id);
   const hasDemo = unit.lessons.some((l) => l.demo);
   return (
-    <li className="editor-unit">
+    <li id={`unit-${unit.id}`} className="editor-unit">
       <div className="editor-unit-header">
         <div className="editor-unit-heading">
           <p className="editor-unit-number">{label}</p>
@@ -300,11 +417,20 @@ function UnitBlock({
       ) : (
         <ol className="editor-lessons">
           {unit.lessons.map((lesson) => (
-            <li key={lesson.id} className="editor-lesson-row">
+            <li
+              key={lesson.id}
+              id={
+                firsts.get(groupOf(lesson.status)) === lesson.id
+                  ? `lesson-${lesson.id}`
+                  : undefined
+              }
+              className="editor-lesson-row"
+            >
               <span className="editor-lesson-number" aria-hidden="true">
                 {lesson.position}
               </span>
               <div className="editor-lesson-main-cell">
+                {/* Stretched over the whole row (CSS), under the tools. */}
                 <Link
                   href={editLessonPath(lesson.id)}
                   className="editor-lesson-link"

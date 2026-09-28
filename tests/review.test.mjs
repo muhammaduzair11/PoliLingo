@@ -21,6 +21,7 @@ import {
   missingScopes,
   orderItems,
   orderLessons,
+  ownCurrentApproval,
   parseDecisionForm,
   parseSuggestionForm,
   proposedChanges,
@@ -399,6 +400,40 @@ test('awaiting countersign: only the current, uncountersigned, sole approval', (
   assert.equal(awaitingCountersign([{ ...base, sole_reviewer: false }]), null);
 });
 
+test('own current approval: only mine, current, on the version on screen', () => {
+  const fp = '0123456789abcdef';
+  const me = { contributor_id: 'ctr-0200' };
+  const base = {
+    id: 'd',
+    decision: 'approve',
+    reviewer_id: 'ctr-0200',
+    seen_fingerprint: fp,
+    target_revision_no: 3,
+    current: true,
+  };
+  assert.equal(ownCurrentApproval([base], me, fp)?.target_revision_no, 3);
+  // Someone else's approval, an older one, another version, not an approval.
+  assert.equal(
+    ownCurrentApproval([{ ...base, reviewer_id: 'ctr-0300' }], me, fp),
+    null,
+  );
+  assert.equal(ownCurrentApproval([{ ...base, current: false }], me, fp), null);
+  assert.equal(ownCurrentApproval([base], me, 'fedcba9876543210'), null);
+  assert.equal(
+    ownCurrentApproval([{ ...base, decision: 'request_changes' }], me, fp),
+    null,
+  );
+  // Without a contributor id, nothing is anyone's own.
+  assert.equal(
+    ownCurrentApproval(
+      [{ ...base, reviewer_id: null }],
+      { contributor_id: null },
+      fp,
+    ),
+    null,
+  );
+});
+
 test('approval stance explains the author and sole-reviewer rules up front', () => {
   const viewer = {
     contributor_id: 'ctr-0200',
@@ -553,4 +588,10 @@ test('waiting labels', async () => {
   assert.equal(waitingLabel(NOW, NOW), 'Just arrived');
   assert.equal(waitingLabel(hoursAgo(26), NOW), 'Waiting 1 day');
   assert.equal(waitingLabel(null, NOW), '');
+});
+
+test('the review screens name exercise kinds as the editor does', async () => {
+  const review = await import('../lib/console/review.ts');
+  const editor = await import('../lib/console/editor.ts');
+  assert.deepEqual(review.EXERCISE_KIND_LABELS, editor.EXERCISE_KIND_LABELS);
 });

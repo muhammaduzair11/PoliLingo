@@ -26,16 +26,31 @@
   background: var(--background);
   border-bottom: 1px solid var(--border);
 }
+/* The learner site's mark and wordmark (primitives.css .brand-icon), a
+   little smaller, then the Workspace pill. */
 .console-brand {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
+  min-height: 44px;
+  color: var(--ink);
+}
+.console-brand .console-brand-icon {
+  width: 32px;
+  height: 32px;
+  margin-right: 0;
+  border-radius: 10px;
 }
 .console-brand-name {
-  font-size: 20px;
+  font-size: 23px;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: -1px;
+  line-height: 1;
   color: var(--ink);
+  white-space: nowrap;
+}
+.console-brand-name > span {
+  font-weight: 500;
 }
 .console-brand-tag {
   font-size: 12px;
@@ -146,6 +161,8 @@
   position: sticky;
   top: 88px;
   align-self: start;
+}
+.console-nav-track {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -313,10 +330,73 @@
 .console-notice-body p {
   margin: 0;
 }
+/* A support reference under the sentence, quiet: not code to read. */
 .console-notice-code {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted-foreground);
+}
+/* The same, folded away until someone asks for it. */
+.console-support {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.console-support summary {
+  width: fit-content;
+  cursor: pointer;
+  font-weight: 600;
+}
+.console-support summary:focus-visible {
+  outline: 3px solid #8853e955;
+  border-radius: 4px;
+}
+.console-support p {
+  margin: 4px 0 0;
+}
+.console-support code {
   font-family: ui-monospace, 'Cascadia Mono', Menlo, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* The live region at the top of <main>: what the last action did. It
+   stays in view (sticky, under the top bar) because the button that did
+   it may be far down the page, or gone. */
+.console-announcer {
+  display: block;
+  position: sticky;
+  top: 72px;
+  z-index: 15;
+}
+.console-announcer:not(:empty) {
+  margin-bottom: 16px;
+}
+.console-announcement {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 6px;
+  padding-right: 6px;
+  box-shadow: 0 10px 24px #26183b14;
+}
+.console-announcement-text {
+  margin: 0;
+  font-weight: 600;
+}
+.console-announcement-close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.console-announcement-close:hover {
+  background: #dff3e5;
 }
 .console-notice-info {
   border-left-color: var(--ring);
@@ -644,6 +724,48 @@ textarea.console-input {
   flex-direction: column;
   gap: 16px;
 }
+/* One branded dialog: text left-aligned at every width (the kit centres
+   it on small screens), and both buttons the console's own, same size. */
+.console-dialog .console-dialog-header {
+  place-items: start;
+  text-align: left;
+}
+.console-dialog [data-slot='alert-dialog-title'] {
+  text-align: left;
+  text-wrap: balance;
+}
+.console-dialog [data-slot='alert-dialog-description'] {
+  text-align: left;
+  text-wrap: pretty;
+}
+.console-dialog .console-dialog-footer .console-button,
+.console-dialog [data-slot='alert-dialog-cancel'].console-button {
+  min-height: 44px !important;
+  padding: 10px 18px !important;
+  border-radius: 10px !important;
+  font-size: 14px !important;
+  font-weight: 600;
+}
+.console-dialog [data-slot='alert-dialog-cancel'].console-button {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  color: var(--purple);
+}
+.console-dialog [data-slot='alert-dialog-cancel'].console-button:hover {
+  border-color: var(--ring);
+}
+@media (max-width: 639px) {
+  .console-dialog .console-dialog-footer {
+    flex-direction: column-reverse;
+  }
+  /* Danger: the safe choice ("Keep it") comes first, the harm second. */
+  .console-dialog-danger .console-dialog-footer {
+    flex-direction: column;
+  }
+  .console-dialog .console-dialog-footer .console-button {
+    width: 100%;
+  }
+}
 .console-dialog-fields {
   display: flex;
   flex-direction: column;
@@ -671,33 +793,66 @@ textarea.console-input {
     position: sticky;
     top: 60px;
     z-index: 10;
-    flex-direction: row;
-    gap: 4px;
     margin: 0 -16px;
-    padding: 8px 16px;
-    overflow-x: auto;
     background: var(--background);
     border-bottom: 1px solid var(--border);
+  }
+  .console-nav-track {
+    flex-direction: row;
+    gap: 0;
+    padding: 6px 16px;
+    overflow-x: auto;
+    /* The nav scrolls the current tab into view: keep the same gutter as
+       the padding, so the last tab does not end flush with the screen. */
+    scroll-padding-inline: 16px;
     scrollbar-width: none;
+  }
+  /* More tabs past an edge: that edge fades, so a cut-off tab reads as
+     "scroll for more". */
+  .console-nav-track[data-more-end] {
+    mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent);
+  }
+  .console-nav-track[data-more-start] {
+    mask-image: linear-gradient(to right, transparent, #000 32px);
+  }
+  .console-nav-track[data-more-start][data-more-end] {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 32px,
+      #000 calc(100% - 48px),
+      transparent
+    );
   }
   .console-nav-group {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
     flex-shrink: 0;
+  }
+  /* The group headings are hidden on the strip: a thin rule tells the
+     groups apart instead. */
+  .console-nav-group + .console-nav-group {
+    margin-left: 6px;
+    padding-left: 6px;
+    border-left: 1px solid var(--border);
   }
   .console-nav-heading {
     display: none;
   }
   .console-nav ul {
     flex-direction: row;
-    gap: 4px;
+    gap: 2px;
   }
   .console-nav-link {
-    min-height: 40px;
-    padding: 8px 14px;
+    min-height: 44px;
+    padding: 8px 12px;
     border-radius: 999px;
     white-space: nowrap;
+  }
+  /* Under the top bar and the tab strip. */
+  .console-announcer {
+    top: 128px;
   }
   .console-account-name {
     display: none;
@@ -718,7 +873,14 @@ textarea.console-input {
 
 @media (max-width: 580px) {
   .console-brand-tag {
-    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+  }
+  .console-brand {
+    gap: 8px;
+  }
+  .console-brand-name {
+    font-size: 21px;
   }
   .console-panel {
     padding: 20px;

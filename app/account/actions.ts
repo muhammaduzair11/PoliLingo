@@ -6,6 +6,7 @@
  * stays there whatever happens to the account.
  */
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import {
   actionError,
   actionOk,
@@ -43,13 +44,20 @@ export async function exportMyData(): Promise<ActionResult<unknown>> {
 }
 
 /**
- * Deletes the account (delete_my_account), then signs this device out.
- * Local progress is kept; the page tells the person so.
+ * Deletes the account (delete_my_account), signs this device out, and opens
+ * the goodbye page. Local progress is kept; that page tells the person so.
+ *
+ * The goodbye page is /sign-in/goodbye, outside the proxy's matcher: the
+ * session is gone by the time it renders, and anything under /account
+ * would send a signed-out visitor to /sign-in instead. `reason=age` (from
+ * ProfileSetup, for someone under 13) says learning works without an
+ * account rather than that one was deleted. Only a refusal returns.
  */
 export async function deleteMyAccount(
   _previous: ActionResult<null> | null,
-  _formData: FormData,
+  formData: FormData,
 ): Promise<ActionResult<null>> {
+  const reason = formData.get('reason') === 'age' ? 'age' : 'deleted';
   const supabase = await serverSupabase();
   const deleted = fromRpc(await callRpc(supabase, 'delete_my_account'));
   if (!deleted.ok) return deleted;
@@ -62,9 +70,8 @@ export async function deleteMyAccount(
   }
   // No revalidatePath here: it would render /account again in this same
   // response with the session already gone, which redirects to /sign-in and
-  // hides the farewell (or the under-13) screen. Both callers finish with a
-  // full page load instead.
-  return actionOk(null);
+  // hides the farewell. The redirect renders the goodbye page instead.
+  redirect(`/sign-in/goodbye?reason=${reason}`);
 }
 
 /** Signs out on this device only. Local progress is untouched. */

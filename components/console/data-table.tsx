@@ -22,6 +22,7 @@ export function DataTable<Row>({
   rowKey,
   caption,
   empty,
+  className,
 }: {
   columns: Column<Row>[];
   rows: Row[];
@@ -29,10 +30,12 @@ export function DataTable<Row>({
   caption?: ReactNode;
   /** Shown instead of the table when there are no rows. */
   empty?: ReactNode;
+  /** Extra class on the wrapper, for a page's own layout of the table. */
+  className?: string;
 }) {
   if (rows.length === 0 && empty) return <>{empty}</>;
   return (
-    <div className="data-table-wrap">
+    <div className={`data-table-wrap${className ? ` ${className}` : ''}`}>
       <table className="data-table">
         {caption && <caption>{caption}</caption>}
         <thead>

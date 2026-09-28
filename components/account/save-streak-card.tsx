@@ -77,8 +77,10 @@ export function SaveStreakCard({
           It lives on this device for now. Sign in to save it and pick up on any
           device.
         </p>
+        {/* An outline button on a quiet card: the lesson's own violet
+            button stays the one to press next. */}
         <Link
-          className="button button-small button-yellow"
+          className="button button-small button-outline save-streak-button"
           href={signInHref(mapHref)}
         >
           Save your streak — sign in
@@ -91,7 +93,7 @@ export function SaveStreakCard({
         title="Not now"
         onClick={dismiss}
       >
-        <X size={18} />
+        <X size={18} aria-hidden="true" />
       </button>
     </aside>
   );

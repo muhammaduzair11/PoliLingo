@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, type CSSProperties } from 'react';
 import {
+  ArrowRight,
   ArrowUpRight,
   Check,
   Flame,
@@ -63,6 +64,24 @@ export function Dashboard({ courseId }: { courseId?: string }) {
   } = courseProgress(state.completed, course);
   const path = mapPath(total);
   const today = state.activity[localDate()] || 0;
+  const badges = courses.filter(
+    (c) => courseProgress(state.completed, c).finished,
+  ).length;
+  // Where a finished course leads: another visible language, one not yet
+  // finished. Its map when the learner has begun it, else its first step.
+  const other = finished
+    ? courses.find(
+        (c) =>
+          c.id !== course.id && !courseProgress(state.completed, c).finished,
+      )
+    : undefined;
+  const otherBegun =
+    !!other &&
+    (courseProgress(state.completed, other).done > 0 ||
+      other.lessons.some((l) => state.sessions[lessonKey(other.id, l.id)]));
+  const nextLesson = next
+    ? course.lessons.find((l) => l.id === next.id)
+    : undefined;
   function start(lesson: string) {
     const key = lessonKey(course!.id, lesson);
     if (!state.sessions[key] || state.sessions[key].done)
@@ -97,6 +116,42 @@ export function Dashboard({ courseId }: { courseId?: string }) {
                 ? `${countWord(total)} ${plural(total, 'lesson')}. A whole new beginning. Keep your words fresh with a replay.`
                 : 'Take a breath. Make a little room for something good.'}
             </p>
+            {/* The one thing to do next, above the fold on every screen. */}
+            {finished ? (
+              <div className="next-step">
+                {other && (
+                  <Link
+                    className="button button-purple"
+                    href={
+                      otherBegun
+                        ? `/learn/${other.id}`
+                        : `/onboarding/${other.id}`
+                    }
+                  >
+                    Try {other.name} next <ArrowRight size={19} />
+                  </Link>
+                )}
+                <a
+                  className={other ? 'text-link' : 'button button-outline'}
+                  href="#course-map"
+                >
+                  Replay a favourite <ArrowRight size={17} />
+                </a>
+              </div>
+            ) : (
+              nextLesson && (
+                <div className="next-step">
+                  <button
+                    type="button"
+                    className="button button-purple next-start"
+                    onClick={() => start(nextLesson.id)}
+                  >
+                    <span>Start: {nextLesson.title}</span>
+                    <ArrowRight size={19} />
+                  </button>
+                </div>
+              )
+            )}
           </div>
           <div className="stats-pills">
             <span>
@@ -109,7 +164,7 @@ export function Dashboard({ courseId }: { courseId?: string }) {
         </div>
         <div className="dashboard-grid">
           <section className="learning-map">
-            <div className="course-tabs" aria-label="Choose a language">
+            <nav className="course-tabs" aria-label="Choose a language">
               {courses.map((c) => (
                 <Link
                   key={c.id}
@@ -123,18 +178,27 @@ export function Dashboard({ courseId }: { courseId?: string }) {
                   {c.name}
                 </Link>
               ))}
-            </div>
+            </nav>
             <div className="map-banner" style={{ background: course.color }}>
               <div>
                 <span className="eyebrow">
                   CHAPTER 01 · YOUR FIRST CONNECTIONS
                 </span>
-                <h2>{course.name}, here you come.</h2>
-                <p>{course.varietyLabel}</p>
+                <h2>
+                  {finished
+                    ? 'Chapter 01 complete.'
+                    : `${course.name}, here you come.`}
+                </h2>
+                <p>
+                  {finished
+                    ? `More ${course.name} is on its way.`
+                    : course.varietyLabel}
+                </p>
               </div>
               <Art name={course.image} alt="" sizes="200px" priority />
             </div>
             <div
+              id="course-map"
               className="path-area"
               style={{ '--stops': total } as CSSProperties}
             >
@@ -146,12 +210,6 @@ export function Dashboard({ courseId }: { courseId?: string }) {
               >
                 <path d={path.d} />
               </svg>
-              <div className="map-poli">
-                <Poli pose={finished ? 'celebrate' : 'welcome'} />
-                <span>
-                  {finished ? 'You did that!' : 'I saved you a spot.'}
-                </span>
-              </div>
               {course.lessons.map((l, i) => {
                 const done = state.completed[lessonKey(course.id, l.id)];
                 const open = unlocked(state, course.id, l.id);
@@ -190,13 +248,26 @@ export function Dashboard({ courseId }: { courseId?: string }) {
                           ? 'Complete the previous lesson'
                           : done
                             ? 'Completed · replay anytime'
-                            : `${l.exercises.length} playful exercises`}
+                            : `${l.exercises.length} playful ${l.exercises.length === 1 ? 'exercise' : 'exercises'}`}
                       </p>
                     </div>
+                    {/* Poli waits at the learner's next stop. */}
+                    {active && (
+                      <div className="map-poli">
+                        <Poli pose="welcome" />
+                        <span>I saved you a spot.</span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
               <div className={`path-trophy ${finished ? 'earned' : ''}`}>
+                {finished && (
+                  <div className="map-poli">
+                    <Poli pose="celebrate" />
+                    <span>You did that!</span>
+                  </div>
+                )}
                 <Trophy size={35} />
                 <span>
                   {finished
@@ -234,8 +305,10 @@ export function Dashboard({ courseId }: { courseId?: string }) {
                 ))}
               </div>
               <strong>
-                {Math.min(today, state.dailyGoal)} / {state.dailyGoal} lessons
-                today
+                <span>
+                  {today} {plural(today, 'lesson')} today
+                </span>{' '}
+                · <span>goal {state.dailyGoal}</span>
               </strong>
               <Link href="/settings">
                 Make it your rhythm <ArrowUpRight size={15} />
@@ -273,7 +346,10 @@ export function Dashboard({ courseId }: { courseId?: string }) {
                   );
                 })}
               </div>
-              <p>Finish a course to collect its first steps badge.</p>
+              <p>
+                {badges} of {courses.length} {plural(courses.length, 'badge')}{' '}
+                collected
+              </p>
             </section>
           </aside>
         </div>

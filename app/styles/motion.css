@@ -12,8 +12,14 @@
     transform: none !important;
   }
 }
-html[data-motion='reduced'] {
+html[data-motion='reduced'],
+html[data-motion='reduced'][data-scroll-behavior='smooth'] {
   scroll-behavior: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-scroll-behavior='smooth'] {
+    scroll-behavior: auto;
+  }
 }
 html[data-motion='reduced'] *,
 html[data-motion='reduced'] *:before,

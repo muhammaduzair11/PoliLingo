@@ -5,7 +5,7 @@ current content release, Pashto and Urdu today.
 Built with Next.js, React 19, TypeScript, Tailwind CSS, and customised shadcn / Base UI
 primitives.
 
-**Live:** <https://poli-lingo.vercel.app>
+**Live:** <https://polilingo.me> (also served at <https://poli-lingo.vercel.app>)
 
 ---
 

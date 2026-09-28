@@ -60,6 +60,18 @@
   border-color: var(--border);
   box-shadow: 0 3px 0 #ece6f3;
 }
+/* An action that removes something: the destructive red as an outline, so
+   it reads as serious without shouting louder than the safe choice. */
+.button-danger {
+  background: #fff;
+  color: var(--color-destructive, #b63751);
+  border-color: #e3b4c0;
+  box-shadow: 0 3px 0 #f2dce2;
+}
+.button-danger:hover {
+  background: #fdf3f5;
+  border-color: var(--color-destructive, #b63751);
+}
 .button:disabled {
   background: #e7e1eb;
   color: #93849f;
@@ -83,9 +95,17 @@
 .quiet-link {
   display: block;
   text-align: center;
-  color: #786689;
-  font-size: 14px;
+  color: var(--text-muted);
+  font-size: var(--text-small);
   margin-top: 22px;
+  padding: 11px 0;
+}
+/* A line break for wide screens only: on a phone the heading wraps on its
+   own, and a forced break there leaves a single word on a line. */
+@media (max-width: 580px) {
+  .desktop-break {
+    display: none;
+  }
 }
 .icon-button {
   display: inline-flex;
@@ -124,7 +144,7 @@
   transform: rotate(-8deg);
 }
 .brand-dot {
-  font-size: 10px;
+  font-size: 12px;
   align-self: flex-start;
   margin: 7px 0 0 3px;
   letter-spacing: 0;

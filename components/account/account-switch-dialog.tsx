@@ -17,7 +17,7 @@ const plural = (n: number, one: string, many: string) =>
 /**
  * Asked when someone signs in on a device that last saved its progress to a
  * different account (lib/sync.ts accountChoice() === 'ask'). Nothing is sent
- * until they choose Add. "Not now" (or Escape) pauses saving for this tab
+ * until they choose "Add to my account". "Not now" (or Escape) pauses saving for this tab
  * and changes nothing on the device. Either way the progress on this device
  * stays exactly where it is.
  *
@@ -78,32 +78,31 @@ export function AccountSwitchDialog({
         else onNotNow();
       }}
     >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="[overflow-wrap:anywhere]">
+      <AlertDialogContent className="account-switch">
+        <AlertDialogHeader className="account-switch-header">
+          <AlertDialogTitle className="account-switch-title">
             {done ? (
               <>
-                <span aria-hidden="true" className="text-primary">
+                <span aria-hidden="true" className="account-switch-check">
                   ✓{' '}
                 </span>
                 Saved to {account}
               </>
             ) : (
-              <>Add this device&apos;s progress to {account}?</>
+              <>Add this device’s progress to {account}?</>
             )}
           </AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogDescription className="account-switch-text">
             {done ? (
               <>
-                This device&apos;s progress is in your account now, and it keeps
+                This device’s progress is in your account now, and it keeps
                 saving as you learn. Nothing on this device was removed.
               </>
             ) : (
               <>
                 This device last saved progress to a different account. Add it
-                to{' '}
-                <strong className="[overflow-wrap:anywhere]">{account}</strong>{' '}
-                and it&apos;s kept there too. Nothing on this device is removed,
+                to <strong className="account-switch-email">{account}</strong>{' '}
+                and it’s kept there too. Nothing on this device is removed,
                 whichever you choose.
               </>
             )}
@@ -111,36 +110,43 @@ export function AccountSwitchDialog({
         </AlertDialogHeader>
         {facts.length > 0 && (
           <ul
-            className="flex flex-wrap gap-2 p-0 m-0 list-none"
+            className="account-switch-facts"
             aria-label={done ? 'In your account' : 'On this device'}
           >
             {facts.map((fact) => (
-              <li
-                key={fact}
-                className="rounded-full bg-secondary text-secondary-foreground px-3 py-1 text-sm font-semibold"
-              >
-                {fact}
-              </li>
+              <li key={fact}>{fact}</li>
             ))}
           </ul>
         )}
         {error && !done && (
-          <p role="alert" className="m-0 text-sm text-destructive">
+          <p role="alert" className="account-switch-error">
             {error}
           </p>
         )}
-        <AlertDialogFooter>
+        <AlertDialogFooter className="account-switch-footer">
           {!done && (
-            <AlertDialogCancel disabled={pending}>Not now</AlertDialogCancel>
+            <AlertDialogCancel
+              className="account-switch-later"
+              disabled={pending}
+            >
+              Not now
+            </AlertDialogCancel>
           )}
           <AlertDialogAction
             ref={actionRef}
+            className="account-switch-add"
             onClick={done ? onDone : onAdd}
             disabled={pending}
             focusableWhenDisabled
             aria-busy={pending || undefined}
           >
-            {done ? 'Done' : pending ? 'Adding…' : error ? 'Try again' : 'Add'}
+            {done
+              ? 'Done'
+              : pending
+                ? 'Adding…'
+                : error
+                  ? 'Try again'
+                  : 'Add to my account'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

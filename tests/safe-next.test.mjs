@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   DEFAULT_NEXT,
   EMAIL_LINK_COOKIE,
+  SIGN_IN_WORDS,
   emailLinkCookie,
   emailLinkMatches,
   emailLinkNonce,
@@ -15,7 +16,10 @@ import {
   isSameOriginPost,
   learnerBack,
   safeNext,
+  signInAudience,
   signInHref,
+  stepEyebrow,
+  withSignedIn,
 } from '../lib/safe-next.ts';
 
 test('same-site paths are kept, with their query and hash', () => {
@@ -86,18 +90,88 @@ test('signInHref carries a safe next and drops an unsafe one', () => {
   assert.equal(signInHref(null), '/sign-in');
 });
 
-test('"Back to learning" only goes to learner pages', () => {
-  for (const [input, expected] of [
-    ['/learn/pashto?x', '/learn/pashto?x'],
-    ['/lesson/ps-lsn-aaaaaa', '/lesson/ps-lsn-aaaaaa'],
-    ['/settings#account', '/settings#account'],
-    ['/', '/'],
-    ['/admin', DEFAULT_NEXT],
-    ['/review/item/x', DEFAULT_NEXT],
-    ['/account', DEFAULT_NEXT],
-    ['/learner', DEFAULT_NEXT],
+test('the way back only goes to learner pages, and says where', () => {
+  for (const [input, href, label] of [
+    ['/learn/pashto?x', '/learn/pashto?x', 'Back to your map'],
+    ['/learn', '/learn', 'Back to your map'],
+    ['/lesson/ps-lsn-aaaaaa', '/lesson/ps-lsn-aaaaaa', 'Back to your lesson'],
+    ['/settings', '/settings', 'Back to settings'],
+    ['/settings#account', '/settings#account', 'Back to settings'],
+    ['/onboarding', '/onboarding', 'Back to PoliLingo'],
+    ['/', '/', 'Back to PoliLingo'],
+    ['/admin', '/', 'Back to PoliLingo'],
+    ['/review/item/x', '/', 'Back to PoliLingo'],
+    ['/invite/abc_DEF-123', '/', 'Back to PoliLingo'],
+    ['/account', DEFAULT_NEXT, 'Back to your map'],
+    ['/learner', DEFAULT_NEXT, 'Back to your map'],
+    ['/settingsx', DEFAULT_NEXT, 'Back to your map'],
+    // A next that came back from a callback still flagged.
+    ['/learn?signed_in=1', '/learn', 'Back to your map'],
+    ['/settings?x=1&signed_in=1#a', '/settings?x=1#a', 'Back to settings'],
   ])
-    assert.equal(learnerBack(input), expected, input);
+    assert.deepEqual(learnerBack(input), { href, label }, input);
+});
+
+test('withSignedIn flags next once, keeping its query and hash', () => {
+  assert.equal(withSignedIn('/settings'), '/settings?signed_in=1');
+  assert.equal(
+    withSignedIn('/learn/pashto?from=lesson#top'),
+    '/learn/pashto?from=lesson&signed_in=1#top',
+  );
+  assert.equal(
+    withSignedIn(withSignedIn('/settings')),
+    '/settings?signed_in=1',
+  );
+  // Still a path safeNext keeps, so the callbacks follow it.
+  assert.equal(
+    safeNext(withSignedIn('/learn/pashto')),
+    '/learn/pashto?signed_in=1',
+  );
+});
+
+test('the eyebrow counts three steps', () => {
+  assert.equal(
+    stepEyebrow(SIGN_IN_WORDS.learner.eyebrow, 1),
+    'SAVE YOUR PROGRESS · STEP 1 OF 3',
+  );
+  assert.equal(
+    stepEyebrow(SIGN_IN_WORDS.workspace.eyebrow, 3),
+    'SIGN IN TO THE WORKSPACE · STEP 3 OF 3',
+  );
+});
+
+test('the sign-in words follow where next leads', () => {
+  for (const [input, expected] of [
+    ['/invite/abc_DEF-123', 'invite'],
+    ['/admin', 'workspace'],
+    ['/admin/people', 'workspace'],
+    ['/edit/lesson/ps-lsn-aaaaaa', 'workspace'],
+    ['/review?x=1', 'workspace'],
+    ['/review#top', 'workspace'],
+    ['/learn', 'learner'],
+    ['/lesson/ps-lsn-aaaaaa', 'learner'],
+    ['/account', 'learner'],
+    ['/invite', 'learner'],
+    ['/reviewers', 'learner'],
+    ['/editor', 'learner'],
+    [DEFAULT_NEXT, 'learner'],
+  ])
+    assert.equal(signInAudience(input), expected, input);
+  assert.equal(SIGN_IN_WORDS.invite.title, 'Accept your invitation');
+  assert.equal(SIGN_IN_WORDS.workspace.eyebrow, 'SIGN IN TO THE WORKSPACE');
+  assert.equal(SIGN_IN_WORDS.learner.eyebrow, 'SAVE YOUR PROGRESS');
+  // Only a learner is told about progress on this device.
+  for (const audience of ['invite', 'workspace']) {
+    assert.doesNotMatch(SIGN_IN_WORDS[audience].lead, /progress/);
+    assert.doesNotMatch(SIGN_IN_WORDS[audience].ageLead, /progress|learn/i);
+    assert.doesNotMatch(SIGN_IN_WORDS[audience].hello, /lesson|streak|XP/);
+  }
+  assert.match(SIGN_IN_WORDS.learner.lead, /progress/);
+  assert.match(SIGN_IN_WORDS.learner.ageLead, /only your age band/);
+  // Curly apostrophes only, in every sentence shown.
+  for (const words of Object.values(SIGN_IN_WORDS))
+    for (const sentence of Object.values(words))
+      assert.doesNotMatch(sentence, /'/, sentence);
 });
 
 test('email link types and token hashes: only what the email can carry', () => {

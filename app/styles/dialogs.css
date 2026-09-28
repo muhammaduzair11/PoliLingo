@@ -1,9 +1,3 @@
-.dashboard-heading .eyebrow {
-  font-size: 10px;
-}
-.onboard-art .eyebrow {
-  font-size: 10px;
-}
 [data-slot='alert-dialog-content'] {
   font-family: 'Outfit', sans-serif;
   padding: 25px !important;
@@ -40,14 +34,58 @@
   background: var(--purple);
   color: white;
 }
+/* A lesson whose earlier lesson is not finished yet. */
 .locked-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
   text-align: center;
-  padding: 60px 30px;
+}
+.locked-message .poli {
+  width: 160px;
+  height: 160px;
+}
+.locked-icon {
+  color: var(--purple);
+  margin-top: 8px;
 }
 .locked-message h1 {
-  margin: 15px 0;
+  font-size: clamp(30px, 5vw, 44px);
+  line-height: 1.1;
+  margin: 12px 0;
+  text-wrap: balance;
 }
 .locked-message p {
-  margin: 15px 0 25px;
-  color: #8b759b;
+  margin: 0 0 24px;
+  font-size: 16px;
+  color: var(--text-muted, #6b5a7b);
+}
+/* Settings: the reset dialog (components/settings.tsx). Keeping progress is
+   the filled, leading choice; resetting is red, built on the destructive
+   token. On phones the footer stacks with "Keep my progress" first. */
+[data-slot='alert-dialog-cancel'].reset-keep {
+  background: var(--purple);
+  border-color: var(--purple);
+  color: #fff;
+}
+[data-slot='alert-dialog-cancel'].reset-keep:hover {
+  background: #5527a8;
+  color: #fff;
+}
+[data-slot='alert-dialog-action'].reset-confirm {
+  background: #fff;
+  border: 1.5px solid var(--color-destructive, #b63751);
+  color: var(--color-destructive, #b63751);
+}
+[data-slot='alert-dialog-action'].reset-confirm:hover {
+  background: #fdf0f3;
+}
+@media (max-width: 639px) {
+  .reset-dialog-footer {
+    flex-direction: column;
+  }
 }

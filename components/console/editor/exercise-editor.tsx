@@ -1,6 +1,7 @@
 'use client';
 import { useActionState, useId, useState } from 'react';
 import { EmptyState } from '@/components/console/empty-state';
+import { Notice } from '@/components/console/notice';
 import { SubmitButton } from '@/components/console/submit-button';
 import { NativeText } from '@/components/native';
 import {
@@ -20,20 +21,39 @@ import {
   type EditorResult,
   type ExerciseKind,
 } from '@/lib/console/editor';
-import { defaultPrompt } from '@/lib/console/exercise-generator';
+import {
+  MAX_DISTRACTORS,
+  defaultPrompt,
+  pickDistractors,
+} from '@/lib/console/exercise-generator';
 import { ActionNotice } from './action-notice';
-import { Disclosure, useEditFocus, useRefocus } from './disclosure';
+import {
+  Disclosure,
+  useEditFocus,
+  useRefocus,
+  useRetiredFocus,
+} from './disclosure';
 import type { EditorLanguage } from './item-editor';
 import { RetireButton } from './reason-dialog';
 import { ReorderButtons } from './reorder-buttons';
+import { UnsavedNote, useDirtyForm } from './unsaved';
 
 type ExerciseResult = Awaited<ReturnType<typeof updateExercise>>;
 
+/** The wrong choices "Generate exercises" would pick for `answerId`. */
+function generatedChoices(items: readonly EditItem[], answerId: string) {
+  const index = items.findIndex((i) => i.id === answerId);
+  return index < 0 ? [] : pickDistractors(items, index, 1, MAX_DISTRACTORS);
+}
+
 /**
  * The exercise form: its kind, the phrase that answers it, the prompt, and
- * the wrong choices, picked from the lesson's other phrases. Choices the
- * database would refuse (the same text or meaning as the answer) are shown
- * but cannot be ticked; "Build the sentence" has no choices at all.
+ * the wrong choices, picked from the lesson’s other phrases. A new exercise
+ * starts ready to save: the generator’s prompt and up to 3 wrong choices.
+ * Choices the database would refuse (the same text or meaning as the
+ * answer) are shown but cannot be ticked; "Build the sentence" has no
+ * choices at all. Too few or too many choices say so at once, before any
+ * round trip. The prompt follows the kind and answer until it is changed.
  */
 function ExerciseForm({
   lessonId,
@@ -45,6 +65,7 @@ function ExerciseForm({
   submitLabel,
   pendingLabel,
   onCancel,
+  onKindChange,
 }: {
   lessonId: string;
   exercise: EditExercise | null;
@@ -55,26 +76,41 @@ function ExerciseForm({
   submitLabel: string;
   pendingLabel: string;
   onCancel: () => void;
+  /** The card’s badge follows the form. */
+  onKindChange?: (kind: ExerciseKind) => void;
 }) {
   const values = result && !result.ok ? result.values : undefined;
   const find = itemById(items);
-  const [kind, setKind] = useState<ExerciseKind>(
+  const { ref, dirty, onChange } = useDirtyForm();
+  const startKind =
     (echo(values, 'kind', exercise?.kind ?? 'meaning') as ExerciseKind) ||
-      'meaning',
+    'meaning';
+  const startAnswer = echo(
+    values,
+    'answer',
+    exercise?.answer_item_id ?? items[0]?.id,
   );
-  const [answer, setAnswer] = useState(
-    echo(values, 'answer', exercise?.answer_item_id ?? items[0]?.id),
+  const startPrompt = echo(values, 'prompt', exercise?.prompt);
+  const [kind, setKind] = useState<ExerciseKind>(startKind);
+  const [answer, setAnswer] = useState(startAnswer);
+  const [options, setOptions] = useState<string[]>(
+    () => exercise?.options ?? generatedChoices(items, startAnswer),
   );
-  const [options, setOptions] = useState<string[]>(exercise?.options ?? []);
-  const [prompt, setPrompt] = useState(
-    echo(values, 'prompt', exercise?.prompt),
+  const [choicesTouched, setChoicesTouched] = useState(exercise !== null);
+  const [prompt, setPrompt] = useState(startPrompt);
+  // A saved prompt that is still the default for its kind counts as not
+  // written by hand: changing the kind swaps it for the new default.
+  const [promptTouched, setPromptTouched] = useState(
+    startPrompt !== '' &&
+      startPrompt !==
+        defaultPrompt(startKind, find(startAnswer)?.meaning ?? ''),
   );
-  const [promptTouched, setPromptTouched] = useState(exercise !== null);
   const kindId = useId();
   const answerId = useId();
   const promptId = useId();
   const difficultyId = useId();
   const choicesHintId = useId();
+  const choicesErrorId = useId();
 
   const answerItem = find(answer);
   const choices = choiceOptions(items, answer);
@@ -84,9 +120,25 @@ function ExerciseForm({
   const chosen = options.filter((id) => allowed.has(id));
   const suggested = defaultPrompt(kind, answerItem?.meaning ?? '');
   const shownPrompt = promptTouched ? prompt : suggested;
+  const most = Math.min(LIMITS.options.max, allowed.size);
+  const choicesError =
+    kind === 'assemble'
+      ? null
+      : allowed.size === 0
+        ? 'Add another phrase to this lesson first: it has nothing to offer as a wrong choice.'
+        : chosen.length < LIMITS.options.min || chosen.length > most
+          ? most === 1
+            ? 'Pick 1 wrong choice.'
+            : `Pick 1 to ${most} wrong choices.`
+          : null;
 
   return (
-    <form action={action} className="console-form editor-exercise-form">
+    <form
+      ref={ref}
+      action={action}
+      onChange={onChange}
+      className="console-form editor-exercise-form"
+    >
       <input type="hidden" name="lesson_id" value={lessonId} />
       {exercise && (
         <>
@@ -107,9 +159,18 @@ function ExerciseForm({
             id={kindId}
             name="kind"
             className="console-input"
-            defaultValue={kind}
+            value={kind}
             aria-describedby={`${kindId}-hint`}
-            onChange={(event) => setKind(event.target.value as ExerciseKind)}
+            onChange={(event) => {
+              const next = event.target.value as ExerciseKind;
+              if (
+                promptTouched &&
+                prompt === defaultPrompt(kind, answerItem?.meaning ?? '')
+              )
+                setPromptTouched(false);
+              setKind(next);
+              onKindChange?.(next);
+            }}
           >
             {EXERCISE_KINDS.map((k) => (
               <option key={k} value={k}>
@@ -129,12 +190,21 @@ function ExerciseForm({
             id={answerId}
             name="answer"
             className="console-input"
-            defaultValue={answer}
+            value={answer}
             required
             onChange={(event) => {
               const next = event.target.value;
+              if (
+                promptTouched &&
+                prompt === defaultPrompt(kind, answerItem?.meaning ?? '')
+              )
+                setPromptTouched(false);
               setAnswer(next);
-              setOptions((current) => current.filter((id) => id !== next));
+              setOptions((current) =>
+                choicesTouched
+                  ? current.filter((id) => id !== next)
+                  : generatedChoices(items, next),
+              );
             }}
           >
             {items.map((item) => (
@@ -173,8 +243,8 @@ function ExerciseForm({
           }}
         />
         <p id={`${promptId}-hint`} className="console-hint">
-          {kind === 'context' ? (
-            'Describe a moment, like “You meet a friend. What do you say?”'
+          {kind === 'context' && !promptTouched ? (
+            'Describe the moment first, like “You meet a friend. What do you say?”'
           ) : promptTouched && suggested && suggested !== prompt ? (
             <>
               Suggested: “{suggested}”{' '}
@@ -201,20 +271,21 @@ function ExerciseForm({
           the answer in order.
         </p>
       ) : (
-        <fieldset className="editor-fieldset" aria-describedby={choicesHintId}>
+        <fieldset
+          className="editor-fieldset"
+          aria-describedby={
+            choicesError ? `${choicesHintId} ${choicesErrorId}` : choicesHintId
+          }
+          aria-invalid={choicesError ? true : undefined}
+        >
           <legend className="console-label">Wrong choices</legend>
           <p id={choicesHintId} className="console-hint">
             {kind === 'match'
               ? 'The phrases matched alongside the answer.'
               : 'Other phrases from this lesson, shown next to the answer.'}{' '}
-            {chosen.length} chosen, between {LIMITS.options.min} and{' '}
-            {LIMITS.options.max}.
+            {chosen.length} chosen.
           </p>
-          {choices.length === 0 ? (
-            <p className="editor-muted">
-              Add another phrase to this lesson to have a wrong choice.
-            </p>
-          ) : (
+          {choices.length > 0 && (
             <ul className="editor-choices">
               {choices.map((choice) => {
                 const blocked = choice.blocked !== null;
@@ -227,15 +298,16 @@ function ExerciseForm({
                         type="checkbox"
                         name="options"
                         value={choice.id}
-                        defaultChecked={!blocked && options.includes(choice.id)}
+                        checked={!blocked && chosen.includes(choice.id)}
                         disabled={blocked}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          setChoicesTouched(true);
                           setOptions((current) =>
                             event.target.checked
                               ? [...current, choice.id]
                               : current.filter((id) => id !== choice.id),
-                          )
-                        }
+                          );
+                        }}
                       />
                       <span className="editor-choice-text">
                         <NativeText
@@ -254,6 +326,13 @@ function ExerciseForm({
               })}
             </ul>
           )}
+          <p
+            id={choicesErrorId}
+            className="editor-field-error"
+            aria-live="polite"
+          >
+            {choicesError}
+          </p>
         </fieldset>
       )}
 
@@ -278,7 +357,13 @@ function ExerciseForm({
 
       <ActionNotice result={result} />
       <div className="console-actions">
-        <SubmitButton pendingLabel={pendingLabel}>{submitLabel}</SubmitButton>
+        <SubmitButton
+          pendingLabel={pendingLabel}
+          disabled={choicesError !== null}
+          aria-describedby={choicesError ? choicesErrorId : undefined}
+        >
+          {submitLabel}
+        </SubmitButton>
         <button
           type="button"
           className="console-button console-button-quiet"
@@ -286,6 +371,7 @@ function ExerciseForm({
         >
           Cancel
         </button>
+        <UnsavedNote dirty={dirty} />
       </div>
     </form>
   );
@@ -299,6 +385,7 @@ function ExerciseCard({
   lessonId,
   language,
   locked,
+  onRetired,
 }: {
   exercise: EditExercise;
   ids: string[];
@@ -306,8 +393,10 @@ function ExerciseCard({
   lessonId: string;
   language: EditorLanguage;
   locked: boolean;
+  onRetired: () => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [draftKind, setDraftKind] = useState<ExerciseKind>(exercise.kind);
   const { containerRef, triggerRef } = useEditFocus(editing);
   const [saved, setSaved] = useState(false);
   const [result, formAction] = useActionState(
@@ -335,16 +424,18 @@ function ExerciseCard({
           {exercise.position}
         </span>
         <span className="editor-kind">
-          {EXERCISE_KIND_LABELS[exercise.kind]}
+          {EXERCISE_KIND_LABELS[editing ? draftKind : exercise.kind]}
         </span>
         {!locked && !editing && (
           <div className="editor-card-tools">
             <button
               ref={triggerRef}
               type="button"
+              data-card-edit
               className="console-button console-button-outline editor-small-button"
               onClick={() => {
                 setSaved(false);
+                setDraftKind(exercise.kind);
                 setEditing(true);
               }}
               aria-label={`Edit ${label}`}
@@ -363,6 +454,7 @@ function ExerciseCard({
               id={exercise.id}
               lessonId={lessonId}
               what={label}
+              onRetired={onRetired}
             />
           </div>
         )}
@@ -378,6 +470,7 @@ function ExerciseCard({
           submitLabel="Save exercise"
           pendingLabel="Saving…"
           onCancel={() => setEditing(false)}
+          onKindChange={setDraftKind}
         />
       ) : (
         <div className="editor-exercise">
@@ -432,7 +525,7 @@ function ExerciseCard({
   );
 }
 
-/** The lesson's exercises, in order, and "Add an exercise" at the foot. */
+/** The lesson’s exercises, in order, and "Add an exercise" at the foot. */
 export function ExerciseList({
   lessonId,
   exercises,
@@ -451,6 +544,8 @@ export function ExerciseList({
   const [formKey, setFormKey] = useState(0);
   const newFormRef = useRefocus(formKey);
   const [added, setAdded] = useState(false);
+  const { listRef, announcement, markRetired, clear } =
+    useRetiredFocus(exercises);
   const [result, formAction] = useActionState(
     async (
       previous: Awaited<ReturnType<typeof createExercise>> | null,
@@ -467,7 +562,7 @@ export function ExerciseList({
     null,
   );
   return (
-    <div className="editor-exercises">
+    <div ref={listRef} className="editor-exercises">
       {exercises.length === 0 ? (
         !locked && (
           <EmptyState title="No exercises yet">
@@ -479,7 +574,7 @@ export function ExerciseList({
         )
       ) : (
         <ol className="editor-cards">
-          {exercises.map((exercise) => (
+          {exercises.map((exercise, index) => (
             <ExerciseCard
               key={exercise.id}
               exercise={exercise}
@@ -488,10 +583,21 @@ export function ExerciseList({
               lessonId={lessonId}
               language={language}
               locked={locked}
+              onRetired={() => {
+                setAdded(false);
+                markRetired(
+                  exercise.id,
+                  index,
+                  `Exercise ${exercise.position} retired.`,
+                );
+              }}
             />
           ))}
         </ol>
       )}
+      <div className="editor-result" aria-live="polite">
+        {announcement && <Notice tone="success">{announcement}</Notice>}
+      </div>
       {!locked && items.length > 0 && (
         <>
           <div className="editor-result" aria-live="polite">
@@ -505,6 +611,7 @@ export function ExerciseList({
             onOpenChange={(open) => {
               setAdding(open);
               setAdded(false);
+              clear();
             }}
           >
             <div ref={newFormRef} className="editor-card editor-card-new">

@@ -11,7 +11,7 @@ const PLAIN: Record<EditorStatus, [string, string]> = {
   changes_requested: ['needs changes', 'need changes'],
   approved: ['approved', 'approved'],
   rejected: ['rejected', 'rejected'],
-  demo: ['demo', 'demo'],
+  demo: ['starter', 'starter'],
   retired: ['retired', 'retired'],
 };
 

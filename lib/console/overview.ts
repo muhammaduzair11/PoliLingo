@@ -4,10 +4,11 @@
  * page shows. Pure: no React, no Supabase.
  *
  * Honesty rules: the reviewed count is what reviewers have approved, never
- * padded with starter (demo) phrases, and the target line always shows next
- * to it.
+ * padded with starter (demo) phrases, and the target always shows next to
+ * it. Nothing here promises a release the data can't prove: an approved
+ * phrase goes live only with its whole lesson, which this data doesn't see.
  */
-import { formatDay, formatWeekday } from './invite-link.ts';
+import { formatDay, formatPktDay, formatWeekday } from './invite-link.ts';
 
 /** page_admin_overview(), as the database returns it. */
 export type OverviewData = {
@@ -79,10 +80,10 @@ export type LanguageCard = {
   dir: 'rtl' | 'ltr';
   /** The language's own gate is closed: learners see none of it. */
   hidden: boolean;
-  /** "Reviewed items: 12 — target 250–400 per language" */
+  /** "12 of 250 reviewed phrases" */
   reviewedLine: string;
   reviewed: number;
-  /** 0..1, reviewed items against the lower target. */
+  /** 0..1, reviewed phrases against the lower target. */
   progress: number;
   progressLabel: string;
   steps: PipelineStep[];
@@ -130,7 +131,10 @@ export type AccountsView = {
 export type OverviewView = {
   release: {
     name: string;
+    /** "27 Sep 2026": the day in Pakistan time. */
     publishedLabel: string;
+    /** The stored timestamp, for <time> and its exact time on hover. */
+    publishedAt: string;
     lessons: number;
     items: number;
     kindLabel: string;
@@ -150,27 +154,37 @@ export function formatCount(n: number): string {
   return whole < 0 ? `-${digits}` : digits;
 }
 
-/** "Reviewed items: N — target 250–400 per language": the honest line. */
-export function reviewedLine(
-  reviewed: number,
-  min: number,
-  max: number,
-): string {
-  return `Reviewed items: ${formatCount(reviewed)} — target ${formatCount(min)}–${formatCount(max)} per language`;
+/**
+ * The honest line: "5 of 250 reviewed phrases" against the lower target,
+ * then "300 reviewed phrases" once it is passed. The line under the
+ * progress bar (progressLabel) always carries the whole target.
+ */
+export function reviewedLine(reviewed: number, min: number): string {
+  const n =
+    Number.isFinite(reviewed) && reviewed > 0 ? Math.trunc(reviewed) : 0;
+  const noun = (count: number) =>
+    count === 1 ? 'reviewed phrase' : 'reviewed phrases';
+  // "1 of 250 reviewed phrases": there, the noun counts the target.
+  return min > 0 && n < min
+    ? `${formatCount(n)} of ${formatCount(min)} ${noun(min)}`
+    : `${formatCount(n)} ${noun(n)}`;
 }
 
-/** Reviewed items as a share of the lower target, between 0 and 1. */
+/** Reviewed phrases as a share of the lower target, between 0 and 1. */
 export function targetProgress(reviewed: number, min: number): number {
   if (!(min > 0) || !(reviewed > 0)) return 0;
   return Math.min(1, reviewed / min);
 }
 
+/** The line under the progress bar: the whole target, and how far to go. */
 function progressLabel(reviewed: number, min: number, max: number): string {
-  if (reviewed >= max) return 'Target reached';
+  const target = `Target ${formatCount(min)}–${formatCount(max)} per language`;
+  if (reviewed >= max) return `${target}: reached`;
   if (reviewed >= min)
-    return `Past ${formatCount(min)}: on the way to ${formatCount(max)}`;
-  const left = min - reviewed;
-  return `${formatCount(left)} more to reach ${formatCount(min)}`;
+    return `${target}: past ${formatCount(min)}, on the way to ${formatCount(max)}`;
+  // "250 more to reach 250" reads oddly before anything is reviewed.
+  if (!(reviewed > 0)) return target;
+  return `${target} · ${formatCount(min - reviewed)} more to reach ${formatCount(min)}`;
 }
 
 function plural(n: number, one: string, many: string): string {
@@ -198,10 +212,12 @@ export function pipelineSteps(l: OverviewLanguage): PipelineStep[] {
       hint: 'Back with the editor to fix',
     },
     {
+      // An approved phrase goes live only with its whole lesson, and this
+      // data can't tell whether that lesson is ready: no promise here.
       key: 'waiting',
-      label: 'Approved, waiting to publish',
+      label: 'Approved, not live yet',
       value: l.approved_waiting,
-      hint: 'Ready for the next release',
+      hint: 'Goes live when its whole lesson is approved and published',
     },
     {
       key: 'live',
@@ -240,7 +256,7 @@ export function languageCard(
     nativeName: l.native_name,
     dir: l.direction,
     hidden: l.publish_gate === 'blocked',
-    reviewedLine: reviewedLine(l.reviewed, target.min, target.max),
+    reviewedLine: reviewedLine(l.reviewed, target.min),
     reviewed: l.reviewed,
     progress: targetProgress(l.reviewed, target.min),
     progressLabel: progressLabel(l.reviewed, target.min, target.max),
@@ -299,12 +315,24 @@ const KIND_LABELS: Record<string, string> = {
   rollback: 'Rolled back',
 };
 
+/** Open gates before closed ones, each group in the order it came. */
+function liveFirst<T extends { publish_gate: 'open' | 'blocked' }>(
+  list: readonly T[],
+): T[] {
+  return [...list].sort(
+    (a, b) =>
+      Number(a.publish_gate === 'blocked') -
+      Number(b.publish_gate === 'blocked'),
+  );
+}
+
 export function buildOverview(data: OverviewData): OverviewView {
   const target = {
     min: data.target?.reviewed_target_min ?? 250,
     max: data.target?.reviewed_target_max ?? 400,
   };
-  const languages = (data.languages ?? []).map((l) =>
+  // Languages learners can see first; a hidden one follows, name order kept.
+  const languages = liveFirst(data.languages ?? []).map((l) =>
     languageCard(l, target, Boolean(data.latest_release)),
   );
   const sum = (pick: (l: OverviewLanguage) => number) =>
@@ -315,7 +343,8 @@ export function buildOverview(data: OverviewData): OverviewView {
     release: r
       ? {
           name: r.name,
-          publishedLabel: formatDay(r.published_at),
+          publishedLabel: formatPktDay(r.published_at),
+          publishedAt: r.published_at,
           lessons: r.lessons,
           items: r.items,
           kindLabel: KIND_LABELS[r.kind] ?? 'Published',
@@ -323,7 +352,7 @@ export function buildOverview(data: OverviewData): OverviewView {
       : null,
     target,
     languages,
-    varieties: (data.varieties ?? []).map(varietyRow),
+    varieties: liveFirst(data.varieties ?? []).map(varietyRow),
     accounts: a
       ? {
           total: a.total,

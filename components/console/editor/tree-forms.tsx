@@ -90,6 +90,7 @@ export function NewUnitForm({
     <div className="editor-new">
       <Disclosure
         label="New unit"
+        tone="quiet"
         open={open}
         onOpenChange={(next) => {
           setOpen(next);
@@ -170,7 +171,7 @@ export function NewLessonForm({
     <div className="editor-new">
       <Disclosure
         label="New lesson"
-        tone="quiet"
+        tone="outline"
         open={open}
         onOpenChange={setOpen}
       >
@@ -203,7 +204,7 @@ export function NewLessonForm({
             maxLength={LIMITS.lessonSubtitle.max}
             invalid={field === 'subtitle'}
           />
-          <div className="editor-field-row">
+          <div className="editor-field-row editor-field-row-minutes">
             <div className="console-field">
               <label htmlFor={varietyId} className="console-label">
                 Variety
@@ -234,8 +235,12 @@ export function NewLessonForm({
                 max={LIMITS.minutes.max}
                 className="console-input"
                 defaultValue={echo(values, 'estimated_minutes', '')}
+                aria-describedby={`${minutesId}-hint`}
                 aria-invalid={field === 'estimated_minutes' || undefined}
               />
+              <p id={`${minutesId}-hint`} className="console-hint">
+                Up to {LIMITS.minutes.max} minutes.
+              </p>
             </div>
           </div>
           <ActionNotice result={result} />
@@ -257,7 +262,7 @@ export function NewLessonForm({
   );
 }
 
-/** Admin only: the last day a language's demo lessons stay live. */
+/** Admin only: the last day a language’s demo lessons stay live. */
 export function DemoSunsetForm({
   language,
   languageName,
@@ -289,7 +294,7 @@ export function DemoSunsetForm({
         onOpenChange={setOpen}
       >
         <form action={formAction} className="console-form editor-inline-form">
-          <p className="editor-form-title">Demo lessons in {languageName}</p>
+          <p className="editor-form-title">Starter lessons in {languageName}</p>
           <input type="hidden" name="language" value={language} />
           <div className="console-field">
             <label htmlFor={dateId} className="console-label">

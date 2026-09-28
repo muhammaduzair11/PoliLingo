@@ -430,3 +430,110 @@ export function readBackVerdict(
     ? 'verified'
     : 'mismatch';
 }
+
+// ---------------------------------------------------------------------------
+// Lessons held back: one honest badge, and the database's reasons in words
+// ---------------------------------------------------------------------------
+
+/** Why preview_release() leaves a lesson out: its `reasons` entries. */
+export type HoldReason = {
+  code: string;
+  message: string;
+  problem_code?: string;
+};
+
+/**
+ * The one state a held-back lesson's badge shows:
+ *   retired            its unit or course is retired
+ *   held_back          someone set Hold back on it or on something above it
+ *   starter            starter content that isn't shown
+ *   not_finished       the editor still has work: no phrases, no or too few
+ *                      exercises, a blocking problem, or never sent for review
+ *   changes_requested  a reviewer asked for changes (or turned it down)
+ *   in_review          sent for review and waiting for approvals
+ *   countersign        approved by a variety's only reviewer, waiting for an admin
+ *   not_ready          anything else
+ */
+export type HeldState =
+  | 'retired'
+  | 'held_back'
+  | 'starter'
+  | 'not_finished'
+  | 'changes_requested'
+  | 'in_review'
+  | 'countersign'
+  | 'not_ready';
+
+// preview_release() says "hasn't been sent for review yet" for a lesson
+// never submitted; it has no separate code for it.
+const NOT_SENT = /n[’']t been sent for review/i;
+const CHANGES = /asked for changes|turned this lesson down/i;
+const UNFINISHED_PROBLEMS = new Set([
+  'PL422_BAD_INPUT',
+  'PL422_TOO_FEW_EXERCISES',
+]);
+
+/**
+ * The badge state for a lesson left out of the next release. "In review"
+ * only for a lesson that was sent for review: a lesson still being written
+ * is "Not finished", whatever else it lacks.
+ */
+export function heldState(lesson: {
+  class: string | null;
+  reasons: readonly HoldReason[];
+}): HeldState {
+  const reasons = lesson.reasons ?? [];
+  const has = (code: string) => reasons.some((r) => r.code === code);
+  const notApproved = reasons.filter((r) => r.code === 'lesson_not_approved');
+  if (has('retired')) return 'retired';
+  if (has('gated')) return 'held_back';
+  if (
+    lesson.class === 'demo' ||
+    has('demo_exit') ||
+    has('demo_not_live') ||
+    has('demo_ended')
+  )
+    return 'starter';
+  if (
+    lesson.class === 'empty' ||
+    lesson.class === 'mixed' ||
+    has('problem') ||
+    has('too_few_exercises') ||
+    reasons.some((r) => UNFINISHED_PROBLEMS.has(r.problem_code ?? '')) ||
+    notApproved.some((r) => NOT_SENT.test(r.message))
+  )
+    return 'not_finished';
+  if (notApproved.some((r) => CHANGES.test(r.message)))
+    return 'changes_requested';
+  if (
+    has('lesson_not_approved') ||
+    has('items_not_approved') ||
+    has('lesson_stale')
+  )
+    return 'in_review';
+  if (has('awaiting_countersign')) return 'countersign';
+  return 'not_ready';
+}
+
+/** Straight apostrophes and paired double quotes as typographic ones. */
+function typographic(text: string): string {
+  return text
+    .replace(/"([^"]*)"/g, '“$1”')
+    .replace(/(\p{L})'(\p{L})/gu, '$1’$2')
+    .replace(/(\p{L}s)'(\s)/gu, '$1’$2');
+}
+
+const GATED = /^Held back: the publish gate is closed on (.+?)\.?$/;
+
+/**
+ * A reason as the publish page shows it: the database's sentence with
+ * typographic quotes, and the gate sentence in the words the editor's
+ * switch uses ("Hold back"), never "publish gate".
+ */
+export function reasonSentence(reason: HoldReason): string {
+  const gated = reason.code === 'gated' ? GATED.exec(reason.message) : null;
+  if (gated) return typographic(`Set to Hold back on ${gated[1]}.`);
+  if (reason.code === 'gated')
+    return 'Set to Hold back, so learners don’t see it yet.';
+  return typographic(reason.message);
+}

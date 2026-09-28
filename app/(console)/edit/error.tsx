@@ -18,7 +18,7 @@ export default function EditErrorBoundary({
   const { code, message } = describeDbError(error);
   return (
     <section className="console-panel editor-load-error">
-      <h1>This page didn&apos;t load</h1>
+      <h1>This page didn’t load</h1>
       <Notice tone="error" code={code}>
         {message}
       </Notice>

@@ -9,6 +9,7 @@ import 'server-only';
 import { cache, createElement, type ReactElement } from 'react';
 import { NoAccess } from '../../components/console/no-access';
 import { callRpc } from '../rpc';
+import { consoleHomeFor, consoleHomeLabel } from './invite-link';
 import type { DbError } from '../db-errors';
 import { serverSupabase } from '../supabase/server';
 
@@ -94,10 +95,71 @@ export async function requireRole(role: ConsoleRole): Promise<RoleGate> {
   const access = await getAccess();
   if (access.state === 'ready' && hasRole(access.context, role))
     return { ok: true, context: access.context };
+  // A team member on someone else's page: say whose page it is, what their
+  // own work is, and take them to it. Only an account with no role at all
+  // gets the invitation copy.
+  if (access.state === 'ready' && hasRole(access.context, 'staff'))
+    return {
+      ok: false,
+      view: createElement(NoAccess, notForYou(access.context, role)),
+    };
   return {
     ok: false,
     view: createElement(NoAccess, {
       reason: access.state === 'error' ? access.error : undefined,
     }),
+  };
+}
+
+/** The caller's own main role: the part of the workspace that is theirs. */
+export function mainRole(context: MyContext): 'admin' | 'editor' | 'reviewer' {
+  if (context.is_admin) return 'admin';
+  if (hasRole(context, 'editor')) return 'editor';
+  return 'reviewer';
+}
+
+/** Where the caller's own work is, or null for an account with no role. */
+export function workspaceHome(
+  context: MyContext,
+): { href: string; label: string } | null {
+  if (!hasRole(context, 'staff')) return null;
+  const role = mainRole(context);
+  return { href: consoleHomeFor(role), label: consoleHomeLabel(role) };
+}
+
+const PAGE_FOR: Record<ConsoleRole, string> = {
+  admin: 'This page is for admins',
+  editor: 'This page is for editors',
+  reviewer: 'This page is for reviewers',
+  staff: 'This page is for the team',
+};
+
+function listJoin(parts: string[]): string {
+  if (parts.length <= 1) return parts.join('');
+  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+}
+
+/** NoAccess for a team member whose roles don't cover `role`. */
+function notForYou(
+  context: MyContext,
+  role: ConsoleRole,
+): { title: string; body: string; home: { href: string; label: string } } {
+  const own = mainRole(context);
+  const where =
+    own === 'admin'
+      ? 'Your work is on the overview.'
+      : own === 'editor'
+        ? 'Your work is in your lessons.'
+        : 'Your work is in your review queue.';
+  const what =
+    own === 'admin'
+      ? 'You run the workspace as an admin.'
+      : own === 'editor'
+        ? 'You write and edit lessons.'
+        : `You review ${listJoin(context.review_varieties.map((v) => v.name)) || 'phrases'}.`;
+  return {
+    title: PAGE_FOR[role],
+    body: `${what} ${where}`,
+    home: { href: consoleHomeFor(own), label: consoleHomeLabel(own) },
   };
 }

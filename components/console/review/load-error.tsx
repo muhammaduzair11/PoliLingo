@@ -4,8 +4,8 @@ import type { DbError } from '@/lib/db-errors';
 
 /**
  * In place of a review page whose read was refused or failed: what
- * happened in plain English, with a way back. A phrase in someone else's
- * variety gets its own title; the database's sentence already names who
+ * happened in plain English, with a way back. A phrase in someone else’s
+ * variety gets its own title; the database’s sentence already names who
  * can review it.
  */
 export function LoadError({
@@ -26,11 +26,11 @@ export function LoadError({
     error.code === 'PL403_OUTSIDE_VARIETY'
       ? `This ${what} is for another variety`
       : error.code === 'PL404_NOT_FOUND'
-        ? `We couldn't find that ${what}`
+        ? `We couldn’t find that ${what}`
         : error.code === 'PL403_NOT_REVIEWER' ||
             error.code === 'PL403_NOT_EDITOR'
-          ? `This ${what} isn't open to you`
-          : `We couldn't open this ${what}`;
+          ? `This ${what} isn’t open to you`
+          : `We couldn’t open this ${what}`;
   const retry = !['PL403_OUTSIDE_VARIETY', 'PL404_NOT_FOUND'].includes(
     error.code,
   );
@@ -41,7 +41,10 @@ export function LoadError({
         tone={error.code === 'PL404_NOT_FOUND' ? 'info' : 'error'}
         code={error.code}
       >
-        {error.message}
+        {/* The database's own sentence would only repeat the title. */}
+        {error.code === 'PL404_NOT_FOUND'
+          ? 'It may have been retired, or the link may be incomplete.'
+          : error.message}
       </Notice>
       <p className="console-actions">
         {retry && (

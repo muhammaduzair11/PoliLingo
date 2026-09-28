@@ -23,17 +23,26 @@
     width: 21px;
   }
   .button-small {
-    font-size: 12px;
-    min-height: 40px;
-    padding: 9px 13px;
+    font-size: 14px;
+    min-height: 44px;
+    padding: 10px 14px;
     gap: 10px;
   }
   .header-actions {
-    gap: 1px;
+    gap: 4px;
   }
-  .motion-button {
-    width: 34px;
-    height: 40px;
+  /* Phones: the motion switch moves to the footer and the marquee as a
+     labelled button (components/site-chrome.tsx), and the CTA shows its
+     short label with no arrow. */
+  .site-header .motion-button {
+    display: none;
+  }
+  .header-cta-label,
+  .header-cta > svg {
+    display: none;
+  }
+  .header-cta-short {
+    display: inline;
   }
   .hero-inner {
     display: flex;
@@ -48,8 +57,7 @@
   }
   .hero-copy .eyebrow {
     justify-content: center;
-    font-size: 8px;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.06em;
     margin-bottom: 22px;
   }
   .hero h1 {
@@ -68,9 +76,8 @@
     bottom: -13px;
   }
   .hero-copy > p {
-    font-size: 13px;
     margin: 24px 0 21px;
-    line-height: 1.65;
+    line-height: 1.6;
   }
   .hero-copy .button {
     min-height: 51px;
@@ -80,9 +87,10 @@
   }
   .hero-footnote {
     justify-content: center;
-    font-size: 10px;
+    flex-wrap: wrap;
+    font-size: 12px;
     margin-top: 17px;
-    gap: 18px;
+    gap: 6px 18px;
   }
   .hero-art {
     width: 100%;
@@ -110,7 +118,8 @@
   .poli-sticker {
     left: 0;
     bottom: 54px;
-    font-size: 9px;
+    font-size: 12px;
+    padding: 10px 12px;
     transform: rotate(-10deg);
   }
   .star-one {
@@ -130,8 +139,8 @@
   }
   .poli-caption {
     bottom: 0;
-    right: 51px;
-    font-size: 10px;
+    right: 30px;
+    font-size: 12px;
   }
   .orbit-one {
     inset: 25px 0;
@@ -142,7 +151,6 @@
   .hero-bottom {
     margin: 0 24px;
     padding: 15px 0;
-    font-size: 7px;
     letter-spacing: 0.07em;
   }
   .hero-bottom span:first-child {
@@ -165,59 +173,84 @@
   }
   .section-heading > p {
     max-width: none;
-    font-size: 13px;
     padding-top: 16px;
   }
   .section-heading .eyebrow {
-    font-size: 8px;
-    letter-spacing: 0.13em;
+    letter-spacing: 0.1em;
   }
   .mobile-break {
     display: block;
   }
-  .language-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
+  /* Phones: each language lies wide, its world on the left and its name,
+     script and tagline beside it, so both fit in about one screen. */
+  .language-grid,
+  .language-grid-single {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
     max-width: none;
   }
-  .language-card {
-    padding: 19px 22px 16px;
+  .language-card,
+  .language-grid-single .language-card {
+    grid-template-columns: 116px minmax(0, 1fr);
+    /* The words sit centred beside the world, however short they are. */
+    grid-template-rows: 1fr auto auto 1fr auto;
+    grid-template-areas: 'art .' 'art top' 'art bottom' 'art .' 'meta meta';
+    column-gap: 14px;
+    padding: 14px 16px 12px 12px;
     border-radius: 22px;
   }
-  .language-card-top .native {
-    font-size: 27px;
+  .world-frame,
+  .language-grid-single .world-frame {
+    height: 116px;
+    margin: 0;
+    align-self: center;
   }
+  .world-spark,
   .course-number {
-    font-size: 9px;
+    display: none;
   }
-  .world-frame {
-    height: 195px;
-    margin: -16px 12px -3px;
+  .language-card-top {
+    justify-content: flex-end;
+    min-height: 0;
   }
-  .language-card-bottom {
-    align-items: center;
+  .language-card-top .native {
+    font-size: 24px;
+    line-height: 1.5;
+  }
+  .language-card-bottom,
+  .language-grid-single .language-card-bottom {
+    align-items: flex-start;
     padding-top: 0;
+    margin-top: -14px;
   }
-  .language-card h3 {
-    font-size: 32px;
+  .language-card h3,
+  .language-grid-single .language-card h3 {
+    font-size: 28px;
+    line-height: 1.05;
   }
   .language-card p {
-    font-size: 12px;
     max-width: none;
     min-height: auto;
   }
   .round-arrow {
-    min-width: 42px;
-    height: 42px;
-  }
-  .round-arrow svg {
-    width: 24px;
+    display: none;
   }
   .language-card-meta {
-    font-size: 9px;
-    margin-top: 19px;
-    padding-top: 11px;
+    margin-top: 12px;
+    padding-top: 10px;
+    letter-spacing: 0.05em;
+  }
+  .language-card-meta > span:last-child::after {
+    content: ' →';
+  }
+  .marquee-wrap {
+    display: flex;
+    flex-direction: column;
+  }
+  .marquee-wrap .marquee-motion {
+    display: inline-flex;
+    align-self: flex-end;
+    margin: 6px 22px 0 0;
   }
   .marquee {
     padding: 17px 0;
@@ -239,12 +272,6 @@
     font-size: 43px;
     margin-top: 15px;
   }
-  .how-intro > p {
-    font-size: 14px;
-  }
-  .how-intro .eyebrow {
-    font-size: 9px;
-  }
   .steps {
     margin-top: 36px;
   }
@@ -259,12 +286,6 @@
   .steps h3 {
     font-size: 22px;
   }
-  .steps p {
-    font-size: 13px;
-  }
-  .step-label {
-    font-size: 9px;
-  }
   .sample-section {
     display: block;
     margin: 0 16px 48px;
@@ -275,93 +296,76 @@
     font-size: 40px;
     margin-top: 19px;
   }
-  .sample-copy > p {
-    font-size: 13px;
-  }
-  .pill {
-    font-size: 8px;
-  }
+  /* The nudge sits just above the card, right-aligned, pointing down. */
   .handwritten {
-    margin: 17px 0 25px;
-    font-size: 15px;
+    position: static;
+    display: block;
     text-align: right;
+    margin: 22px 6px 10px 0;
+    transform: rotate(-3deg);
+    transform-origin: right bottom;
   }
   .sample-card {
-    padding: 21px 17px;
-    transform: rotate(1deg);
-  }
-  .sample-top {
-    font-size: 8px;
-  }
-  .sample-top span:last-child {
-    display: flex;
-    font-size: 8px;
+    padding: 20px 16px;
+    transform: none;
   }
   .sample-card h3 {
     font-size: 21px;
-    margin-top: 23px;
+    margin-top: 20px;
   }
-  .sample-options {
-    gap: 9px;
-  }
-  .sample-option {
-    font-size: 11px;
-    padding: 14px 6px;
-  }
-  .sample-option .native {
-    font-size: 26px;
-  }
-  .sample-response {
-    font-size: 11px;
-  }
+  /* The second Poli is small here: it stands just above the heading with
+     its speech bubble beside it, instead of a second full-screen mascot. */
   .meet-inner {
     display: flex;
-    flex-direction: column-reverse;
-    padding: 44px 24px 25px;
-    gap: 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 36px 24px 44px;
+    gap: 10px;
   }
   .meet-copy {
     width: 100%;
   }
   .meet-copy h2 {
-    font-size: 48px;
+    font-size: 46px;
   }
   .meet-copy p {
-    font-size: 14px;
     max-width: 100%;
   }
-  .meet-copy .eyebrow {
-    font-size: 8px;
-  }
   .meet-copy .button {
-    font-size: 14px;
+    font-size: 15px;
   }
   .meet-art {
-    width: 100%;
-    max-width: 350px;
-    height: 335px;
+    width: 190px;
+    max-width: 190px;
+    height: 190px;
+    flex-shrink: 0;
   }
   .meet-circle {
-    width: 270px;
-    height: 270px;
-    left: 35px;
-    top: 30px;
+    width: 160px;
+    height: 160px;
+    left: 15px;
+    top: 18px;
   }
   .speech-bubble {
-    font-size: 12px;
-    left: 4px;
-    top: 26px;
+    font-size: 13px;
+    left: calc(100% - 6px);
+    top: 34px;
+    white-space: nowrap;
+    border-radius: 18px 18px 18px 3px;
+    transform: rotate(-5deg);
   }
   .meet-art .deco-star {
-    right: 15px;
+    right: -10px;
+    bottom: 10px;
+    font-size: 34px;
   }
   .closing {
     padding-top: 52px;
     padding-bottom: 54px;
   }
   .closing .eyebrow {
-    font-size: 8px;
-    letter-spacing: 0.09em;
+    display: block;
+    letter-spacing: 0.08em;
   }
   .closing h2 {
     font-size: 43px;
@@ -386,12 +390,18 @@
     width: 18px;
   }
   .site-footer > div {
-    font-size: 9px;
-    gap: 8px;
+    gap: 0;
     text-align: right;
   }
-  .site-footer > div a {
-    font-size: 9px;
+  .site-footer > div a,
+  .site-footer .footer-legal a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 14px;
+  }
+  .site-footer .footer-legal {
+    gap: 18px;
   }
   .onboarding-page {
     display: flex;
@@ -401,24 +411,21 @@
     gap: 22px;
   }
   .onboard-art {
-    height: 175px;
-    min-height: 175px;
-    padding: 25px;
+    height: 150px;
+    min-height: 150px;
+    padding: 20px 22px;
     border-radius: 23px;
   }
-  .onboard-art h2 {
-    font-size: 39px;
+  .onboard-course {
+    font-size: 36px;
     position: relative;
     z-index: 1;
-    margin-top: 11px;
+    margin-top: 8px;
   }
-  .onboard-art h2 .native {
-    font-size: 26px;
+  .onboard-course .native {
+    font-size: 24px;
     margin-top: 0;
     text-align: left;
-  }
-  .onboard-art .eyebrow {
-    font-size: 8px;
   }
   .onboard-world {
     position: absolute;
@@ -435,19 +442,14 @@
     padding: 0 3px;
   }
   .onboard-content > .eyebrow {
-    font-size: 9px;
-    margin-top: 24px;
+    margin-top: 20px;
   }
   .onboard-content h1 {
     font-size: 43px;
     margin-top: 12px;
   }
-  .onboard-content .lead {
-    font-size: 15px;
-  }
   .course-facts p {
-    font-size: 12px;
-    padding: 12px 0;
+    padding: 10px 0;
   }
   .course-facts strong {
     font-size: 15px;
@@ -455,14 +457,8 @@
   .onboard-top {
     margin-bottom: 13px;
   }
-  .onboard-top > span {
-    font-size: 10px;
-  }
   .goal-option {
-    padding: 19px 17px;
-  }
-  .onboard-content > .button {
-    margin-top: 10px;
+    padding: 16px;
   }
   .dashboard {
     padding-top: 28px;
@@ -476,23 +472,16 @@
     max-width: 320px;
     margin: 12px 0;
   }
-  .dashboard-heading p {
-    font-size: 13px;
-  }
   .stats-pills {
     margin-top: 20px;
   }
   .stats-pills small {
     display: inline;
-    font-size: 10px;
   }
   .stats-pills > span {
     flex: 1;
     justify-content: center;
     padding: 12px;
-  }
-  .dashboard-heading .eyebrow {
-    font-size: 8px;
   }
   .dashboard-grid {
     gap: 20px;
@@ -504,7 +493,7 @@
   .course-tabs a {
     flex-direction: column;
     gap: 0;
-    font-size: 12px;
+    font-size: 14px;
     padding: 5px;
   }
   .course-tabs .native {
@@ -517,15 +506,15 @@
   .map-banner h2 {
     font-size: 25px;
     line-height: 1.1;
-    max-width: 185px;
+    max-width: 200px;
   }
   .map-banner .eyebrow {
-    font-size: 7px;
-    letter-spacing: 0.07em;
+    display: block;
+    letter-spacing: 0.06em;
+    max-width: 190px;
   }
   .map-banner p {
-    font-size: 10px;
-    max-width: 170px;
+    max-width: 180px;
   }
   .map-banner img {
     width: 148px;
@@ -542,18 +531,16 @@
     min-height: calc(530px + (var(--stops, 3) - 3) * 127px);
   }
   .map-poli {
-    width: 88px;
-    left: 0;
-    top: 27px;
+    width: 70px;
   }
   .map-poli img {
-    width: 95px;
-    height: 110px;
+    width: 70px;
+    height: 80px;
   }
+  /* No room for Poli's speech tag beside a phone's stops; the label's
+     "YOUR NEXT WIN" says it. */
   .map-poli > span {
-    font-size: 7px;
-    left: 3px;
-    padding: 6px;
+    display: none;
   }
   .lesson-stop {
     gap: 15px;
@@ -578,16 +565,14 @@
   .stop-2 {
     margin-left: 25%;
   }
+  .stop-label {
+    padding: 5px 8px;
+  }
   .stop-label h3 {
-    font-size: 13px;
-    max-width: 130px;
+    max-width: 140px;
   }
   .stop-label p {
-    font-size: 9px;
-    max-width: 135px;
-  }
-  .start-here {
-    font-size: 7px;
+    max-width: 140px;
   }
   .path-line {
     left: 19%;
@@ -601,10 +586,9 @@
     padding: 18px 16px;
     gap: 12px;
   }
-  .map-footer > span {
-    font-size: 9px;
-  }
+  /* One card per row: side by side, each was too narrow for its words. */
   .dashboard-aside {
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
   }
   .daily-card,
@@ -618,9 +602,6 @@
   .card-title > svg {
     width: 18px;
   }
-  .daily-card > p {
-    font-size: 11px;
-  }
   .goal-dots {
     gap: 6px;
     margin: 18px 0 13px;
@@ -633,11 +614,8 @@
   .goal-dots svg {
     width: 18px;
   }
-  .daily-card > a {
-    font-size: 10px;
-  }
   .daily-card > strong {
-    font-size: 10px;
+    font-size: 14px;
   }
   .badge-row {
     gap: 7px;
@@ -651,21 +629,13 @@
   .badge-row svg {
     width: 17px;
   }
-  .badge-row small {
-    font-size: 8px;
-  }
-  .badge-card > p {
-    font-size: 10px;
-  }
+
   .settings-page {
     padding-top: 28px;
     padding-bottom: 40px;
   }
   .settings-page h1 {
     font-size: 39px;
-  }
-  .settings-page .eyebrow {
-    font-size: 9px;
   }
   .settings-card {
     padding: 4px 17px;
@@ -682,11 +652,12 @@
   .setting-icon svg {
     width: 16px;
   }
-  .setting-row h3 {
-    font-size: 14px;
+  .setting-title {
+    font-size: 15px;
   }
-  .setting-row p {
-    font-size: 11px;
+  /* A wrapped button lines up with the words above it, not the icon. */
+  .account-setting .setting-row > .button {
+    margin-left: 43px;
   }
   .setting-row [data-slot='switch'] {
     min-width: 32px;
@@ -697,8 +668,8 @@
     gap: 15px;
   }
   .inline-goals label {
-    font-size: 12px;
-    gap: 7px;
+    font-size: 14px;
+    gap: 8px;
   }
   .sources-card {
     padding: 22px;
@@ -706,57 +677,38 @@
   .sources-card h2 {
     font-size: 23px;
   }
-  .sources-card p {
-    font-size: 12px;
-  }
   .reset-card {
-    flex-direction: column;
     align-items: flex-start;
-    gap: 17px;
+    gap: 14px;
   }
   .lesson-header {
-    padding: 17px 16px;
-    gap: 11px;
+    padding: 10px 12px;
+    gap: 10px;
   }
-  .lesson-header > .icon-button {
-    width: 32px;
-    height: 38px;
-  }
-  .lesson-header .lesson-count {
-    font-size: 10px;
-  }
-  .lesson-tools .icon-button {
-    width: 30px;
-    height: 36px;
-  }
-  .lesson-tools .icon-button svg {
-    width: 17px;
+  .lesson-retry-chip {
+    padding: 3px 9px;
   }
   .lesson-shell {
-    padding: 22px 22px 25px;
+    padding: 10px 16px 20px;
   }
   .lesson-label {
-    font-size: 8px;
-    letter-spacing: 0.08em;
-    margin-bottom: 25px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    margin-bottom: 14px;
   }
   .lesson-shell h1 {
-    font-size: 29px;
+    font-size: 26px;
+  }
+  .lesson-shell > .lead {
+    font-size: 15px;
+    margin-bottom: 16px;
   }
   .lesson-mascot-row {
-    gap: 15px;
-    margin: 21px 0;
-    min-height: 119px;
-  }
-  .lesson-mascot-row .poli {
-    width: 92px;
-    height: 118px;
+    gap: 12px;
+    margin: 12px 0 18px;
   }
   .prompt-bubble {
-    min-width: 0;
-    flex: 1;
-    padding: 17px 14px;
-    max-width: 260px;
+    padding: 12px 14px;
     border-radius: 16px;
   }
   .phrase-large .native {
@@ -765,176 +717,206 @@
   .phrase-large .roman {
     font-size: 13px;
   }
+  .prompt-bubble .phrase-large .native {
+    font-size: 28px;
+  }
+  .prompt-bubble .phrase-large .roman {
+    font-size: 14px;
+  }
   .prompt-bubble .english-meaning {
-    font-size: 21px;
+    font-size: 19px;
+  }
+  .prompt-bubble .prompt-scene {
+    font-size: 16px;
+    line-height: 1.35;
   }
   .answer-options {
-    gap: 12px;
+    gap: 10px;
   }
   .answer-option {
-    padding: 20px 10px;
-    min-height: 82px;
-    font-size: 15px;
+    padding: 14px 26px;
+    min-height: 76px;
+    font-size: 16px;
   }
-  .answer-option > .phrase {
-    padding: 0 7px;
+  /* Native script answers: one full-width row each, the script on one line
+     and the romanisation under it. The short English answers of "pick the
+     meaning" keep two columns. */
+  .answer-options--native {
+    grid-template-columns: 1fr;
+  }
+  .answer-options--native .answer-option {
+    min-height: 64px;
+    padding: 8px 48px;
+  }
+  .answer-options--native .option-index,
+  .answer-options--native .answer-mark {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .answer-options--native .option-index {
+    left: 12px;
+  }
+  .answer-options--native .answer-mark {
+    right: 12px;
   }
   .answer-option .native {
     font-size: 25px;
   }
   .answer-option .roman {
-    font-size: 11px;
+    font-size: 13px;
   }
   .option-index {
-    top: 6px;
-    left: 6px;
-    width: 17px;
-    height: 17px;
-    font-size: 9px;
+    top: 7px;
+    left: 7px;
+    font-size: 11px;
+  }
+  .answer-mark {
+    top: 7px;
+    right: 7px;
   }
   .lesson-help {
-    margin-top: 22px;
-    font-size: 12px;
+    margin-top: 14px;
   }
   .lesson-footer {
-    padding: 21px 22px 28px;
-    margin-top: 0;
-    gap: 15px;
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom));
   }
-  .lesson-footer > p {
-    font-size: 10px;
-    max-width: 145px;
+  /* The bar is just its button on a phone, full width under the thumb. */
+  .lesson-bar-note {
+    display: none;
   }
-  .lesson-footer > .button {
-    min-width: 145px;
-    padding: 15px 17px;
-    font-size: 14px;
+  .lesson-bar > .lesson-cta {
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
+    padding: 14px 18px;
+    font-size: 16px;
     gap: 12px;
   }
-  .feedback {
-    margin: 10px 17px 25px;
-    padding: 20px;
+  .feedback .lesson-bar {
     flex-direction: column;
     align-items: stretch;
-    gap: 17px;
+    gap: 12px;
   }
-  .feedback h3 {
+  .feedback-title {
     font-size: 18px;
   }
-  .feedback p {
-    font-size: 12px;
-  }
-  .feedback .button {
-    width: 100%;
-    font-size: 14px;
-    min-height: 48px;
-  }
   .match-grid {
-    gap: 13px;
+    gap: 10px;
+    grid-auto-rows: minmax(84px, 1fr);
   }
   .match-column .answer-option {
-    padding: 10px 6px;
-    font-size: 13px;
-    min-height: 81px;
+    padding: 10px 8px;
+    font-size: 15px;
   }
   .match-column .native {
-    font-size: 23px;
+    font-size: 22px;
+  }
+  .match-badge {
+    right: 8px;
+    padding: 0 6px 0 4px;
   }
   .assembly-tray {
-    min-height: 104px;
-    padding: 15px 10px;
+    min-height: 84px;
+    padding: 14px 10px;
   }
   .word-tile {
-    font-size: 15px;
-    padding: 11px 14px;
+    font-size: 16px;
+    padding: 10px 14px;
   }
   .word-bank {
-    padding: 23px 0;
+    padding: 18px 0 6px;
     gap: 9px;
   }
   .study-grid {
-    gap: 11px;
+    gap: 10px;
+    margin: 18px 0 14px;
   }
   .study-card {
-    padding: 16px 10px;
+    padding: 14px 12px 12px;
   }
   .study-card .native {
     font-size: 25px;
   }
   .study-card .roman {
-    font-size: 11px;
-  }
-  .study-card > strong {
     font-size: 13px;
   }
-  .study-card > p {
-    font-size: 10px;
+  .study-card > strong {
+    font-size: 14px;
+  }
+  .study-card-note > p {
+    font-size: 13px;
+  }
+  .study-more {
+    min-height: 44px;
+    min-width: 44px;
+    margin-bottom: -12px;
   }
   .study-intro {
-    gap: 16px;
-    margin-bottom: 22px;
+    gap: 14px;
+    margin-bottom: 16px;
   }
   .study-intro .poli {
-    width: 90px;
-    height: 120px;
+    width: 76px;
+    height: 84px;
   }
   .study-intro h1 {
-    font-size: 27px;
+    font-size: 28px;
   }
   .study-intro p {
-    font-size: 12px;
+    font-size: 14px;
   }
   .study-note {
-    font-size: 11px;
+    font-size: 14px;
   }
   .resume-card {
-    margin: 25px 20px;
-    padding: 30px 24px;
+    width: auto;
+    margin: 20px 16px;
+    padding: 28px 20px 18px;
   }
   .resume-card h1 {
     font-size: 32px;
   }
   .resume-card p {
-    font-size: 14px;
+    font-size: 15px;
   }
   .resume-card .poli {
-    width: 180px;
-    height: 190px;
+    width: 130px;
+    height: 130px;
   }
   .celebration {
-    padding: 5px 24px 45px;
-  }
-  .celebration-art {
-    width: 265px;
-    height: 260px;
+    padding: 0 20px 12px;
   }
   .celebration h1 {
-    font-size: 43px;
+    font-size: 38px;
   }
   .celebration > p {
     font-size: 14px;
   }
   .result-stats {
-    gap: 10px;
-    margin: 25px 0;
+    gap: 8px;
+    margin: 18px 0 4px;
   }
   .result-stat {
-    padding: 18px 7px;
+    padding: 14px 6px;
   }
   .result-stat strong {
-    font-size: 25px;
+    font-size: 24px;
   }
-  .result-stat small {
-    font-size: 8px;
+  .lesson-page .result-stat small {
+    font-size: 11px;
+    letter-spacing: 0.03em;
   }
   .badge-earned {
-    padding: 17px 19px;
+    padding: 16px 18px;
   }
-  .badge-earned h3 {
+  .badge-earned h2 {
     font-size: 15px;
   }
   .badge-earned p {
-    font-size: 11px;
+    font-size: 13px;
+  }
+  .celebration-after {
+    padding: 4px 16px 28px;
   }
   .empty-page h1 {
     font-size: 34px;
@@ -944,26 +926,32 @@
   }
 }
 
-/* The header CTA keeps its words on one line. Where the header row is too
-   narrow for them (about 415px with the settings button, 370px on the home
-   page), only the arrow shows and the words stay for screen readers. */
+/* Away from the home page the header also holds the settings button, and
+   below about 420px there is no room left for a labelled CTA. It is left
+   out rather than shrunk to an arrow: those pages have their own way back
+   ("Back to your adventure", the map's Start button). */
 @media (max-width: 420px) {
-  .site-header:not(.home-header) .header-cta-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+  .site-header:not(.home-header) .header-cta {
+    display: none;
   }
 }
-@media (max-width: 370px) {
-  .home-header .header-cta-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+/* A narrow phone (360-400px): at the middle stop Poli stands beside the
+   label, so there Poli is a little smaller and the gaps a little tighter,
+   and "You, in a new language" and "4 playful exercises" keep whole lines. */
+@media (max-width: 400px) {
+  .stop-1.next-stop {
+    gap: 11px;
+  }
+  .stop-1.next-stop .stop-label {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  .stop-1 .map-poli {
+    width: 54px;
+    margin-left: -10px;
+  }
+  .stop-1 .map-poli img {
+    width: 54px;
+    height: 62px;
   }
 }

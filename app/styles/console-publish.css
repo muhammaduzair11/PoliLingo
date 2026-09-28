@@ -78,6 +78,22 @@
   line-height: 1;
 }
 
+/* A release's id: for the history and for support, so small print. */
+.publish-status-id {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.publish-status-id code,
+.publish-dialog-id code {
+  font-family: ui-monospace, 'Cascadia Mono', Menlo, monospace;
+  font-size: 13px;
+}
+.publish-dialog-id {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
 /* The publish control and its outcome */
 .publish-control {
   display: flex;
@@ -98,6 +114,10 @@
 }
 .publish-outcome:empty {
   display: none;
+}
+/* It takes focus after a publish or a go back, whose button has gone. */
+.publish-outcome:focus {
+  outline: none;
 }
 .publish-optional {
   font-weight: 400;

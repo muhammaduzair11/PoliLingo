@@ -1,8 +1,8 @@
 /**
- * The course maker's pure logic (docs/platform.md 4.10): the shapes of the
- * editor's page reads, the status a lesson or phrase shows, the tree's
+ * The course maker’s pure logic (docs/platform.md 4.10): the shapes of the
+ * editor’s page reads, the status a lesson or phrase shows, the tree’s
  * status counts, the reorder arithmetic behind the up and down buttons, the
- * readiness checklist, and form parsing that mirrors the database's length
+ * readiness checklist, and form parsing that mirrors the database’s length
  * and provenance rules (supabase/migrations/20260928001400_editor.sql), so
  * most mistakes are caught before a round trip. The database still decides.
  *
@@ -185,7 +185,7 @@ export type EditLessonPage = {
     submitted_at: string | null;
     /** Sent back by a reviewer and changed since, so it may go again. */
     changed_since_review: boolean;
-    /** Active reviewers of the lesson's variety. */
+    /** Active reviewers of the lesson’s variety. */
     reviewers: number;
     revision_no: number;
     updated_at: string;
@@ -203,7 +203,7 @@ export type EditLessonPage = {
 // Status
 // ---------------------------------------------------------------------------
 
-/** The badge a lesson or phrase shows; a subset of the kit's StatusBadge. */
+/** The badge a lesson or phrase shows; a subset of the kit’s StatusBadge. */
 export type EditorStatus =
   | 'draft'
   | 'in_review'
@@ -318,11 +318,19 @@ export type TreeView = {
   lessonCount: number;
 };
 
-/** page_edit_tree() with statuses and counts at every level. */
+/**
+ * page_edit_tree() with statuses and counts at every level. Languages that
+ * have courses come first (in the order the database gave), so the work is
+ * at the top and a language with nothing to edit yet sits quietly below.
+ */
 export function treeView(tree: EditTree): TreeView {
   const total = emptyCounts();
   let lessonCount = 0;
-  const languages = tree.languages.map((language) => {
+  const ordered = [
+    ...tree.languages.filter((l) => l.courses.length > 0),
+    ...tree.languages.filter((l) => l.courses.length === 0),
+  ];
+  const languages = ordered.map((language) => {
     const languageCounts = emptyCounts();
     const varietyNames = new Map(language.varieties.map((v) => [v.id, v.name]));
     const courses = language.courses.map((course) => {
@@ -395,22 +403,107 @@ export const MAX_ITEMS = 12;
 export const MIN_EXERCISES = 6;
 
 export type ReadinessCheck = {
-  key: 'items' | 'exercises' | 'problems';
+  key: 'items' | 'exercises' | 'problems' | 'request';
   ok: boolean;
   label: string;
   detail: string;
 };
 
-export function readiness(page: {
-  items: readonly unknown[];
-  exercises: readonly unknown[];
-  problems: readonly Problem[];
-}): { ready: boolean; checks: ReadinessCheck[] } {
+/** Where the lesson sits under its publish gates, for the held-back note. */
+export type LessonGates = { lesson: Gate; unit: Gate };
+
+/**
+ * The held-back note in plain words: which gate is closed when we can tell
+ * (the lesson’s own, or its unit’s), and who opens it.
+ */
+export function heldBackMessage(gates?: LessonGates): string {
+  if (gates?.lesson === 'blocked')
+    return 'This lesson is still held back, so learners won’t see it yet. An admin opens it.';
+  if (gates?.unit === 'blocked')
+    return 'This unit is still held back, so learners won’t see the lesson yet. An admin opens it.';
+  return 'Its course is still held back, so learners won’t see the lesson yet. An admin opens it.';
+}
+
+/**
+ * The lesson’s problems as the editor lists them. The database words the
+ * exercise count two ways (blocking "at least one" at none, a warning under
+ * six), but submit_lesson() refuses anything under six, so the editor shows
+ * one blocking line that says six. The held-back warning is reworded without
+ * the database’s terms. readiness() counts this same list.
+ */
+export function editorProblems(
+  page: {
+    exercises: readonly unknown[];
+    problems: readonly Problem[];
+  },
+  gates?: LessonGates,
+): Problem[] {
+  const exercises = page.exercises.length;
+  const problems = page.problems
+    .filter((p) => p.code !== 'PL422_TOO_FEW_EXERCISES')
+    .map((p) =>
+      p.code === 'PL409_NOT_PUBLISHABLE' && p.severity === 'warning'
+        ? { ...p, message: heldBackMessage(gates) }
+        : p,
+    );
+  if (exercises < MIN_EXERCISES)
+    problems.push({
+      severity: 'blocking',
+      code: 'PL422_TOO_FEW_EXERCISES',
+      message: `A reviewed lesson needs at least ${MIN_EXERCISES} exercises. This one has ${exercises}.`,
+      target_type: 'lesson',
+    });
+  return problems;
+}
+
+/**
+ * A problem the checklist already says in its own row: too few exercises
+ * (the Exercises row), and no phrases or too many (the Phrases row). The
+ * review panel lists the rest under "Problems", so no sentence shows twice.
+ */
+export function coveredByChecklist(problem: Problem): boolean {
+  if (problem.code === 'PL422_TOO_FEW_EXERCISES') return true;
+  return (
+    problem.target_type === 'lesson' &&
+    (problem.code === 'PL422_BAD_INPUT' || problem.code === 'PL422_LESSON_FULL')
+  );
+}
+
+/** The problems the review panel lists: blocking ones to fix, and notes. */
+export function checklistProblems(problems: readonly Problem[]): {
+  blocking: Problem[];
+  notes: Problem[];
+} {
+  const shown = problems.filter((p) => !coveredByChecklist(p));
+  return {
+    blocking: shown.filter((p) => p.severity === 'blocking'),
+    notes: shown.filter((p) => p.severity !== 'blocking'),
+  };
+}
+
+/** Whether a reviewer sent the lesson back (asked for changes or rejected it). */
+export const sentBack = (lesson: { review_status: ReviewStatus }): boolean =>
+  lesson.review_status === 'changes_requested' ||
+  lesson.review_status === 'rejected';
+
+/**
+ * The review checklist: what submit_lesson() will ask for, plus, for a
+ * lesson a reviewer sent back, a change since that review (the database
+ * refuses to take the same text back).
+ */
+export function readiness(
+  page: {
+    items: readonly unknown[];
+    exercises: readonly unknown[];
+    problems: readonly Problem[];
+  },
+  lesson?: { review_status: ReviewStatus; changed_since_review: boolean },
+  gates?: LessonGates,
+): { ready: boolean; checks: ReadinessCheck[] } {
   const items = page.items.length;
   const exercises = page.exercises.length;
-  const blocking = page.problems.filter(
-    (p) => p.severity === 'blocking' && p.code !== 'PL422_TOO_FEW_EXERCISES',
-  ).length;
+  const blocking = checklistProblems(editorProblems(page, gates)).blocking
+    .length;
   const checks: ReadinessCheck[] = [
     {
       key: 'items',
@@ -433,14 +526,56 @@ export function readiness(page: {
     {
       key: 'problems',
       ok: blocking === 0,
-      label: 'Checks',
+      label: 'Problems',
       detail:
         blocking === 0
-          ? 'Nothing blocking.'
+          ? 'Nothing to fix.'
           : `${blocking} ${blocking === 1 ? 'problem' : 'problems'} to fix.`,
     },
   ];
+  if (lesson && sentBack(lesson))
+    checks.push({
+      key: 'request',
+      ok: lesson.changed_since_review,
+      label: 'Reviewer’s request',
+      detail: lesson.changed_since_review
+        ? 'Changed since the review.'
+        : 'Not changed since the review yet.',
+    });
   return { ready: checks.every((c) => c.ok), checks };
+}
+
+/** The checks still to do, for the status strip ("2 checks to do"). */
+export const checksToDo = (checks: readonly ReadinessCheck[]): number =>
+  checks.filter((c) => !c.ok).length;
+
+export type NextStep =
+  | { kind: 'locked' }
+  | { kind: 'waiting' }
+  | { kind: 'approved' }
+  | { kind: 'submit'; resend: boolean }
+  | { kind: 'todo'; count: number };
+
+/**
+ * The one thing the lesson needs next, for the status strip and the phone’s
+ * bottom bar: send it (or send it back), finish the checks, or nothing while
+ * it waits or once it is approved.
+ */
+export function nextStep(
+  lesson: {
+    review_status: ReviewStatus;
+    submitted_at: string | null;
+  },
+  checks: readonly ReadinessCheck[],
+  locked: boolean,
+): NextStep {
+  if (locked) return { kind: 'locked' };
+  if (lesson.submitted_at !== null && lesson.review_status === 'unreviewed')
+    return { kind: 'waiting' };
+  if (lesson.review_status === 'approved') return { kind: 'approved' };
+  const count = checksToDo(checks);
+  if (count > 0) return { kind: 'todo', count };
+  return { kind: 'submit', resend: sentBack(lesson) };
 }
 
 // ---------------------------------------------------------------------------
@@ -506,10 +641,10 @@ export function relativeTime(iso: string, now: Date): string {
 }
 
 // ---------------------------------------------------------------------------
-// Form parsing, mirroring the database's rules
+// Form parsing, mirroring the database’s rules
 // ---------------------------------------------------------------------------
 
-/** The database's length limits, in characters (code points). */
+/** The database’s length limits, in characters (code points). */
 export const LIMITS = {
   unitTitle: { min: 1, max: 60 },
   unitGoal: { min: 10, max: 300 },
@@ -546,7 +681,7 @@ export const EXERCISE_KINDS: readonly ExerciseKind[] = [
   'context',
 ];
 
-/** Anything with FormData's get (and optionally getAll). */
+/** Anything with FormData’s get (and optionally getAll). */
 export type FormLike = {
   get(name: string): unknown;
   getAll?(name: string): unknown[];
@@ -555,7 +690,7 @@ export type FormLike = {
 export type FieldError = { field: string; code: string; message: string };
 export type Parsed<T> = { ok: true; value: T } | ({ ok: false } & FieldError);
 
-/** JavaScript's \s trimmed, as the database trims (private.js_ws). */
+/** JavaScript’s \s trimmed, as the database trims (private.js_ws). */
 export function clean(value: unknown): string {
   return typeof value === 'string' ? value.replace(/^\s+|\s+$/g, '') : '';
 }
@@ -572,7 +707,7 @@ export function lengthError(
 ): FieldError | null {
   const length = charLength(text);
   if (length === 0 && limit.min > 0)
-    return { field, code: 'PL422_LENGTH', message: `${label} can't be empty.` };
+    return { field, code: 'PL422_LENGTH', message: `${label} can’t be empty.` };
   if (length > 0 && length < limit.min)
     return {
       field,
@@ -690,8 +825,8 @@ export function isPastOrToday(date: string, today: string): boolean {
 
 /**
  * The phrase form. Native text is normalised as the database stores it;
- * the script rules themselves are ScriptField's (lib/script-check.ts) and
- * the database's.
+ * the script rules themselves are ScriptField’s (lib/script-check.ts) and
+ * the database’s.
  */
 export function parseItemForm(
   form: FormLike,
@@ -745,7 +880,7 @@ export function parseItemForm(
       : {
           field: 'source_licence',
           code: 'PL422_PROVENANCE',
-          message: `Say what licence it's used under, in ${LIMITS.licence.min} to ${LIMITS.licence.max} characters.`,
+          message: `Say what licence it’s used under, in ${LIMITS.licence.min} to ${LIMITS.licence.max} characters.`,
         },
     retrieved === '' || isPastOrToday(retrieved, today)
       ? null
@@ -819,7 +954,7 @@ export function parseExerciseForm(form: FormLike): Parsed<ExerciseFields> {
       return fail({
         field: 'options',
         code: 'PL422_OPTION_EQUALS_ANSWER',
-        message: "The answer can't also be a wrong choice.",
+        message: 'The answer can’t also be a wrong choice.',
       });
     if (
       finalOptions.length < LIMITS.options.min ||
@@ -882,7 +1017,7 @@ export const utcToday = (now: Date): string => now.toISOString().slice(0, 10);
 // ---------------------------------------------------------------------------
 
 /**
- * What an editor server action returns: the kit's ActionResult, plus, on a
+ * What an editor server action returns: the kit’s ActionResult, plus, on a
  * refusal, the text the person typed (so the form shows it again after
  * React resets it) and the field at fault when we know it.
  */
@@ -955,11 +1090,23 @@ export const EXERCISE_FIELDS = [
   'difficulty',
 ] as const;
 
+/** A phrase the team wrote itself: who to credit, and under what terms. */
+export const ORIGINAL_PROVENANCE = {
+  source_citation: 'PoliLingo team',
+  source_licence: 'Written for PoliLingo',
+} as const;
+
 /**
- * Where a new phrase comes from, by default: the same as the lesson's last
- * phrase, so a lesson written from one source asks for it once.
+ * Where a new phrase comes from, by default: the same as the lesson’s last
+ * phrase, so a lesson written from one source asks for it once; in a new
+ * lesson, written by the team for PoliLingo.
  */
-export function provenanceDefaults(items: readonly EditItem[]): {
+export function provenanceDefaults(
+  items: readonly Pick<
+    EditItem,
+    'source_type' | 'source_citation' | 'source_licence'
+  >[],
+): {
   source_type: SourceType;
   source_citation: string;
   source_licence: string;
@@ -971,7 +1118,68 @@ export function provenanceDefaults(items: readonly EditItem[]): {
         source_citation: last.source_citation,
         source_licence: last.source_licence,
       }
-    : { source_type: 'original', source_citation: '', source_licence: '' };
+    : { source_type: 'original', ...ORIGINAL_PROVENANCE };
+}
+
+/** Only a published work or a community source has a date it was read on. */
+export const sourceHasDate = (type: string): boolean =>
+  type === 'published_work' || type === 'community_attested';
+
+/** Whether the citation and licence would pass the database’s rules. */
+export function provenanceValid(citation: string, licence: string): boolean {
+  const c = charLength(clean(citation));
+  const l = charLength(clean(licence));
+  return (
+    c >= LIMITS.citation.min &&
+    c <= LIMITS.citation.max &&
+    l >= LIMITS.licence.min &&
+    l <= LIMITS.licence.max
+  );
+}
+
+/**
+ * Another live phrase of the lesson with the same text or the same meaning
+ * (compared as the database compares them), for the "Same as phrase 2"
+ * warning while typing. `exceptId` is the phrase being edited.
+ */
+export function duplicateOf<
+  T extends Pick<EditItem, 'id' | 'native' | 'meaning' | 'position'>,
+>(
+  items: readonly T[],
+  typed: { native: string; meaning: string },
+  exceptId?: string | null,
+): T | null {
+  const native = typed.native.trim() ? normaliseNative(typed.native) : '';
+  const meaning = typed.meaning.trim()
+    ? normaliseNative(typed.meaning).toLowerCase()
+    : '';
+  if (!native && !meaning) return null;
+  return (
+    items.find(
+      (i) =>
+        i.id !== exceptId &&
+        ((native !== '' && normaliseNative(i.native) === native) ||
+          (meaning !== '' &&
+            normaliseNative(i.meaning).toLowerCase() === meaning)),
+    ) ?? null
+  );
+}
+
+/**
+ * The exercises that use a phrase, as the answer or a wrong choice (what
+ * retire_content() checks before it retires a phrase), and how many have it
+ * as the answer.
+ */
+export function exercisesUsing<
+  T extends Pick<EditExercise, 'answer_item_id' | 'options'>,
+>(itemId: string, exercises: readonly T[]): { using: T[]; answerIn: number } {
+  const using = exercises.filter(
+    (e) => e.answer_item_id === itemId || e.options.includes(itemId),
+  );
+  return {
+    using,
+    answerIn: using.filter((e) => e.answer_item_id === itemId).length,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -992,7 +1200,7 @@ const sameMeaning = (a: string, b: string) =>
   normaliseNative(a).toLowerCase() === normaliseNative(b).toLowerCase();
 
 /**
- * The lesson's other phrases as wrong choices for `answerId`, each marked
+ * The lesson’s other phrases as wrong choices for `answerId`, each marked
  * when the database would refuse it (the answer itself, or the same text or
  * meaning as the answer, compared as the database compares them).
  */
@@ -1017,12 +1225,35 @@ export function choiceOptions(
     }));
 }
 
-/** The phrase for an id, for showing an exercise's answer and choices. */
+/** The phrase for an id, for showing an exercise’s answer and choices. */
 export function itemById<T extends { id: string }>(
   items: readonly T[],
 ): (id: string) => T | undefined {
   const map = new Map(items.map((i) => [i.id, i]));
   return (id) => map.get(id);
+}
+
+/**
+ * A variety’s name without its parenthesis ("Northern Pashto (Peshawar /
+ * Yusufzai)" is "Northern Pashto"), and the page eyebrow built from it: the
+ * short name alone when it already names the language, so a phone shows
+ * one line.
+ */
+export function shortVarietyName(name: string): string {
+  return name.replace(/\s*\([^)]*\)\s*$/, '').trim() || name;
+}
+
+export function varietyEyebrow(
+  languageName: string,
+  varietyName: string,
+): { long: string; short: string } {
+  const short = shortVarietyName(varietyName);
+  return {
+    long: `${languageName} · ${varietyName}`,
+    short: short.toLowerCase().includes(languageName.toLowerCase())
+      ? short
+      : `${languageName} · ${short}`,
+  };
 }
 
 /** "Open" or "Held back", for a publish gate. */
@@ -1051,19 +1282,34 @@ const DAY_FORMAT = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'UTC',
 });
 
-/** "26 September 2026" for an ISO date or timestamp (UTC), or '' when unreadable. */
+// Pakistan Standard Time is UTC+5 all year, so a timestamp moved on five
+// hours and read in UTC is the day it was in Pakistan, where the team
+// works (as the admin pages show it).
+const PKT_OFFSET_MS = 5 * 60 * 60 * 1000;
+
+/**
+ * "26 September 2026" for an ISO date as it stands, or for a timestamp the
+ * day it was in Pakistan; '' when unreadable.
+ */
 export function formatDay(iso: string | null | undefined): string {
   if (!iso) return '';
-  const date = new Date(
-    /^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T00:00:00Z` : iso,
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(iso);
+  const date = new Date(dateOnly ? `${iso}T00:00:00Z` : iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return DAY_FORMAT.format(
+    dateOnly ? date : new Date(date.getTime() + PKT_OFFSET_MS),
   );
-  return Number.isNaN(date.getTime()) ? '' : DAY_FORMAT.format(date);
 }
+
+/** Lesson rows that a child’s change writes too (its fingerprint follows them). */
+const ECHO_REASONS = ['edit', 'reorder', 'retire', 'create'];
 
 /**
  * The history worth showing: a lesson row written only because one of its
- * phrases or exercises changed or moved (its fingerprint follows them) is
- * left out when that change is listed within a few seconds of it.
+ * phrases or exercises was created, changed, moved or retired (its
+ * fingerprint follows them) is left out when that change is listed within a
+ * few seconds of it. Otherwise retiring one phrase would also read as
+ * "Lesson retired".
  */
 export function historyRows(
   revisions: readonly RevisionEntry[],
@@ -1073,7 +1319,7 @@ export function historyRows(
     .filter((r) => r.object_type === 'item' || r.object_type === 'exercise')
     .map((r) => new Date(r.at).getTime());
   return revisions.filter((r) => {
-    if (r.object_type !== 'lesson' || !['edit', 'reorder'].includes(r.reason))
+    if (r.object_type !== 'lesson' || !ECHO_REASONS.includes(r.reason))
       return true;
     const at = new Date(r.at).getTime();
     return !childTimes.some((t) => Math.abs(t - at) <= windowMs);
@@ -1085,12 +1331,14 @@ export function historyRows(
 // ---------------------------------------------------------------------------
 
 export type HandoffCopy = {
-  /** The panel's line when the lesson is ready to send. */
+  /** The panel’s line when the lesson is ready to send. */
   ready: string;
   /** The line while it waits in the queue (after "since <day>."). */
   waiting: string;
-  /** The submit confirm's description. */
+  /** The submit confirm’s description. */
   confirm: string;
+  /** The success notice once it is sent. */
+  sent: string;
 };
 
 /**
@@ -1108,10 +1356,12 @@ export function handoffCopy(
       ready: `Ready. ${varietyName} reviewers will see it next.`,
       waiting: `Waiting for a ${varietyName} reviewer`,
       confirm: `${varietyName} reviewers see it in their queue next. ${keepEditing}`,
+      sent: `Sent to the ${varietyName} reviewers. We’ll show their note here.`,
     };
   return {
     ready: `Ready. No one reviews ${varietyName} yet, so it will wait in the queue until an admin invites a reviewer.`,
     waiting: `Waiting for a reviewer (no one reviews ${varietyName} yet)`,
     confirm: `No one reviews ${varietyName} yet. It will wait in the queue until an admin invites a reviewer. ${keepEditing}`,
+    sent: `Sent. It waits in the queue until an admin invites a ${varietyName} reviewer. We’ll show their note here.`,
   };
 }

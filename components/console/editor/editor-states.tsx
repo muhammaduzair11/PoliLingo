@@ -22,14 +22,14 @@ export function EditorLoadError({
 }) {
   const title =
     error.code === 'PL404_NOT_FOUND'
-      ? `We couldn't find that ${what}`
+      ? `We couldn’t find that ${what}`
       : error.code === 'PL403_OUTSIDE_LANGUAGE'
-        ? `This ${what} is in a language you don't edit`
+        ? `This ${what} is in a language you don’t edit`
         : error.code === 'PL403_NOT_EDITOR'
           ? what.endsWith('s')
-            ? `The ${what} aren't open to you`
-            : `This ${what} isn't open to you`
-          : `We couldn't open the ${what}`;
+            ? `The ${what} aren’t open to you`
+            : `This ${what} isn’t open to you`
+          : `We couldn’t open the ${what}`;
   const retry = ![
     'PL404_NOT_FOUND',
     'PL403_OUTSIDE_LANGUAGE',
@@ -42,7 +42,10 @@ export function EditorLoadError({
         tone={error.code === 'PL404_NOT_FOUND' ? 'info' : 'error'}
         code={error.code}
       >
-        {error.message}
+        {/* The database's own sentence would only repeat the title. */}
+        {error.code === 'PL404_NOT_FOUND'
+          ? 'The link may be incomplete or out of date.'
+          : error.message}
       </Notice>
       <p className="console-actions">
         {retry && (

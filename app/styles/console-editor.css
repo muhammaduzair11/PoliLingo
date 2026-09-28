@@ -2,8 +2,10 @@
  * Owner: Track E (editor). Styles for /edit: the lesson tree and the lesson
  * editor (components/console/editor/*). Built on the tokens in tokens.css
  * and the kit's classes in console.css; semantic class names only. Desktop
- * puts the lesson's status beside its content; under 1100px it moves above;
- * under 580px everything is one column with full-width buttons.
+ * puts the lesson's status beside its content; under 1100px a status strip
+ * under the header carries the next step and the full panel follows the
+ * content; under 580px everything is one column, the strip becomes a bar
+ * along the bottom of the screen, and tap targets are 44px.
  */
 
 /* Page ------------------------------------------------------------------- */
@@ -92,9 +94,40 @@
 .editor-link-button:focus-visible,
 .editor-lesson-link:focus-visible,
 .editor-problem-link:focus-visible,
-.editor-breadcrumb a:focus-visible {
+.editor-breadcrumb a:focus-visible,
+.editor-status-link:focus-visible,
+.editor-stat-link:focus-visible {
   outline: 3px solid #8853e988;
   outline-offset: 2px;
+}
+/* Retire: a calm red text button, never the same weight as Edit. */
+.editor-retire {
+  display: contents;
+}
+.editor-retire > .console-button-quiet {
+  color: #a02e46;
+  font-weight: 600;
+}
+.editor-retire > .console-button-quiet:hover {
+  background: #fff3f5;
+}
+.editor-card-tools .editor-retire > .console-button {
+  min-height: 36px;
+  padding: 6px 10px;
+}
+.editor-unsaved {
+  font-size: 14px;
+  font-weight: 600;
+  color: #7a4b00;
+}
+.editor-field-error {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #8c2238;
+}
+.editor-field-error:empty {
+  display: none;
 }
 
 /* Status counts */
@@ -110,6 +143,67 @@
   margin: 8px 0 0;
   font-size: 13px;
   color: var(--muted-foreground);
+}
+
+/* Lessons by status: counts that add up, each jumping to its first lesson */
+.editor-stats ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.editor-stats li {
+  display: flex;
+}
+.editor-stat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  color: var(--ink);
+}
+.editor-stat-total {
+  background: var(--muted);
+  border-color: transparent;
+}
+.editor-stat-link:hover {
+  border-color: var(--ring);
+  background: #fdfbff;
+}
+.editor-stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.editor-stat-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Languages with nothing to edit yet: one quiet line each */
+.editor-languages-empty {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.editor-language-empty {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+.editor-language-empty strong {
+  color: var(--ink);
+}
+.editor-language-empty .native-text {
+  font-size: 18px;
+  color: var(--purple);
 }
 
 /* Tree ------------------------------------------------------------------- */
@@ -185,9 +279,10 @@
   font-size: 14px;
   line-height: 1.55;
 }
+/* One line where it fits: the first lessons should be in view. */
 .editor-demo-note p {
+  flex: 1 1 24rem;
   margin: 0;
-  max-width: 70ch;
 }
 .editor-demo-note .editor-new {
   flex-basis: auto;
@@ -240,6 +335,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  scroll-margin-top: 90px;
   padding: 16px;
   border: 1px solid #ece5f2;
   border-radius: var(--radius);
@@ -293,13 +389,32 @@
   background: #fff;
   overflow: hidden;
 }
+/* The whole row opens the lesson: the link's ::after covers it, and the
+   row's own tools sit above that layer. */
 .editor-lesson-row {
+  position: relative;
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
   border-bottom: 1px solid #f0eaf5;
+  scroll-margin-top: 90px;
+}
+.editor-lesson-row:hover {
+  background: #fdfbff;
+}
+.editor-lesson-row:target {
+  background: #f5f0ff;
+}
+.editor-lesson-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.editor-lesson-tools {
+  position: relative;
+  z-index: 1;
 }
 .editor-lesson-row:last-child {
   border-bottom: 0;
@@ -362,6 +477,10 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px 16px;
 }
+/* Variety gets the room its long names need; minutes are two digits. */
+.editor-field-row-minutes {
+  grid-template-columns: minmax(0, 1fr) 140px;
+}
 .editor-narrow-field {
   max-width: 220px;
 }
@@ -383,6 +502,7 @@
 .editor-breadcrumb ol {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 4px;
   margin: 0;
   padding: 0;
@@ -396,14 +516,63 @@
   color: #b3a8bf;
 }
 .editor-breadcrumb a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 4px;
   color: var(--purple);
   font-weight: 600;
-  border-radius: 4px;
+  border-radius: 6px;
+}
+.editor-breadcrumb a:hover {
+  text-decoration: underline;
+}
+.editor-breadcrumb li:first-child a {
+  margin-left: -4px;
 }
 .editor-header-badges {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
+}
+/* The header's status badge goes to the review panel. */
+.editor-status-link {
+  display: inline-flex;
+  border-radius: 999px;
+}
+.editor-status-link:hover .status-badge {
+  box-shadow: 0 0 0 2px #8853e955;
+}
+.editor-eyebrow-short {
+  display: none;
+}
+
+/* The status strip: the lesson's next step under the header, below 1100px
+   (above that, the review panel beside the content says it). */
+.editor-status-strip {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.editor-status-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.editor-status-pill {
+  display: none;
 }
 .editor-lesson-layout {
   display: grid;
@@ -438,6 +607,10 @@
   font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.01em;
+  scroll-margin-top: 90px;
+}
+.editor-section h2:focus {
+  outline: none;
 }
 .editor-section-head {
   display: flex;
@@ -515,7 +688,7 @@
 .editor-phrase-roman {
   margin: 0;
   font-size: 14px;
-  color: #8e75a2;
+  color: var(--muted-foreground);
 }
 .editor-phrase-meaning {
   margin: 0;
@@ -601,6 +774,59 @@
   font-size: 14px;
   font-weight: 600;
   color: #8c2238;
+}
+.editor-duplicate {
+  margin: -6px 0 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #fff9e8;
+  color: #5e3c00;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.editor-duplicate:empty {
+  display: none;
+}
+.editor-more-fields {
+  align-self: flex-start;
+  min-height: 32px;
+  font-size: 14px;
+}
+.editor-item-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+/* Where it comes from: one line with "Change", until it is wanted. */
+.editor-source-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.editor-source-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+}
+.editor-source-summary p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.editor-source-summary-label {
+  font-weight: 700;
+}
+.editor-source-summary .editor-link-button {
+  font-size: 14px;
+}
+.editor-fieldset[hidden] {
+  display: none;
 }
 
 /* Exercises */
@@ -736,8 +962,12 @@
 .editor-plan[hidden] {
   display: none;
 }
-.editor-generate .editor-result {
+.editor-generate .editor-result,
+.editor-generate-result {
   flex-basis: 100%;
+}
+.editor-generate-result:focus {
+  outline: none;
 }
 
 /* Aside panels */
@@ -757,6 +987,12 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted-foreground);
+  scroll-margin-top: 90px;
+}
+.editor-panel-title:focus-visible {
+  outline: 3px solid #8853e988;
+  outline-offset: 4px;
+  border-radius: 4px;
 }
 .editor-panel-text {
   margin: 0;
@@ -795,8 +1031,42 @@
   background: var(--muted);
   color: var(--muted-foreground);
 }
+.editor-check-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
 .editor-check-detail {
   display: block;
+  color: var(--muted-foreground);
+}
+.editor-check-body .editor-problems {
+  margin-top: 6px;
+}
+/* Why Submit is off, in words, under the button. */
+.editor-submit-off {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.editor-submit-hint {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+.editor-panel-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid #efe9f4;
+}
+.editor-panel-notes-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--muted-foreground);
 }
 .editor-problems {
@@ -805,12 +1075,16 @@
   gap: 8px;
 }
 .editor-problem {
-  display: flex;
-  gap: 8px;
+  display: block;
   padding: 8px 10px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.45;
+}
+.editor-problems-quiet .editor-problem {
+  padding: 0;
+  background: none;
+  color: var(--muted-foreground);
 }
 .editor-problem-blocking {
   background: #fff3f5;
@@ -819,14 +1093,6 @@
 .editor-problem-warning {
   background: #fff9e8;
   color: #5e3c00;
-}
-.editor-problem-severity {
-  flex-shrink: 0;
-  font-weight: 800;
-  text-transform: uppercase;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  padding-top: 1px;
 }
 .editor-problem-link {
   color: inherit;
@@ -852,7 +1118,56 @@
 .editor-more {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
+}
+.editor-panel .editor-more .console-button {
+  width: auto;
+}
+
+/* A phrase still in use: the exercises to change first */
+.editor-in-use {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+.editor-in-use li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.editor-in-use-what {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.editor-in-use .editor-problem-link {
+  flex-shrink: 0;
+}
+/* A long list scrolls between the title and Close, which stay in view. */
+.console-dialog.editor-in-use-dialog {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.editor-in-use-dialog .editor-in-use {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.editor-in-use .editor-problem-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  color: var(--purple);
 }
 
 /* Reorder */
@@ -948,6 +1263,9 @@ html[data-motion='reduced'] .editor-skeleton-block {
   .editor-skeleton-split {
     grid-template-columns: minmax(0, 1fr);
   }
+  .editor-status-strip {
+    display: flex;
+  }
   .editor-lesson-aside {
     position: static;
     display: grid;
@@ -1007,5 +1325,75 @@ html[data-motion='reduced'] .editor-skeleton-block {
   }
   .editor-disclosure > .console-button {
     width: 100%;
+  }
+
+  /* 44px tap targets */
+  .editor-icon-button {
+    width: 44px;
+    height: 44px;
+  }
+  .editor-small-button,
+  .editor-card-tools .editor-retire > .console-button,
+  .editor-in-use .editor-problem-link,
+  .editor-breadcrumb a {
+    min-height: 44px;
+  }
+  .editor-more-fields,
+  .editor-source-summary .editor-link-button {
+    min-height: 44px;
+  }
+
+  /* One-line eyebrow */
+  .editor-eyebrow-long {
+    display: none;
+  }
+  .editor-eyebrow-short {
+    display: inline;
+  }
+
+  /* Stats as one row of chips */
+  .editor-stats ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .editor-stat {
+    flex: 0 1 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 6px 14px;
+    border-radius: 999px;
+  }
+  .editor-stat-value {
+    font-size: 16px;
+  }
+
+  /* The status strip becomes a bar along the bottom while there is
+     something to do: the status, and the next step. */
+  .editor-status-strip-sticky {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    flex-wrap: nowrap;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-width: 1px 0 0;
+    border-radius: 0;
+    box-shadow: 0 -8px 24px #26183b14;
+  }
+  .editor-status-strip-sticky .editor-status-summary > span:last-child {
+    display: none;
+  }
+  .editor-status-pill {
+    display: inline-flex;
+  }
+  .editor-status-strip-sticky .console-button {
+    flex-shrink: 0;
+  }
+  .editor-lesson-page:has(.editor-status-strip-sticky) {
+    padding-bottom: 88px;
   }
 }

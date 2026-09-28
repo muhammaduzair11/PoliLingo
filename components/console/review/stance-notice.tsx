@@ -4,7 +4,7 @@ import type { ApprovalStance } from '@/lib/console/review';
 /**
  * Says up front what the reviewer can do with this phrase or lesson, and
  * why, before they try: the author rule, the sole-reviewer path, starter
- * content, retired content, and someone else's variety.
+ * content, retired content, and someone else’s variety.
  */
 export function StanceNotice({
   stance,
@@ -29,11 +29,10 @@ export function StanceNotice({
       return (
         <Notice
           tone="info"
-          title="You wrote part of this, and you're the only reviewer"
+          title="You wrote part of this, and you’re the only reviewer"
         >
-          You&apos;re the only {varietyName} reviewer right now, so you can
-          approve your own text. An admin countersigns it before learners see
-          it.
+          You’re the only {varietyName} reviewer right now, so you can approve
+          your own text. An admin countersigns it before learners see it.
         </Notice>
       );
     case 'demo':

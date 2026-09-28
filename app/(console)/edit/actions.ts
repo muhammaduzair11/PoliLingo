@@ -6,7 +6,7 @@
  * person; the database checks the role, the language and the state, and a
  * refusal comes back as one plain-English sentence (describeDbError).
  *
- * The lesson page's own writes are in ./lesson/[id]/actions.ts.
+ * The lesson page’s own writes are in ./lesson/[id]/actions.ts.
  */
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -48,7 +48,7 @@ function refused<T>(
   };
 }
 
-/** One database function as the signed-in person, keeping a refusal's detail. */
+/** One database function as the signed-in person, keeping a refusal’s detail. */
 async function run<T>(
   fn: string,
   args: Record<string, unknown>,
@@ -76,7 +76,10 @@ export async function createUnit(
   return { ok: true, data: { id: result.data } };
 }
 
-/** A new lesson at the end of a unit; then opens it in the lesson editor. */
+/**
+ * A new lesson at the end of a unit; then opens it in the lesson editor at
+ * its phrases (#items-heading), where "Add a phrase" opens by itself.
+ */
 export async function createLesson(
   _previous: EditorResult<{ id: string }> | null,
   formData: FormData,
@@ -94,14 +97,14 @@ export async function createLesson(
   });
   if (!result.ok) return { ...result, values };
   refresh();
-  redirect(editLessonPath(result.data));
+  redirect(`${editLessonPath(result.data)}#items-heading`);
 }
 
 export type ParentType = 'course' | 'unit' | 'lesson';
 
 /**
- * Puts a parent's live children in the order given (every child, once):
- * a course's units, a unit's lessons, a lesson's phrases or exercises.
+ * Puts a parent’s live children in the order given (every child, once):
+ * a course’s units, a unit’s lessons, a lesson’s phrases or exercises.
  * Called directly by the up and down buttons.
  */
 export async function reorderChildren(
@@ -117,7 +120,7 @@ export async function reorderChildren(
   )
     return refused({
       code: 'PL422_BAD_INPUT',
-      message: "That move didn't make sense. Reload the page and try again.",
+      message: 'That move didn’t make sense. Reload the page and try again.',
     });
   const result = await run<{ order: string[] }>('reorder_children', {
     p_parent_type: parentType,
@@ -170,7 +173,7 @@ export async function setPublishGate(
   return result;
 }
 
-/** Moves the last day a language's demo lessons stay live (admin). */
+/** Moves the last day a language’s demo lessons stay live (admin). */
 export async function setDemoSunset(
   _previous: EditorResult<unknown> | null,
   formData: FormData,

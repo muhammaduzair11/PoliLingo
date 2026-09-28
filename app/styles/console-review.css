@@ -66,6 +66,10 @@
   align-items: start;
   gap: 20px;
 }
+/* Read only, with nothing for the right column: the main one takes it all */
+.review-layout-single {
+  grid-template-columns: minmax(0, 1fr);
+}
 .review-main,
 .review-side {
   display: flex;
@@ -96,6 +100,16 @@
   font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.01em;
+  scroll-margin-top: 96px;
+}
+/* An admin on the queue: where their part of review is. */
+.review-admin-panel {
+  max-width: 720px;
+}
+/* A stale notice above both columns, full width. */
+.review-stale-slot {
+  display: flex;
+  flex-direction: column;
 }
 .review-subtitle {
   margin: 8px 0 0;
@@ -140,6 +154,10 @@
 .review-phrase {
   display: inline-flex;
   flex-direction: column;
+  /* Native text is right-to-left: stretched, it would sit at the far edge,
+     away from its romanisation and meaning. Each line takes its own width
+     so all three share one edge. */
+  align-items: flex-start;
   gap: 1px;
   min-width: 0;
 }
@@ -325,6 +343,10 @@
 .review-preview-card .native-preview-meaning {
   font-size: 16px;
 }
+/* As dark as the lesson's own (lesson.css), for 4.5:1 on white. */
+.review-preview-card .phrase .roman {
+  color: var(--text-muted, #6b5a7b);
+}
 .review-preview-note {
   margin: 0;
   padding: 10px 14px;
@@ -425,6 +447,7 @@
   flex-direction: column;
   gap: 8px;
 }
+/* The whole card is the checkbox's label: a tap anywhere ticks it. */
 .review-scope-option {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -434,6 +457,10 @@
   background: #fff;
   border: 1.5px solid var(--border);
   border-radius: 12px;
+  cursor: pointer;
+}
+.review-scope-option:hover {
+  border-color: var(--ring);
 }
 .review-scope-option:has(input:checked) {
   background: #f5f0ff;
@@ -475,6 +502,55 @@
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+/* Approve: the title and the buttons stay put; only the middle scrolls,
+   so Approve and Cancel are always in view on a phone. */
+.console-dialog.review-approve-dialog {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.review-approve-form {
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 14px;
+}
+.review-approve-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  margin: 0 -16px;
+  padding: 2px 16px 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.review-approve-phrase {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 14px;
+  background: #f5f0ff;
+  border-radius: 12px;
+}
+.review-approve-phrase .native-text {
+  font-size: 24px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.review-approve-phrase .review-phrase-roman {
+  font-size: 14px;
+}
+.review-approve-phrase .review-phrase-meaning {
+  font-size: 15px;
+}
+.review-approve-note {
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 /* Suggest a fix */
@@ -524,6 +600,11 @@
 
 /* Before and after ------------------------------------------------------ */
 
+/* The size the table has, not the screen's, decides its layout: it stacks
+   in the side column and in dialogs as it does on a phone. */
+.review-diff-wrap {
+  container-type: inline-size;
+}
 .review-diff {
   width: 100%;
   border-collapse: separate;
@@ -551,6 +632,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--muted-foreground);
   background: #fbf8fd;
 }
@@ -572,6 +654,47 @@
   font-size: 20px;
   line-height: 1.5;
   color: var(--ink);
+}
+@container (max-width: 520px) {
+  .review-diff,
+  .review-diff tbody,
+  .review-diff tr,
+  .review-diff th,
+  .review-diff td {
+    display: block;
+    width: 100%;
+  }
+  .review-diff thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .review-diff tbody th {
+    width: 100%;
+    padding-bottom: 2px;
+    border-bottom: 0;
+  }
+  .review-diff td {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-bottom: 0;
+  }
+  .review-diff td::before {
+    content: attr(data-label);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: 0.85;
+  }
+  .review-diff tbody tr + tr {
+    border-top: 1px solid #efe9f4;
+  }
 }
 
 /* History --------------------------------------------------------------- */
@@ -973,15 +1096,62 @@ html[data-motion='reduced'] .review-skeleton-block {
   animation: none;
 }
 
-/* Under 1000px the actions move below the phrase ------------------------ */
+/* The phone's bar of review actions: only under 740px (below). */
+.review-action-bar {
+  display: none;
+}
+
+/* Under 1000px the side column narrows, so the actions stay beside the
+   phrase on a tablet ------------------------------------------------------ */
 
 @media (max-width: 1000px) {
-  .review-layout,
+  .review-layout:not(.review-layout-single),
+  .review-skeleton-detail {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+  .review-card {
+    padding: 18px;
+  }
+}
+
+/* Under 740px the actions move below the phrase, and a bar along the
+   bottom of the screen keeps Approve and Request changes in reach -------- */
+
+@media (max-width: 740px) {
+  .review-layout:not(.review-layout-single),
   .review-skeleton-detail {
     grid-template-columns: minmax(0, 1fr);
   }
   .review-decision-buttons > .console-button-primary {
     flex-basis: auto;
+  }
+  .review-action-bar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: #fff;
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -8px 24px #26183b14;
+  }
+  .review-action-bar > .console-button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 12px;
+  }
+  .review-action-bar > .review-action-more {
+    flex: 0 0 44px;
+    padding: 0;
+    font-size: 22px;
+    line-height: 1;
+  }
+  .review-page:has(.review-action-bar) {
+    padding-bottom: 88px;
   }
 }
 
@@ -1018,44 +1188,6 @@ html[data-motion='reduced'] .review-skeleton-block {
   .review-queue-group .data-table .review-phrase {
     align-items: flex-end;
     text-align: right;
-  }
-  .review-diff,
-  .review-diff tbody,
-  .review-diff tr,
-  .review-diff th,
-  .review-diff td {
-    display: block;
-    width: 100%;
-  }
-  .review-diff thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-  .review-diff tbody th {
-    width: 100%;
-    padding-bottom: 2px;
-    border-bottom: 0;
-  }
-  .review-diff td {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    border-bottom: 0;
-  }
-  .review-diff td::before {
-    content: attr(data-label);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    opacity: 0.8;
-  }
-  .review-diff tbody tr + tr {
-    border-top: 1px solid #efe9f4;
   }
   .review-suggestion-head {
     flex-direction: column;

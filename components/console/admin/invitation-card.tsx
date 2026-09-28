@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import {
   formatDay,
+  formatPktDay,
   inviteHeadline,
   roleDuties,
   roleLabel,
@@ -10,6 +11,7 @@ import {
   type InviteRefusal,
   type Scope,
 } from '@/lib/console/invite-link';
+import { SupportDetails } from '../notice';
 
 /** peek_invitation(), as the database returns it. */
 export type InvitationPeek = Scope & {
@@ -34,7 +36,7 @@ export function InvitationCard({
   /** 2 when something else on the page holds its one h1. */
   headingLevel?: 1 | 2;
   /** The action area: Accept, or what to do instead. */
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   const first = invitation.display_name?.trim().split(/\s+/)[0];
   const Heading = headingLevel === 2 ? 'h2' : 'h1';
@@ -76,7 +78,8 @@ export function InvitationCard({
         </div>
         <div>
           <dt>Link expires</dt>
-          <dd>{formatDay(invitation.expires_at)}</dd>
+          {/* In Pakistan time, as the admin who sent it sees it. */}
+          <dd>{formatPktDay(invitation.expires_at)}</dd>
         </div>
         {invitation.grant_ends_at && (
           <div>
@@ -90,15 +93,22 @@ export function InvitationCard({
   );
 }
 
-/** A refusal or a dead end: what happened, why, and the next step. */
+/**
+ * A refusal or a dead end: what happened, why, and the next step. Someone
+ * already on the team also gets a way into their workspace, not only
+ * back to learning.
+ */
 export function InvitationProblem({
   refusal,
   code,
   action,
+  home,
 }: {
   refusal: InviteRefusal;
   code?: string;
   action?: ReactNode;
+  /** The viewer's own part of the workspace, when they have a role. */
+  home?: string | null;
 }) {
   return (
     <article
@@ -111,9 +121,14 @@ export function InvitationProblem({
       </h1>
       <p className="invite-lead">{refusal.message}</p>
       <p className="invite-next">{refusal.next}</p>
-      {code && <small className="console-notice-code">Code: {code}</small>}
+      {code && <SupportDetails code={code} />}
       <div className="console-actions">
         {action}
+        {home && (
+          <Link className="console-button console-button-primary" href={home}>
+            Open the workspace
+          </Link>
+        )}
         <Link className="console-button console-button-quiet" href="/learn">
           Back to learning
         </Link>

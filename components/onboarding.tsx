@@ -32,15 +32,16 @@ export function Onboarding({ courseId }: { courseId: string }) {
   return (
     <>
       <Header />
-      <main id="main-content" className="onboarding-page">
+      <main id="main-content" className="onboarding-page" data-step={step}>
         <div className="onboard-art" style={{ background: course.color }}>
           <span className="eyebrow">YOUR NEXT CHAPTER</span>
-          <h2>
+          {/* A poster title, not a heading: the page's h1 comes first. */}
+          <p className="onboard-course">
             {course.name}
             <span className="native" lang={course.lang} dir={course.dir}>
               {course.native}
             </span>
-          </h2>
+          </p>
           <Art
             className="onboard-world"
             name={course.image}
@@ -108,12 +109,16 @@ export function Onboarding({ courseId }: { courseId: string }) {
                   </span>
                 </p>
               </div>
-              <button
-                className="button button-purple full-width"
-                onClick={() => setStep(2)}
-              >
-                That’s my language <ArrowRight size={20} />
-              </button>
+              {/* Sticks to the bottom of short screens, so the next step is
+                  always in view (onboarding.css). */}
+              <div className="onboard-cta">
+                <button
+                  className="button button-purple full-width"
+                  onClick={() => setStep(2)}
+                >
+                  That’s my language <ArrowRight size={20} />
+                </button>
+              </div>
               <Link href="/#languages" className="quiet-link">
                 Explore another language
               </Link>
@@ -162,19 +167,21 @@ export function Onboarding({ courseId }: { courseId: string }) {
               <div className="kind-note">
                 <Heart size={19} /> No pressure. A little is always enough.
               </div>
-              <button
-                className="button button-purple full-width"
-                onClick={() => {
-                  update((s) => ({
-                    ...s,
-                    selected: course.id,
-                    dailyGoal: goal,
-                  }));
-                  router.push(`/learn/${course.id}`);
-                }}
-              >
-                Let the adventure begin <ArrowRight size={20} />
-              </button>
+              <div className="onboard-cta">
+                <button
+                  className="button button-purple full-width"
+                  onClick={() => {
+                    update((s) => ({
+                      ...s,
+                      selected: course.id,
+                      dailyGoal: goal,
+                    }));
+                    router.push(`/learn/${course.id}`);
+                  }}
+                >
+                  Let the adventure begin <ArrowRight size={20} />
+                </button>
+              </div>
               <p className="saved-note">
                 No sign-up needed. Your progress stays on this device, and you
                 can save it with an optional account later.

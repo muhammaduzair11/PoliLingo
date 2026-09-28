@@ -8,6 +8,7 @@ import {
   charLength,
   clean,
   countStatuses,
+  editorProblems,
   isPastOrToday,
   itemStatus,
   lessonStatus,
@@ -35,6 +36,19 @@ import {
   provenanceDefaults,
   formatDay,
   historyRows,
+  ORIGINAL_PROVENANCE,
+  checklistProblems,
+  checksToDo,
+  coveredByChecklist,
+  duplicateOf,
+  exercisesUsing,
+  heldBackMessage,
+  nextStep,
+  provenanceValid,
+  sentBack,
+  sourceHasDate,
+  shortVarietyName,
+  varietyEyebrow,
 } from '../lib/console/editor.ts';
 
 /** A FormData from plain entries; arrays become repeated fields. */
@@ -176,6 +190,25 @@ test('the tree view counts lesson statuses at every level', () => {
   assert.equal(course.units[0].lessons[2].status, 'in_review');
   assert.deepEqual(course.counts, view.languages[0].counts);
   assert.equal(countStatuses([]).draft, 0);
+
+  // A language with courses comes before one without, whatever the order.
+  const withEmpty = treeView({
+    ...tree,
+    languages: [
+      {
+        ...tree.languages[0],
+        code: 'hno',
+        name: 'Hindko',
+        courses: [],
+      },
+      tree.languages[0],
+    ],
+  });
+  assert.deepEqual(
+    withEmpty.languages.map((l) => l.code),
+    ['ps', 'hno'],
+  );
+  assert.equal(withEmpty.lessonCount, 5);
 });
 
 test('moving up and down swaps neighbours, and refuses the ends', () => {
@@ -200,9 +233,11 @@ test('readiness mirrors what submit_lesson asks for', () => {
     [
       ['items', false],
       ['exercises', false],
+      // Too few exercises is the Exercises row's to say, not a problem too.
       ['problems', true],
     ],
   );
+  assert.equal(none.checks[2].detail, 'Nothing to fix.');
   const ready = readiness({
     items: [1, 2, 3],
     exercises: [1, 2, 3, 4, 5, 6],
@@ -216,12 +251,280 @@ test('readiness mirrors what submit_lesson asks for', () => {
     exercises: [1, 2, 3, 4, 5, 6],
     problems: [
       { severity: 'blocking', code: 'PL422_BAD_OPTION', message: 'x' },
-      // Counted by the exercises check instead.
+      // Six exercises are enough, whatever the stored problem said.
       { severity: 'blocking', code: 'PL422_TOO_FEW_EXERCISES', message: 'x' },
     ],
   });
   assert.equal(blocked.ready, false);
   assert.equal(blocked.checks[2].detail, '1 problem to fix.');
+});
+
+test('the Checks panel and the checklist agree on exercises: six, blocking', () => {
+  const noExercises = {
+    items: [1, 2, 3],
+    exercises: [],
+    problems: [
+      {
+        severity: 'blocking',
+        code: 'PL422_TOO_FEW_EXERCISES',
+        message: 'This lesson needs at least one exercise.',
+        target_type: 'lesson',
+        target_id: 'ps-lsn-000001',
+      },
+    ],
+  };
+  assert.deepEqual(
+    editorProblems(noExercises).map((p) => [p.severity, p.message]),
+    [
+      [
+        'blocking',
+        'A reviewed lesson needs at least 6 exercises. This one has 0.',
+      ],
+    ],
+  );
+  const none = readiness(noExercises);
+  assert.equal(none.checks[1].ok, false);
+  assert.equal(none.ready, false);
+  // The Exercises row says it; the problem list does not say it again.
+  assert.equal(none.checks[2].detail, 'Nothing to fix.');
+  assert.deepEqual(checklistProblems(editorProblems(noExercises)), {
+    blocking: [],
+    notes: [],
+  });
+
+  // Under six the database only warns, but submitting is refused.
+  const three = {
+    items: [1, 2, 3],
+    exercises: [1, 2, 3],
+    problems: [
+      { severity: 'blocking', code: 'PL422_BAD_OPTION', message: 'x' },
+      {
+        severity: 'warning',
+        code: 'PL422_TOO_FEW_EXERCISES',
+        message:
+          'A reviewed lesson needs at least 6 exercises. This one has 3.',
+      },
+    ],
+  };
+  assert.deepEqual(
+    editorProblems(three).map((p) => [p.code, p.severity]),
+    [
+      ['PL422_BAD_OPTION', 'blocking'],
+      ['PL422_TOO_FEW_EXERCISES', 'blocking'],
+    ],
+  );
+  assert.equal(readiness(three).checks[2].detail, '1 problem to fix.');
+  assert.equal(readiness(three).checks[1].ok, false);
+
+  // Enough exercises: the line goes, and other problems stay as they are.
+  const six = {
+    items: [1],
+    exercises: [1, 2, 3, 4, 5, 6],
+    problems: [{ severity: 'warning', code: 'PL409_X', message: 'y' }],
+  };
+  assert.deepEqual(editorProblems(six), six.problems);
+  assert.equal(readiness(six).checks[2].detail, 'Nothing to fix.');
+});
+
+test('the review panel lists each problem once, in plain words', () => {
+  const empty = {
+    items: [],
+    exercises: [],
+    problems: [
+      {
+        severity: 'blocking',
+        code: 'PL422_BAD_INPUT',
+        message: 'This lesson has no phrases yet. Add at least one.',
+        target_type: 'lesson',
+      },
+      {
+        severity: 'blocking',
+        code: 'PL422_TOO_FEW_EXERCISES',
+        message: 'This lesson needs at least one exercise.',
+        target_type: 'lesson',
+      },
+      {
+        severity: 'warning',
+        code: 'PL409_NOT_PUBLISHABLE',
+        message:
+          'A publish gate above this lesson is closed, so learners won’t see it yet.',
+        target_type: 'lesson',
+      },
+      {
+        severity: 'blocking',
+        code: 'PL422_BAD_OPTION',
+        message: 'Exercise 2: it needs at least one wrong choice.',
+        target_type: 'exercise',
+        target_id: 'ps-exr-000002',
+      },
+    ],
+  };
+  const gates = { lesson: 'open', unit: 'blocked' };
+  const { blocking, notes } = checklistProblems(editorProblems(empty, gates));
+  // No phrases and too few exercises are the Phrases and Exercises rows.
+  assert.deepEqual(
+    blocking.map((p) => p.code),
+    ['PL422_BAD_OPTION'],
+  );
+  assert.deepEqual(
+    notes.map((p) => p.message),
+    [
+      'This unit is still held back, so learners won’t see the lesson yet. An admin opens it.',
+    ],
+  );
+  for (const p of editorProblems(empty, gates))
+    assert.doesNotMatch(p.message, /publish gate|database/);
+  assert.match(
+    heldBackMessage({ lesson: 'blocked', unit: 'open' }),
+    /^This lesson is still held back/,
+  );
+  assert.match(heldBackMessage(), /^Its course is still held back/);
+  assert.equal(coveredByChecklist(empty.problems[3]), false);
+  const checks = readiness(empty, undefined, gates).checks;
+  assert.deepEqual(
+    checks.map((c) => [c.key, c.ok]),
+    [
+      ['items', false],
+      ['exercises', false],
+      ['problems', false],
+    ],
+  );
+});
+
+test('a lesson sent back waits for a change before it can go again', () => {
+  const page = {
+    items: [1, 2, 3],
+    exercises: [1, 2, 3, 4, 5, 6],
+    problems: [],
+  };
+  const unchanged = readiness(page, {
+    review_status: 'changes_requested',
+    changed_since_review: false,
+  });
+  assert.equal(unchanged.ready, false);
+  assert.deepEqual(unchanged.checks.at(-1), {
+    key: 'request',
+    ok: false,
+    label: 'Reviewer’s request',
+    detail: 'Not changed since the review yet.',
+  });
+  const changed = readiness(page, {
+    review_status: 'rejected',
+    changed_since_review: true,
+  });
+  assert.equal(changed.ready, true);
+  assert.equal(changed.checks.at(-1).ok, true);
+  // Not sent back: no such row.
+  assert.equal(
+    readiness(page, {
+      review_status: 'unreviewed',
+      changed_since_review: false,
+    }).checks.some((c) => c.key === 'request'),
+    false,
+  );
+  assert.equal(sentBack({ review_status: 'changes_requested' }), true);
+  assert.equal(sentBack({ review_status: 'approved' }), false);
+
+  // The next step, for the status strip and the phone's bottom bar.
+  const draft = { review_status: 'unreviewed', submitted_at: null };
+  assert.deepEqual(nextStep(draft, readiness(page).checks, false), {
+    kind: 'submit',
+    resend: false,
+  });
+  assert.deepEqual(
+    nextStep(
+      { review_status: 'changes_requested', submitted_at: 'x' },
+      changed.checks,
+      false,
+    ),
+    { kind: 'submit', resend: true },
+  );
+  assert.deepEqual(
+    nextStep(
+      draft,
+      readiness({ items: [], exercises: [], problems: [] }).checks,
+      false,
+    ),
+    { kind: 'todo', count: 2 },
+  );
+  assert.equal(checksToDo(unchanged.checks), 1);
+  assert.deepEqual(
+    nextStep({ review_status: 'unreviewed', submitted_at: 'x' }, [], false),
+    { kind: 'waiting' },
+  );
+  assert.deepEqual(
+    nextStep({ review_status: 'approved', submitted_at: 'x' }, [], false),
+    { kind: 'approved' },
+  );
+  assert.deepEqual(nextStep(draft, [], true), { kind: 'locked' });
+});
+
+test('duplicates and the exercises that use a phrase', () => {
+  const items = [
+    { id: 'a', position: 1, native: 'سلام', meaning: 'Hello' },
+    { id: 'b', position: 2, native: 'مننه', meaning: 'Thank you' },
+  ];
+  assert.equal(duplicateOf(items, { native: ' سلام ', meaning: '' })?.id, 'a');
+  assert.equal(
+    duplicateOf(items, { native: 'x', meaning: 'thank YOU ' })?.id,
+    'b',
+  );
+  // The phrase being edited is not its own duplicate.
+  assert.equal(
+    duplicateOf(items, { native: 'سلام', meaning: 'Hello' }, 'a'),
+    null,
+  );
+  assert.equal(duplicateOf(items, { native: '', meaning: '' }), null);
+  assert.equal(duplicateOf(items, { native: 'ښه', meaning: 'Good' }), null);
+
+  const exercises = [
+    { id: 'e1', answer_item_id: 'a', options: ['b'] },
+    { id: 'e2', answer_item_id: 'b', options: ['a'] },
+    { id: 'e3', answer_item_id: 'a', options: [] },
+    { id: 'e4', answer_item_id: 'b', options: [] },
+  ];
+  const a = exercisesUsing('a', exercises);
+  assert.deepEqual(
+    a.using.map((e) => e.id),
+    ['e1', 'e2', 'e3'],
+  );
+  assert.equal(a.answerIn, 2);
+  assert.deepEqual(exercisesUsing('z', exercises), { using: [], answerIn: 0 });
+});
+
+test('the lesson eyebrow has a short form for phones', () => {
+  assert.equal(
+    shortVarietyName('Northern Pashto (Peshawar / Yusufzai)'),
+    'Northern Pashto',
+  );
+  assert.equal(shortVarietyName('Hazara Hindko'), 'Hazara Hindko');
+  assert.deepEqual(
+    varietyEyebrow('Pashto', 'Northern Pashto (Peshawar / Yusufzai)'),
+    {
+      long: 'Pashto · Northern Pashto (Peshawar / Yusufzai)',
+      short: 'Northern Pashto',
+    },
+  );
+  assert.equal(
+    varietyEyebrow('Pashto', 'Fixture variety').short,
+    'Pashto · Fixture variety',
+  );
+});
+
+test('the phrase form’s source: defaults, dates and validity', () => {
+  assert.equal(sourceHasDate('published_work'), true);
+  assert.equal(sourceHasDate('community_attested'), true);
+  assert.equal(sourceHasDate('original'), false);
+  assert.equal(sourceHasDate('reviewer_attested'), false);
+  assert.equal(
+    provenanceValid(
+      ORIGINAL_PROVENANCE.source_citation,
+      ORIGINAL_PROVENANCE.source_licence,
+    ),
+    true,
+  );
+  assert.equal(provenanceValid('ab', 'CC BY'), false);
+  assert.equal(provenanceValid('A book', ' '), false);
 });
 
 test('lengths count characters, as the database does', () => {
@@ -445,10 +748,11 @@ test('a refused form echoes what was typed; otherwise the saved value', () => {
 });
 
 test('a new phrase takes the provenance of the lesson’s last phrase', () => {
+  // The first phrase of a lesson: written by the team, for PoliLingo.
   assert.deepEqual(provenanceDefaults([]), {
     source_type: 'original',
-    source_citation: '',
-    source_licence: '',
+    source_citation: 'PoliLingo team',
+    source_licence: 'Written for PoliLingo',
   });
   const items = [
     { source_type: 'original', source_citation: 'A', source_licence: 'L1' },
@@ -502,7 +806,9 @@ test('gates and locks', () => {
 
 test('dates read as words; lesson rows that only echo a child change are left out', () => {
   assert.equal(formatDay('2026-12-11'), '11 December 2026');
-  assert.equal(formatDay('2026-09-26T23:30:00Z'), '26 September 2026');
+  // A timestamp is the day it was in Pakistan (UTC+5), as the admin sees it.
+  assert.equal(formatDay('2026-09-26T18:30:00Z'), '26 September 2026');
+  assert.equal(formatDay('2026-09-26T19:30:00Z'), '27 September 2026');
   assert.equal(formatDay(null), '');
   assert.equal(formatDay('not a date'), '');
   const row = (object_type, reason, at) => ({
@@ -527,6 +833,25 @@ test('dates read as words; lesson rows that only echo a child change are left ou
     ),
     ['item:create:10:00:00', 'lesson:edit:09:00:00', 'lesson:create:08:00:00'],
   );
+  // Retiring or adding a phrase writes a lesson row too: it is left out, so
+  // the history says "A phrase retired", not "Lesson retired".
+  const retired = [
+    row('lesson', 'retire', '2026-09-27T12:00:01Z'),
+    row('item', 'retire', '2026-09-27T12:00:00Z'),
+    row('lesson', 'create', '2026-09-27T11:00:00Z'),
+    row('exercise', 'create', '2026-09-27T11:00:02Z'),
+    row('lesson', 'retire', '2026-09-27T08:00:00Z'),
+  ];
+  assert.deepEqual(
+    historyRows(retired).map(
+      (r) => `${r.object_type}:${r.reason}:${r.at.slice(11, 19)}`,
+    ),
+    [
+      'item:retire:12:00:00',
+      'exercise:create:11:00:02',
+      'lesson:retire:08:00:00',
+    ],
+  );
 });
 
 test('the review hand-off names reviewers only when the variety has some', () => {
@@ -537,9 +862,14 @@ test('the review hand-off names reviewers only when the variety has some', () =>
     /^Yusufzai reviewers see it in their queue next\./,
   );
   assert.equal(some.waiting, 'Waiting for a Yusufzai reviewer');
+  assert.equal(
+    some.sent,
+    'Sent to the Yusufzai reviewers. We’ll show their note here.',
+  );
   const none = handoffCopy('Yusufzai', 0);
   for (const line of [none.ready, none.confirm, none.waiting])
     assert.match(line, /no one reviews Yusufzai yet/i);
+  assert.match(none.sent, /until an admin invites a Yusufzai reviewer/);
   assert.match(none.confirm, /until an admin invites a reviewer/);
   assert.doesNotMatch(none.ready, /reviewers will see it/);
 });

@@ -4,8 +4,9 @@ export type NoticeTone = 'info' | 'success' | 'warning' | 'error';
 
 /**
  * A message in the console. Errors and warnings are announced at once
- * (role="alert"); the rest politely (role="status"). `code` goes in small
- * print, for support.
+ * (role="alert"); the rest politely (role="status"). `code` is for support
+ * only: it waits, folded, under "Details for support", so nobody has to
+ * read a raw error code to understand what happened.
  */
 export function Notice({
   tone = 'info',
@@ -26,7 +27,19 @@ export function Notice({
     >
       {title && <p className="console-notice-title">{title}</p>}
       {children && <div className="console-notice-body">{children}</div>}
-      {code && <small className="console-notice-code">Code: {code}</small>}
+      {code && <SupportDetails code={code} />}
     </div>
+  );
+}
+
+/** A support reference, folded away: "Details for support" opens it. */
+export function SupportDetails({ code }: { code: string }) {
+  return (
+    <details className="console-support">
+      <summary>Details for support</summary>
+      <p>
+        Reference <code>{code}</code>
+      </p>
+    </details>
   );
 }
