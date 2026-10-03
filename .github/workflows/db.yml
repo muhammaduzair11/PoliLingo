@@ -39,7 +39,7 @@ jobs:
         run: npm ci
 
       - name: Set up the Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v3
         with:
           version: 2.118.0
 
